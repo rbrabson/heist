@@ -83,11 +83,11 @@ type Player struct {
 
 // Target is a target of a heist.
 type Target struct {
-	ID       string  `json:"id"`
-	CrewSize int     `json:"crew_size"`
-	Success  float64 `json:"success"`
-	Vault    int     `json:"vault"`
-	VaultMax int     `json:"vault_max"`
+	ID       string `json:"id"`
+	CrewSize int    `json:"crew_size"`
+	Success  int    `json:"success"`
+	Vault    int    `json:"vault"`
+	VaultMax int    `json:"vault_max"`
 }
 
 // NewServers creates a new set of servers. This is typically called when the heist
@@ -156,6 +156,19 @@ func NewHeist(planner *Player) *Heist {
 	heist.Crew = append(heist.Crew, heist.Planner)
 
 	return &heist
+}
+
+// NewTarget creates a new target for a heist
+func NewTarget(id string, maxCrewSize int, success int, maxVault int) *Target {
+	target := Target{
+		ID:       id,
+		CrewSize: maxCrewSize,
+		Success:  success,
+		VaultMax: maxVault,
+		Vault:    maxVault,
+	}
+	return &target
+
 }
 
 // IsPoliceAlerted returns an indication as to whether a new heist can be

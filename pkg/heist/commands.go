@@ -38,20 +38,20 @@ func init() {
 // componentHandlers are the buttons that appear on messages sent by this bot.
 var (
 	componentsHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+		"cancel_heist": cancelHeist,
 		"join_heist":   joinHeist,
 		"leave_heist":  leaveHeist,
-		"cancel_heist": cancelHeist,
 	}
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+		"clear":   clearMember,
 		"plan":    planHeist,
 		"reset":   resetHeist,
-		"themes":  listThemes,
-		"theme":   setTheme,
-		"version": version,
-		"clear":   clearMember,
+		"target":  addTarget,
 		"targets": listTargets,
+		"theme":   setTheme,
+		"themes":  listThemes,
+		"version": version,
 	}
-
 	commands = []*discordgo.ApplicationCommand{
 		{
 			Name:        "plan",
@@ -76,6 +76,36 @@ var (
 		{
 			Name:        "targets",
 			Description: "Gets the list of available heist targets",
+		},
+		{
+			Name:        "target",
+			Description: "Adds a new target to the list of heist targets",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "id",
+					Description: "ID of the heist",
+					Required:    true,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionInteger,
+					Name:        "crew",
+					Description: "Maximum crew size for the heist",
+					Required:    true,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionInteger,
+					Name:        "success",
+					Description: "Percentage liklihood of success (0..100)",
+					Required:    true,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionInteger,
+					Name:        "vault",
+					Description: "Maximum size of the target's vault",
+					Required:    true,
+				},
+			},
 		},
 		{
 			Name:        "themes",
@@ -477,6 +507,64 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 }
 
+// addTarget adds a .
+func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Info("--> addTarget")
+	defer log.Info("<-- addTarget")
+
+	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
+		return
+	}
+
+	server, ok := bot.servers.Servers[i.GuildID]
+	if !ok {
+		server = NewServer(i.GuildID)
+		bot.servers.Servers[server.ID] = server
+	}
+
+	var id string
+	var crewSize, success, valutMax int
+	options := i.ApplicationCommandData().Options
+	for _, option := range options {
+		if option.Name == "id" {
+			id = strings.TrimSpace(option.StringValue())
+		} else if option.Name == "crew" {
+			crewSize = int(option.IntValue())
+		} else if option.Name == "success" {
+			success = int(option.IntValue())
+		} else if option.Name == "vault" {
+			valutMax = int(option.IntValue())
+		}
+	}
+
+	_, ok = server.Targets[id]
+	if ok {
+		commandFailure(s, i, "Target "+id+" already exists.")
+		return
+	}
+	for _, target := range server.Targets {
+		if target.CrewSize == crewSize {
+			commandFailure(s, i, "Target "+target.ID+" has the same max crew size.")
+			return
+		}
+
+	}
+
+	target := NewTarget(id, crewSize, success, valutMax)
+	server.Targets[target.ID] = target
+
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "You have added target " + target.ID + " to the new heist.",
+			Flags:   discordgo.MessageFlagsEphemeral,
+		},
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 // listTargets displays a list of available heist targets.
 func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Info("--> listTargets")
@@ -501,7 +589,7 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	for _, target := range server.Targets {
 		targets.WriteString(target.ID + "\n")
 		crews.WriteString(strconv.Itoa(target.CrewSize) + "\n")
-		vaults.WriteString(strconv.Itoa(target.Vault) + "\n")
+		vaults.WriteString(strconv.Itoa(target.VaultMax) + "\n")
 	}
 
 	caser := cases.Caser(cases.Title(language.Und, cases.NoLower))
