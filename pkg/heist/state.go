@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -53,12 +54,13 @@ type Config struct {
 
 // Heist is the data for a heist that is either planned or being executed.
 type Heist struct {
-	Planner       string   `json:"planner"`
-	Crew          []string `json:"crew"`
-	SurvivingCrew []string `json:"surviving_crew"`
-	Planned       bool     `json:"planned"`
-	Started       bool     `json:"started"`
-	MessageID     string   `json:"message_id"`
+	Planner       string                       `json:"planner"`
+	Crew          []string                     `json:"crew"`
+	SurvivingCrew []string                     `json:"surviving_crew"`
+	Planned       bool                         `json:"planned"`
+	Started       bool                         `json:"started"`
+	MessageID     string                       `json:"message_id"`
+	Interaction   *discordgo.InteractionCreate `json:"interaction"`
 	Timer         *waitTimer
 }
 

@@ -6,6 +6,7 @@ package heist
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
+	"github.com/joho/godotenv"
 	"github.com/rbrabson/heist/pkg/checks"
 	"github.com/rbrabson/heist/pkg/store"
 	log "github.com/sirupsen/logrus"
@@ -24,8 +26,14 @@ import (
 // TODO: check to see if Heist has been paused (it should be in the state)
 
 var (
-	bot *Bot
+	bot   *Bot
+	appID string
 )
+
+func init() {
+	godotenv.Load()
+	appID = os.Getenv("APP_ID")
+}
 
 // componentHandlers are the buttons that appear on messages sent by this bot.
 var (
@@ -34,19 +42,75 @@ var (
 		"leave_heist":  leaveHeist,
 		"cancel_heist": cancelHeist,
 	}
+	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+		"plan":    planHeist,
+		"reset":   resetHeist,
+		"themes":  listThemes,
+		"theme":   setTheme,
+		"version": version,
+		"clear":   clearMember,
+		"targets": listTargets,
+	}
+
+	commands = []*discordgo.ApplicationCommand{
+		{
+			Name:        "plan",
+			Description: "Plans a heist",
+		},
+		{
+			Name:        "reset",
+			Description: "Resets a heist",
+		},
+		{
+			Name:        "clear",
+			Description: "Clears the criminal settings for the user",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "id",
+					Description: "ID of the player to clear",
+					Required:    true,
+				},
+			},
+		},
+		{
+			Name:        "targets",
+			Description: "Gets the list of available heist targets",
+		},
+		{
+			Name:        "themes",
+			Description: "Gets the list of available heist themes",
+		},
+		{
+			Name:        "theme",
+			Description: "Sets the current heist theme",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "name",
+					Description: "Name of the theme to set",
+					Required:    true,
+				},
+			},
+		},
+		{
+			Name:        "version",
+			Description: "Returns the version of heist running on the server",
+		},
+	}
 )
 
 /******** UTILITY FUNCTIONS ********/
 
 // getAssignedRoles returns a list of discord roles assigned to the user
-func getAssignedRoles(s *discordgo.Session, m *discordgo.MessageCreate) discordgo.Roles {
-	guild, err := s.Guild(m.GuildID)
+func getAssignedRoles(s *discordgo.Session, i *discordgo.InteractionCreate) discordgo.Roles {
+	guild, err := s.Guild(i.GuildID)
 	if err != nil {
 		log.Error("Error:", err)
 		return nil
 	}
 
-	member, err := s.GuildMember(m.GuildID, m.Author.ID)
+	member, err := s.GuildMember(i.GuildID, i.Member.User.ID)
 	if err != nil {
 		log.Error(err)
 		return nil
@@ -78,6 +142,9 @@ func getPlayer(server *Server, playerID string, playerName string) *Player {
 
 // commandFailure is a utility routine used to send an error response to a user's reaction to a bot's message.
 func commandFailure(s *discordgo.Session, i *discordgo.InteractionCreate, msg string) {
+	log.Info("--> commandFailure")
+	defer log.Info("<-- commandFailure")
+
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
@@ -88,19 +155,28 @@ func commandFailure(s *discordgo.Session, i *discordgo.InteractionCreate, msg st
 	if err != nil {
 		log.Fatal(err)
 	}
+
 }
 
 // heistMessage sends the main command used to plan, join and leave a heist. It also handles the case where
 // the heist starts, disabling the buttons to join/leave/cancel the heist.
-func heistMessage(s *discordgo.Session, server *Server, player *Player, channelID string, messageID string, planning bool) (*discordgo.Message, error) {
+func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action string) error {
+	log.Info("--> heistMessage")
+	defer log.Info("<-- heistMessage")
+
+	server := bot.servers.Servers[i.GuildID]
+	player := server.Players[i.Member.User.ID]
 	var status string
 	var buttonDisabled bool
-	if planning {
+	if action == "plan" || action == "join" || action == "leave" {
 		timestamp := fmt.Sprintf("<t:%v:R> ", time.Now().Add(server.Config.WaitTime).Unix())
 		status = "Starts " + timestamp
 		buttonDisabled = false
-	} else {
+	} else if action == "start" {
 		status = "Started"
+		buttonDisabled = true
+	} else {
+		status = "Canceled"
 		buttonDisabled = true
 	}
 
@@ -145,69 +221,63 @@ func heistMessage(s *discordgo.Session, server *Server, player *Player, channelI
 		}},
 	}
 
-	var message *discordgo.Message
 	var err error
-	if messageID == "" {
-		msg := &discordgo.MessageSend{
-			Embeds:     embeds,
-			Components: components,
-		}
-
-		message, err = s.ChannelMessageSendComplex(channelID, msg)
+	if action == "plan" {
+		err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Embeds:     embeds,
+				Components: components,
+			},
+		})
 	} else {
-		msg := &discordgo.MessageEdit{
-			Embeds:     embeds,
-			Components: components,
-			Channel:    channelID,
-			ID:         messageID,
-		}
-		message, err = s.ChannelMessageEditComplex(msg)
+		s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+			Embeds:     &embeds,
+			Components: &components,
+		})
 	}
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return message, nil
+	return nil
 }
 
 /******** PLAYER COMMANDS ********/
 
 // planHeist plans a new heist
-func planHeist(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.Author.ID == s.State.User.ID {
-		return
-	}
-	if m.Content != bot.prefix+" plan" {
-		return
-	}
+func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Info("--> planHeist")
+	defer log.Info("<-- planHeist")
 
-	server, ok := bot.servers.Servers[m.GuildID]
+	server, ok := bot.servers.Servers[i.GuildID]
 	if !ok {
-		server = NewServer(m.GuildID)
-		bot.servers.Servers[m.GuildID] = server
-		log.Info(m.GuildID)
+		server = NewServer(i.GuildID)
+		bot.servers.Servers[server.ID] = server
 	}
 	if server.Heist != nil {
-		reply, _ := bot.Session.ChannelMessageSendReply(m.ChannelID, "A "+server.Theme.Heist+" is already being planned.", m.Reference())
-		time.Sleep(3 * time.Second)
-		bot.Session.ChannelMessageDelete(m.ChannelID, reply.ID)
-		bot.Session.ChannelMessageDelete(m.ChannelID, m.ID)
+		bot.Session.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "A " + server.Theme.Heist + " is already being planned.",
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
 		return
 	}
 
-	player := getPlayer(server, m.Author.ID, m.Author.Username)
+	player := getPlayer(server, i.Member.User.ID, i.Member.User.Username)
 
 	server.Heist = NewHeist(player)
+	server.Heist.Interaction = i
 	server.Heist.Planned = true
 
-	planner := server.Players[server.Heist.Planner]
-	message, err := heistMessage(s, server, planner, m.ChannelID, "", true)
+	err := heistMessage(s, i, "plan")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	server.Heist.MessageID = message.ID
-	server.Heist.Timer = newWaitTimer(s, server, m.ChannelID, message.ID, server.Config.WaitTime, startHeist)
+	server.Heist.Timer = newWaitTimer(s, i, server.Config.WaitTime, startHeist)
 
 	file, err := json.MarshalIndent(bot.servers, "", " ")
 	if err != nil {
@@ -219,6 +289,9 @@ func planHeist(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 // joinHeist attempts to join a heist that is being planned
 func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Info("--> joinHeist")
+	defer log.Info("<-- joinHeist")
+
 	server, ok := bot.servers.Servers[i.GuildID]
 	if !ok {
 		server = NewServer(i.GuildID)
@@ -248,8 +321,7 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	server.Heist.Crew = append(server.Heist.Crew, player.ID)
-	planner := server.Players[server.Heist.Planner]
-	_, err = heistMessage(s, server, planner, i.ChannelID, i.Message.ID, true)
+	err = heistMessage(s, server.Heist.Interaction, "join")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -257,6 +329,9 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // leaveHeist attempts to leave a heist previously joined
 func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Info("--> leaveHeist")
+	defer log.Info("<-- leaveHeist")
+
 	server, ok := bot.servers.Servers[i.GuildID]
 	if !ok {
 		server = NewServer(i.GuildID)
@@ -267,17 +342,18 @@ func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		commandFailure(s, i, "No "+server.Theme.Heist+" is planned.")
 		return
 	}
+
 	player := getPlayer(server, i.Member.User.ID, i.Member.User.Username)
 
 	if server.Heist.Planner == player.ID {
 		commandFailure(s, i, "You can't leave the "+server.Theme.Heist+", as you are the planner.")
 		return
 	}
-
 	if !contains(server.Heist.Crew, player.ID) {
 		commandFailure(s, i, "You aren't a member of the "+server.Theme.Heist+".")
 		return
 	}
+
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
@@ -290,8 +366,7 @@ func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	server.Heist.Crew = remove(server.Heist.Crew, player.ID)
 
-	planner := server.Players[server.Heist.Planner]
-	_, err = heistMessage(s, server, planner, i.ChannelID, i.Message.ID, true)
+	err = heistMessage(s, server.Heist.Interaction, "leave")
 	if err != nil {
 		log.Error(err)
 	}
@@ -299,37 +374,46 @@ func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // cancelHeist cancels a heist that is being planned but has not yet started
 func cancelHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Info("--> cancelHeist")
+	defer log.Info("<-- cancelHeist")
+
 	server, ok := bot.servers.Servers[i.GuildID]
 	if !ok {
 		server = NewServer(i.GuildID)
 		bot.servers.Servers[server.ID] = server
 		commandFailure(s, i, "No "+server.Theme.Heist+" could be found.")
-		return
 	}
 	if server.Heist == nil {
 		commandFailure(s, i, "No "+server.Theme.Heist+" is planned.")
 		return
 	}
-
-	// Need to save the author of the person who is planning the heist
 	if i.Member.User.ID != server.Heist.Planner {
 		commandFailure(s, i, "You cannot cancel the "+server.Theme.Heist+" as you are not the planner.")
 		return
 	}
-	err := s.ChannelMessageDelete(i.Message.ChannelID, i.Message.ID)
-	if err != nil {
-		log.Error(err)
-	}
+
+	heistMessage(s, server.Heist.Interaction, "cancel")
 	server.Heist.Timer.cancel()
 	server.Heist = nil
 
-	s.ChannelMessageSend(i.ChannelID, "The "+server.Theme.Heist+" has been cancelled.")
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "The " + server.Theme.Heist + " has been cancelled.",
+		},
+	})
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 // startHeist is called once the wait time for planning the heist completes
-func startHeist(s *discordgo.Session, server *Server, channelID string, messageID string) {
-	planner := server.Players[server.Heist.Planner]
-	_, err := heistMessage(s, server, planner, channelID, messageID, false)
+func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Info("--> startHeist")
+	defer log.Info("<-- startHeist")
+
+	server := bot.servers.Servers[s.State.Application.GuildID]
+	err := heistMessage(s, i, "start")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -338,121 +422,78 @@ func startHeist(s *discordgo.Session, server *Server, channelID string, messageI
 
 	// For now, just clear out the heist so we can continue....
 	time.Sleep(5 * time.Second)
-	err = s.ChannelMessageDelete(channelID, messageID)
+	err = s.ChannelMessageDelete(i.ChannelID, i.Message.ID)
 	if err != nil {
 		log.Fatal(err)
 	}
 	server.Heist = nil
 }
 
-func heistHelp(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.Author.ID == s.State.User.ID {
-		return
-	}
-	if m.Content != bot.prefix+" help" && m.Content != bot.prefix {
-		return
-	}
-
-	server, ok := bot.servers.Servers[m.GuildID]
-	if !ok {
-		server = NewServer(m.GuildID)
-		bot.servers.Servers[server.ID] = server
-	}
-
-	var playerCommands strings.Builder
-	playerCommands.WriteString("help: a summary of available commands\n")
-	playerCommands.WriteString("plan: plan a new " + server.Theme.Heist + "\n")
-	embedFields := []*discordgo.MessageEmbedField{
-		{
-			Name:   "Commands",
-			Value:  playerCommands.String(),
-			Inline: true,
-		},
-	}
-	if checks.IsAdmin(getAssignedRoles(s, m)) {
-		var adminCommands strings.Builder
-		adminCommands.WriteString("clear: clears jail and death statuses\n")
-		adminCommands.WriteString("reset: resets a hung " + server.Theme.Heist + "\n")
-		adminCommands.WriteString("targets: lists available targets\n")
-		adminCommands.WriteString("theme: sets the theme\n")
-		adminCommands.WriteString("themes: lists available themes\n")
-		adminCommands.WriteString("version: shows the version of heist\n")
-		embedFields = append(embedFields, &discordgo.MessageEmbedField{
-			Name:   "Admin Commands",
-			Value:  adminCommands.String(),
-			Inline: false,
-		})
-	}
-
-	msg := &discordgo.MessageSend{
-		Embeds: []*discordgo.MessageEmbed{
-			{
-				Type:        discordgo.EmbedTypeRich,
-				Title:       "Available Commands",
-				Description: "Available Commands for the Heist bot",
-				Fields:      embedFields,
-			},
-		},
-	}
-
-	s.ChannelMessageSendComplex(m.ChannelID, msg)
-}
-
 /******** ADMIN COMMANDS ********/
 
 // Reset resets the heist in case it hangs
-func resetHeist(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.Author.ID == s.State.User.ID {
+func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Info("--> resetHeist")
+	defer log.Info("<-- resetHeist")
+
+	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		return
 	}
-	if m.Content != bot.prefix+" reset" {
-		return
-	}
-	if !checks.IsAdminOrServerManager(getAssignedRoles(s, m)) {
-		return
-	}
-	server, ok := bot.servers.Servers[m.GuildID]
+	server, ok := bot.servers.Servers[i.GuildID]
 	if !ok {
-		server := NewServer(m.GuildID)
+		server = NewServer(i.GuildID)
 		bot.servers.Servers[server.ID] = server
-		bot.Session.ChannelMessageSendReply(m.ChannelID, "No "+server.Theme.Heist+" is being planned.", m.Reference())
 	}
 	if server.Heist == nil || !server.Heist.Planned {
-		bot.Session.ChannelMessageSendReply(m.ChannelID, "No "+server.Theme.Heist+" is being planned.", m.Reference())
-		return
+		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "No " + server.Theme.Heist + " is being planned.",
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+		if err != nil {
+			log.Error(err)
+		}
 	}
 
 	if server.Heist.Timer != nil {
 		server.Heist.Timer.cancel()
 	}
-	s.ChannelMessageDelete(m.ChannelID, server.Heist.MessageID)
+	heistMessage(s, server.Heist.Interaction, "cancel")
 	server.Heist = nil
 
-	s.ChannelMessageSendReply(m.ChannelID, "The "+server.Theme.Heist+" has been reset.", m.Reference())
+	if server.Heist == nil || !server.Heist.Planned {
+		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "The " + server.Theme.Heist + " has been reset.",
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+		if err != nil {
+			log.Error(err)
+		}
+	}
 }
 
-// clearMember clears the criminal state of the player.
-func listTargets(s *discordgo.Session, m *discordgo.MessageCreate) {
-	commandPrefix := bot.prefix + " targets"
-	if m.Author.ID == s.State.User.ID {
-		return
-	}
-	if m.Content != commandPrefix {
-		return
-	}
-	if !checks.IsAdminOrServerManager(getAssignedRoles(s, m)) {
+// listTargets displays a list of available heist targets.
+func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Info("--> listTargets")
+	defer log.Info("<-- listTargets")
+
+	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		return
 	}
 
-	server, ok := bot.servers.Servers[m.GuildID]
+	server, ok := bot.servers.Servers[i.GuildID]
 	if !ok {
-		server = NewServer(m.GuildID)
+		server = NewServer(i.GuildID)
 		bot.servers.Servers[server.ID] = server
 	}
 	if len(server.Targets) == 0 {
-		msg := "There aren't any targets! To create a target use `" +
-			bot.prefix + " createtarget`."
-		s.ChannelMessageSendReply(m.ChannelID, msg, m.Reference())
+		msg := "There aren't any targets! To create a target use `/createtarget`."
+		commandFailure(s, i, msg)
 		return
 	}
 
@@ -462,189 +503,209 @@ func listTargets(s *discordgo.Session, m *discordgo.MessageCreate) {
 		crews.WriteString(strconv.Itoa(target.CrewSize) + "\n")
 		vaults.WriteString(strconv.Itoa(target.Vault) + "\n")
 	}
+
 	caser := cases.Caser(cases.Title(language.Und, cases.NoLower))
-	msg := &discordgo.MessageSend{
-		Embeds: []*discordgo.MessageEmbed{
-			{
-				Type:        discordgo.EmbedTypeRich,
-				Title:       "Available Targets",
-				Description: "Available targets for the Heist bot",
-				Fields: []*discordgo.MessageEmbedField{
-					{
-						Name:   "Target",
-						Value:  targets.String(),
-						Inline: true,
-					},
-					{
-						Name:   "Max Crew",
-						Value:  crews.String(),
-						Inline: true,
-					},
-					{
-						Name:   caser.String(server.Theme.Vault),
-						Value:  vaults.String(),
-						Inline: true,
-					},
+	embeds := []*discordgo.MessageEmbed{
+		{
+			Type:        discordgo.EmbedTypeRich,
+			Title:       "Available Targets",
+			Description: "Available targets for the Heist bot",
+			Fields: []*discordgo.MessageEmbedField{
+				{
+					Name:   "Target",
+					Value:  targets.String(),
+					Inline: true,
+				},
+				{
+					Name:   "Max Crew",
+					Value:  crews.String(),
+					Inline: true,
+				},
+				{
+					Name:   caser.String(server.Theme.Vault),
+					Value:  vaults.String(),
+					Inline: true,
 				},
 			},
 		},
 	}
-	s.ChannelMessageSendComplex(m.ChannelID, msg)
 
+	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Embeds: embeds,
+			Flags:  discordgo.MessageFlagsEphemeral,
+		},
+	})
 }
 
 // clearMember clears the criminal state of the player.
-func clearMember(s *discordgo.Session, m *discordgo.MessageCreate) {
-	commandPrefix := bot.prefix + " clear"
-	if m.Author.ID == s.State.User.ID {
+func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Info("--> clearMember")
+	log.Info("<-- clearMember")
+
+	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		return
 	}
-	if !strings.HasPrefix(m.Content, commandPrefix) {
-		return
+
+	var memberID string
+	options := i.ApplicationCommandData().Options
+	for _, option := range options {
+		if option.Name == "playerID" {
+			memberID = strings.TrimSpace(option.StringValue())
+		}
 	}
-	if !checks.IsAdminOrServerManager(getAssignedRoles(s, m)) {
-		return
-	}
-	memberID := strings.TrimSpace(m.Content[len(commandPrefix):])
-	if memberID == "" {
-		s.ChannelMessageSendReply(m.ChannelID, "Usage: "+bot.prefix+" clear <userID>.", m.Reference())
-		return
-	}
-	server, ok := bot.servers.Servers[m.GuildID]
+	server, ok := bot.servers.Servers[i.GuildID]
 	if !ok {
-		server := NewServer(m.GuildID)
+		server = NewServer(i.GuildID)
 		bot.servers.Servers[server.ID] = server
 	}
 	player, ok := server.Players[memberID]
 	if !ok {
-		s.ChannelMessageSendReply(m.ChannelID, "Player not found.", m.Reference())
+		commandFailure(s, i, "Player not found.")
 	}
 	player.ClearSettings()
-	s.ChannelMessageSendReply(m.ChannelID, "Player settings cleared.", m.Reference())
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "Player settings cleared.",
+			Flags:   discordgo.MessageFlagsEphemeral,
+		},
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 // listThemes returns the list of available themes that may be used for heists
-func listThemes(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.Author.ID == s.State.User.ID {
+func listThemes(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
+		log.Info("User is not an administrator")
 		return
 	}
-	if m.Content != bot.prefix+" themes" {
-		return
-	}
-	if !checks.IsAdminOrServerManager(getAssignedRoles(s, m)) {
-		return
-	}
+
 	themes, err := GetThemes()
 	if err != nil {
 		return
 	}
-	msg := &discordgo.MessageSend{
-		Embeds: []*discordgo.MessageEmbed{
-			{
-				Type:        discordgo.EmbedTypeRich,
-				Title:       "Available Themes",
-				Description: "Available Themes for the Heist bot",
-				Fields: []*discordgo.MessageEmbedField{
-					{
-						Name:   "Themes",
-						Value:  strings.Join(themes[:], ","),
-						Inline: true,
-					},
+
+	embeds := []*discordgo.MessageEmbed{
+		{
+			Type:        discordgo.EmbedTypeRich,
+			Title:       "Available Themes",
+			Description: "Available Themes for the Heist bot",
+			Fields: []*discordgo.MessageEmbedField{
+				{
+					Name:   "Themes",
+					Value:  strings.Join(themes[:], ","),
+					Inline: true,
 				},
 			},
 		},
 	}
 
-	s.ChannelMessageSendComplex(m.ChannelID, msg)
+	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Embeds: embeds,
+			Flags:  discordgo.MessageFlagsEphemeral,
+		},
+	})
 }
 
 // setTheme sets the heist theme to the one specified in the command
-func setTheme(s *discordgo.Session, m *discordgo.MessageCreate) {
-	commandPrefix := bot.prefix + " theme"
-	if m.Author.ID == s.State.User.ID {
+func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Info("--> setTheme")
+	defer log.Info("<-- setTheme")
+
+	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		return
 	}
-	if !strings.HasPrefix(m.Content, commandPrefix) {
-		return
-	}
-	if m.Content == bot.prefix+" themes" {
-		return
-	}
-	if !checks.IsAdminOrServerManager(getAssignedRoles(s, m)) {
-		return
-	}
-	server := bot.servers.Servers[m.GuildID]
+
+	server := bot.servers.Servers[i.GuildID]
 	if server == nil {
-		server = NewServer(m.GuildID)
+		server = NewServer(i.GuildID)
 		bot.servers.Servers[server.ID] = server
 	}
-	themeName := strings.TrimSpace(m.Content[len(commandPrefix):])
-	if themeName == "" {
-		s.ChannelMessageSend(m.ChannelID, "Usage: "+bot.prefix+" theme <theme_name>.")
-		return
+	var themeName string
+	options := i.ApplicationCommandData().Options
+	for _, option := range options {
+		if option.Name == "name" {
+			themeName = strings.TrimSpace(option.StringValue())
+		}
 	}
+
 	if themeName == server.Config.Theme {
-		s.ChannelMessageSend(m.ChannelID, "Theme "+themeName+" is already being used.")
+		commandFailure(s, i, "Theme "+themeName+" is already being used.")
 		return
 	}
 	theme, err := LoadTheme(themeName)
 	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, "Theme "+themeName+" does not exist.")
+		commandFailure(s, i, "Theme "+themeName+" does not exist.")
 		return
 	}
 	server.Config.Theme = themeName
 	server.Theme = *theme
-	s.ChannelMessageSend(m.ChannelID, "Theme "+themeName+" is now being used.")
+
+	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "Theme " + themeName + " is now being used.",
+			Flags:   discordgo.MessageFlagsEphemeral,
+		},
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 // version shows the version of heist you are running.
-func version(s *discordgo.Session, m *discordgo.MessageCreate) {
-	commandPrefix := bot.prefix + " version"
-	if m.Author.ID == s.State.User.ID {
+func version(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Info("--> version")
+	defer log.Info("<-- version")
+
+	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		return
 	}
-	if m.Content != commandPrefix {
-		return
-	}
-	if !checks.IsAdminOrServerManager(getAssignedRoles(s, m)) {
-		return
-	}
-	server, ok := bot.servers.Servers[m.GuildID]
+	server, ok := bot.servers.Servers[i.GuildID]
 	if !ok {
-		server := NewServer(m.GuildID)
+		log.Info("Getting new server")
+		server = NewServer(i.GuildID)
 		bot.servers.Servers[server.ID] = server
 	}
-	bot.Session.ChannelMessageSendReply(m.ChannelID, "You are running heist version "+server.Config.Version+".", m.Reference())
+
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "You are running Heist version " + server.Config.Version + ".",
+			Flags:   discordgo.MessageFlagsEphemeral,
+		},
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 // addBotCommands adds all commands that may be issued from a given server.
 func addBotCommands(b *Bot) {
 	log.Debug("adding bot commands")
-	var err error
 	bot = b
 
 	bot.Session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
 		log.Info("Heist bot is up!")
 	})
-	// Components are part of interactions, so we register InteractionCreate handler
 	bot.Session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		switch i.Type {
+		case discordgo.InteractionApplicationCommand:
+			if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
+				h(s, i)
+			}
 		case discordgo.InteractionMessageComponent:
 			if h, ok := componentsHandlers[i.MessageComponentData().CustomID]; ok {
 				h(s, i)
 			}
 		}
 	})
-	if err != nil {
-		log.Fatalf("Cannot add the component handlers: %v", err)
-	}
 
-	bot.Session.AddHandler(listThemes)
-	bot.Session.AddHandler(planHeist)
-	bot.Session.AddHandler(resetHeist)
-	bot.Session.AddHandler(heistHelp)
-	bot.Session.AddHandler(setTheme)
-	bot.Session.AddHandler(clearMember)
-	bot.Session.AddHandler(listTargets)
-	bot.Session.AddHandler(version)
+	bot.Session.ApplicationCommandBulkOverwrite(appID, "", commands)
 }

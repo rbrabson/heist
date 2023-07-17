@@ -403,7 +403,62 @@
     "surviving_crew": [],
     "planned": true,
     "started": false,
-    "message_id": "1130246197064503446",
+    "message_id": "",
+    "interaction": {
+     "id": "1130615289453740155",
+     "application_id": "1125497775354810548",
+     "type": 2,
+     "data": {
+      "id": "1130524539340718221",
+      "name": "plan",
+      "resolved": null,
+      "options": null,
+      "target_id": ""
+     },
+     "guild_id": "724319470528626738",
+     "channel_id": "1128669255999688704",
+     "message": null,
+     "app_permissions": "140737488355327",
+     "member": {
+      "guild_id": "",
+      "joined_at": "2020-06-21T17:46:58.992Z",
+      "nick": "",
+      "deaf": false,
+      "mute": false,
+      "avatar": "",
+      "user": {
+       "id": "149670432331661312",
+       "email": "",
+       "username": "papertiger",
+       "avatar": "0f623f85d72c080adc55cba419a3d653",
+       "locale": "",
+       "discriminator": "0",
+       "token": "",
+       "verified": false,
+       "mfa_enabled": false,
+       "banner": "",
+       "accent_color": 0,
+       "bot": false,
+       "public_flags": 0,
+       "premium_type": 0,
+       "system": false,
+       "flags": 0
+      },
+      "roles": [
+       "1125822877275537458",
+       "724319470532952147"
+      ],
+      "premium_since": null,
+      "pending": false,
+      "permissions": "140737488355327",
+      "communication_disabled_until": null
+     },
+     "user": null,
+     "locale": "en-US",
+     "guild_locale": "en-US",
+     "token": "aW50ZXJhY3Rpb246MTEzMDYxNTI4OTQ1Mzc0MDE1NTpPekRnZGxUTk91V3VCNmkwcEVCcjJJU2lMZG1Gb3loR1YxbjM4NFdVbEJNSUdpVktrOTBJT2lBNkFYYUNsUG9HZVFsTXV0eXoxcU5tVlU5d1lqS3l3VkxPWThMR1JReklpb1ZWWHBpQlE3eFBnaGxmR1JpWGczdTBhdW5MQW4xYw",
+     "version": 1
+    },
     "Timer": {}
    }
   }
