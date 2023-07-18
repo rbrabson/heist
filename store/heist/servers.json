@@ -405,7 +405,7 @@
     "started": false,
     "message_id": "",
     "interaction": {
-     "id": "1130688476505972736",
+     "id": "1130688780358127646",
      "application_id": "1125497775354810548",
      "type": 2,
      "data": {
@@ -456,7 +456,7 @@
      "user": null,
      "locale": "en-US",
      "guild_locale": "en-US",
-     "token": "aW50ZXJhY3Rpb246MTEzMDY4ODQ3NjUwNTk3MjczNjpVZW5zdlhpYW1pUVR3R0twT0RqYmR1QkNMSzFlbTA1a0lQWFhra3BKMEgwaTB0ZTJrd0JKZnRtbm8yYlBtMDBiSmJKMEpnNklHcHJqU0RNcExsRkhIVUxGSGc5OUVhMjR6dXBYblZOSjZsWlZWbEhRR3QxeThrcEtjRFRZN1NVZA",
+     "token": "aW50ZXJhY3Rpb246MTEzMDY4ODc4MDM1ODEyNzY0NjpNVmdBaDROYXNEWTF5YUNhbks1S3ZVNjFjbWUwZTlzTXpPbGs1RzMzMHlEOXZndGVUZ0Vlc1pqMk9mY3VqZlJXdGcyazQxbUJxS25QMTFLazVWVzRtWUw0UW1LVmxWVXNJNTNnYkphVHBEWE1pb0FHMzV4bHI1OUtEU2NOakdqSg",
      "version": 1
     },
     "Timer": {}
