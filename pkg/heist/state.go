@@ -159,16 +159,38 @@ func NewHeist(planner *Player) *Heist {
 }
 
 // NewTarget creates a new target for a heist
-func NewTarget(id string, maxCrewSize int, success int, maxVault int) *Target {
+func NewTarget(id string, maxCrewSize int, success int, vaultCurrent int, maxVault int) *Target {
 	target := Target{
 		ID:       id,
 		CrewSize: maxCrewSize,
 		Success:  success,
+		Vault:    vaultCurrent,
 		VaultMax: maxVault,
-		Vault:    maxVault,
 	}
 	return &target
 
+}
+
+// GetServer returns the server for the guild. If the server does not already exist, one is created.
+func (servers *Servers) GetServer(guildID string) *Server {
+	server := servers.Servers[guildID]
+	if server == nil {
+		server = NewServer(guildID)
+		servers.Servers[server.ID] = server
+	}
+	return server
+}
+
+// GetPlayer returns the player on the server. If the player does not already exist, one is created.
+func (s *Server) GetPlayer(id string, userName string) *Player {
+	player, ok := s.Players[id]
+	if !ok {
+		player = NewPlayer(id, userName)
+		s.Players[player.ID] = player
+	} else {
+		player.Name = userName
+	}
+	return player
 }
 
 // IsPoliceAlerted returns an indication as to whether a new heist can be

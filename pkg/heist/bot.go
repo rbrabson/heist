@@ -29,7 +29,34 @@ func NewBot() *Bot {
 
 	log.Debug(servers)
 
+	go bot.vaultUpdater()
+
 	return bot
+}
+
+type number interface {
+	int | int32 | int64 | float32 | float64
+}
+
+func min[N number](v1 N, v2 N) N {
+	if v1 < v2 {
+		return v1
+	}
+	return v2
+}
+
+func (b *Bot) vaultUpdater() {
+	const timer = time.Duration(120 * time.Second)
+	time.Sleep(20 * time.Second)
+	for {
+		for _, server := range servers.Servers {
+			for _, target := range server.Targets {
+				vault := min(target.Vault+(target.VaultMax*4/100), target.VaultMax)
+				target.Vault = vault
+			}
+		}
+		time.Sleep(timer)
+	}
 }
 
 func (b *Bot) subtractCosts(player *Player, cost uint) {
@@ -72,7 +99,7 @@ func (b *Bot) scheduleHeist(s *discordgo.Session, i *discordgo.InteractionCreate
 		server = NewServer(i.GuildID)
 		servers.Servers[i.GuildID] = server
 	}
-	player := getPlayer(server, i)
+	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username)
 	server.Heist.Planned = true
 	server.Heist.Planner = player.ID
 	server.Heist.Crew = append(server.Heist.Crew, server.Heist.Planner)
