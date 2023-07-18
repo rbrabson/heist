@@ -668,7 +668,6 @@ func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
 // listThemes returns the list of available themes that may be used for heists
 func listThemes(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
-		log.Info("User is not an administrator")
 		return
 	}
 
