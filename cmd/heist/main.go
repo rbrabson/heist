@@ -14,7 +14,6 @@ func main() {
 	godotenv.Load()
 
 	bot := heist.NewBot()
-
 	err := bot.Session.Open()
 	if err != nil {
 		log.Fatal(err)
