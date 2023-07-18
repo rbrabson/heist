@@ -4,7 +4,6 @@ commands contains the list of commands and messages sent to Discord, or commands
 package heist
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"sort"
@@ -28,8 +27,9 @@ import (
 // TODO: check to see if Heist has been paused (it should be in the state)
 
 var (
-	servers *Servers
-	appID   string
+	servers    *Servers
+	heistStore store.Store
+	appID      string
 )
 
 // componentHandlers are the buttons that appear on messages sent by this bot.
@@ -380,12 +380,7 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	server.Heist.Timer = newWaitTimer(s, i, server.Config.WaitTime, startHeist)
 
-	file, err := json.MarshalIndent(servers, "", " ")
-	if err != nil {
-		log.Fatal(err)
-	}
-	store := store.NewStore()
-	store.SaveHeistState(file)
+	StoreServers(heistStore, servers)
 }
 
 // joinHeist attempts to join a heist that is being planned
@@ -878,7 +873,8 @@ func addBotCommands(bot *Bot) {
 	log.Debug("adding bot commands")
 
 	appID = os.Getenv("APP_ID")
-	servers = NewServers()
+	heistStore = store.NewStore()
+	servers = LoadServers(heistStore)
 
 	bot.Session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
 		log.Info("Heist bot is up!")

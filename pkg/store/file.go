@@ -25,6 +25,14 @@ func (f *fileStore) SaveHeistState(data []byte) {
 	}
 }
 
-func (f *fileStore) SaveEnconomyState(economy.Banks) {
+func (f *fileStore) LoadHeistState() ([]byte, error) {
+	data, err := os.ReadFile(f.fileName)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
 
+func (f *fileStore) SaveEnconomyState(economy.Banks) {
+	// TODO
 }

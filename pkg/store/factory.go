@@ -10,6 +10,7 @@ var (
 
 type Store interface {
 	SaveHeistState([]byte)
+	LoadHeistState() ([]byte, error)
 	SaveEnconomyState(economy.Banks)
 }
 

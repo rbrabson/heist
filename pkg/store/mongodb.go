@@ -16,6 +16,10 @@ func (m *mongo) SaveHeistState([]byte) {
 
 }
 
+func (f *mongo) LoadHeistState() ([]byte, error) {
+	return nil, nil
+}
+
 func (m *mongo) SaveEnconomyState(economy.Banks) {
 
 }

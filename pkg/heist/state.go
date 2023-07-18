@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/rbrabson/heist/pkg/store"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -179,6 +180,30 @@ func (servers *Servers) GetServer(guildID string) *Server {
 		servers.Servers[server.ID] = server
 	}
 	return server
+}
+
+func StoreServers(store store.Store, servers *Servers) {
+	data, err := json.MarshalIndent(servers, "", " ")
+	if err != nil {
+		log.Fatal(err)
+	}
+	store.SaveHeistState(data)
+}
+
+func LoadServers(store store.Store) *Servers {
+	data, err := store.LoadHeistState()
+	if err != nil {
+		log.Info("no server data found, returning new server")
+		return NewServers()
+	}
+	var servers Servers
+	err = json.Unmarshal(data, &servers)
+	if err != nil {
+		log.Error("unable to unmarshal server data")
+		return NewServers()
+	}
+	return &servers
+
 }
 
 // GetPlayer returns the player on the server. If the player does not already exist, one is created.
