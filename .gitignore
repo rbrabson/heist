@@ -28,4 +28,4 @@ go.work
 /data
 
 # Don't save the file stores (we should be using MongoDB anyway)
-/store
+store/*
