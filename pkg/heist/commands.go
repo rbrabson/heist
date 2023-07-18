@@ -46,6 +46,7 @@ var (
 		"clear":   clearMember,
 		"plan":    planHeist,
 		"reset":   resetHeist,
+		"stats":   playerStats,
 		"target":  addTarget,
 		"targets": listTargets,
 		"theme":   setTheme,
@@ -72,6 +73,10 @@ var (
 					Required:    true,
 				},
 			},
+		},
+		{
+			Name:        "stats",
+			Description: "Shows a user's stats",
 		},
 		{
 			Name:        "targets",
@@ -158,13 +163,14 @@ func getAssignedRoles(s *discordgo.Session, i *discordgo.InteractionCreate) disc
 
 // getPlayer returns the player with the given ID on the server. If the player doesn't
 // exist, a new player with the ID and name provided is created and added to the server.
-func getPlayer(server *Server, playerID string, playerName string) *Player {
-	player, ok := server.Players[playerID]
+func getPlayer(server *Server, i *discordgo.InteractionCreate) *Player {
+	player, ok := server.Players[i.Member.User.ID]
 	if !ok {
-		player = NewPlayer(playerID, playerName)
+		player = NewPlayer(i.Member.User.ID, i.Member.User.Username)
 		server.Players[player.ID] = player
+	} else {
+		player.Name = i.Member.User.Username
 	}
-	player.Name = playerName
 	return player
 }
 
@@ -185,7 +191,6 @@ func commandFailure(s *discordgo.Session, i *discordgo.InteractionCreate, msg st
 	if err != nil {
 		log.Fatal(err)
 	}
-
 }
 
 // heistMessage sends the main command used to plan, join and leave a heist. It also handles the case where
@@ -195,7 +200,7 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 	defer log.Info("<-- heistMessage")
 
 	server := bot.servers.Servers[i.GuildID]
-	player := server.Players[i.Member.User.ID]
+	player := getPlayer(server, i)
 	var status string
 	var buttonDisabled bool
 	if action == "plan" || action == "join" || action == "leave" {
@@ -296,7 +301,7 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	player := getPlayer(server, i.Member.User.ID, i.Member.User.Username)
+	player := getPlayer(server, i)
 
 	server.Heist = NewHeist(player)
 	server.Heist.Interaction = i
@@ -332,7 +337,7 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		commandFailure(s, i, "No "+server.Theme.Heist+" is planned.")
 		return
 	}
-	player := getPlayer(server, i.Member.User.ID, i.Member.User.Username)
+	player := getPlayer(server, i)
 	if contains(server.Heist.Crew, player.ID) {
 		commandFailure(s, i, "You are already a member of the "+server.Theme.Heist+".")
 		return
@@ -373,7 +378,7 @@ func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	player := getPlayer(server, i.Member.User.ID, i.Member.User.Username)
+	player := getPlayer(server, i)
 
 	if server.Heist.Planner == player.ID {
 		commandFailure(s, i, "You can't leave the "+server.Theme.Heist+", as you are the planner.")
@@ -459,6 +464,82 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server.Heist = nil
 }
 
+// playerStats shows a player's heist stats
+func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Debug("--> playerStats")
+	defer log.Debug("<-- playerStats")
+
+	server, ok := bot.servers.Servers[i.GuildID]
+	if !ok {
+		server = NewServer(i.GuildID)
+		bot.servers.Servers[server.ID] = server
+	}
+	player := getPlayer(server, i)
+	caser := cases.Caser(cases.Title(language.Und, cases.NoLower))
+	embeds := []*discordgo.MessageEmbed{
+		{
+			Type:        discordgo.EmbedTypeRich,
+			Title:       "Player Stats",
+			Description: "Current stats for " + player.Name + ".",
+			Fields: []*discordgo.MessageEmbedField{
+				{
+					Name:   "Status",
+					Value:  player.Status,
+					Inline: true,
+				},
+				{
+					Name:   "Spree",
+					Value:  strconv.Itoa(player.Spree),
+					Inline: true,
+				},
+				{
+					Name:   caser.String(server.Theme.Bail),
+					Value:  strconv.Itoa(player.BailCost),
+					Inline: true,
+				},
+				{
+					Name:   caser.String(server.Theme.OOB),
+					Value:  strconv.FormatBool(player.OOB),
+					Inline: true,
+				},
+				{
+					Name:   caser.String(server.Theme.Sentence),
+					Value:  strconv.Itoa(player.Sentence),
+					Inline: true,
+				},
+				{
+					Name:   "Apprehended",
+					Value:  strconv.Itoa(player.JailCounter),
+					Inline: true,
+				},
+				{
+					Name:   "Death Timer",
+					Value:  strconv.Itoa(player.DeathTimer),
+					Inline: true,
+				},
+				{
+					Name:   "Total Deaths",
+					Value:  strconv.Itoa(player.Deaths),
+					Inline: true,
+				},
+				{
+					Name:   "Lifetime Apprehensions",
+					Value:  strconv.Itoa(player.TotalJail),
+					Inline: true,
+				},
+			},
+		},
+	}
+
+	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Embeds: embeds,
+			Flags:  discordgo.MessageFlagsEphemeral,
+		},
+	})
+}
+
 /******** ADMIN COMMANDS ********/
 
 // Reset resets the heist in case it hangs
@@ -507,7 +588,7 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 }
 
-// addTarget adds a .
+// addTarget adds a target for heists
 func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Info("--> addTarget")
 	defer log.Info("<-- addTarget")
@@ -667,6 +748,8 @@ func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // listThemes returns the list of available themes that may be used for heists
 func listThemes(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Info("--> listThemes")
+	defer log.Info("<-- listThemes")
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		log.Info("User is not an administrator")
 		return

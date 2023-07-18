@@ -76,7 +76,7 @@ func (b *Bot) scheduleHeist(s *discordgo.Session, i *discordgo.InteractionCreate
 		server = NewServer(i.GuildID)
 		bot.servers.Servers[i.GuildID] = server
 	}
-	player := getPlayer(server, i.Member.User.ID, i.Member.User.Username)
+	player := getPlayer(server, i)
 	server.Heist.Planned = true
 	server.Heist.Planner = player.ID
 	server.Heist.Crew = append(server.Heist.Crew, server.Heist.Planner)
