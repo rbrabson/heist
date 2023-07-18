@@ -1,5 +1,6 @@
 package heist
 
+// comparable defines the objects that `contains` and `remove` may function on.
 type comparable interface {
 	string | *Player
 }
