@@ -178,8 +178,8 @@ func getPlayer(server *Server, i *discordgo.InteractionCreate) *Player {
 
 // commandFailure is a utility routine used to send an error response to a user's reaction to a bot's message.
 func commandFailure(s *discordgo.Session, i *discordgo.InteractionCreate, msg string) {
-	log.Info("--> commandFailure")
-	defer log.Info("<-- commandFailure")
+	log.Debug("--> commandFailure")
+	defer log.Debug("<-- commandFailure")
 
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -196,8 +196,8 @@ func commandFailure(s *discordgo.Session, i *discordgo.InteractionCreate, msg st
 // heistMessage sends the main command used to plan, join and leave a heist. It also handles the case where
 // the heist starts, disabling the buttons to join/leave/cancel the heist.
 func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action string) error {
-	log.Info("--> heistMessage")
-	defer log.Info("<-- heistMessage")
+	log.Debug("--> heistMessage")
+	defer log.Debug("<-- heistMessage")
 
 	server := bot.servers.Servers[i.GuildID]
 	player := getPlayer(server, i)
@@ -282,8 +282,8 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 
 // planHeist plans a new heist
 func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Info("--> planHeist")
-	defer log.Info("<-- planHeist")
+	log.Debug("--> planHeist")
+	defer log.Debug("<-- planHeist")
 
 	server, ok := bot.servers.Servers[i.GuildID]
 	if !ok {
@@ -324,8 +324,8 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // joinHeist attempts to join a heist that is being planned
 func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Info("--> joinHeist")
-	defer log.Info("<-- joinHeist")
+	log.Debug("--> joinHeist")
+	defer log.Debug("<-- joinHeist")
 
 	server, ok := bot.servers.Servers[i.GuildID]
 	if !ok {
@@ -364,8 +364,8 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // leaveHeist attempts to leave a heist previously joined
 func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Info("--> leaveHeist")
-	defer log.Info("<-- leaveHeist")
+	log.Debug("--> leaveHeist")
+	defer log.Debug("<-- leaveHeist")
 
 	server, ok := bot.servers.Servers[i.GuildID]
 	if !ok {
@@ -409,8 +409,8 @@ func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // cancelHeist cancels a heist that is being planned but has not yet started
 func cancelHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Info("--> cancelHeist")
-	defer log.Info("<-- cancelHeist")
+	log.Debug("--> cancelHeist")
+	defer log.Debug("<-- cancelHeist")
 
 	server, ok := bot.servers.Servers[i.GuildID]
 	if !ok {
@@ -444,8 +444,8 @@ func cancelHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // startHeist is called once the wait time for planning the heist completes
 func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Info("--> startHeist")
-	defer log.Info("<-- startHeist")
+	log.Debug("--> startHeist")
+	defer log.Debug("<-- startHeist")
 
 	server := bot.servers.Servers[s.State.Application.GuildID]
 	err := heistMessage(s, i, "start")
@@ -544,8 +544,8 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // Reset resets the heist in case it hangs
 func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Info("--> resetHeist")
-	defer log.Info("<-- resetHeist")
+	log.Debug("--> resetHeist")
+	defer log.Debug("<-- resetHeist")
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		return
@@ -590,8 +590,8 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // addTarget adds a target for heists
 func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Info("--> addTarget")
-	defer log.Info("<-- addTarget")
+	log.Debug("--> addTarget")
+	defer log.Debug("<-- addTarget")
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		return
@@ -648,8 +648,8 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // listTargets displays a list of available heist targets.
 func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Info("--> listTargets")
-	defer log.Info("<-- listTargets")
+	log.Debug("--> listTargets")
+	defer log.Debug("<-- listTargets")
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		return
@@ -710,8 +710,8 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // clearMember clears the criminal state of the player.
 func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Info("--> clearMember")
-	log.Info("<-- clearMember")
+	log.Debug("--> clearMember")
+	log.Debug("<-- clearMember")
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		return
@@ -751,7 +751,6 @@ func listThemes(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Info("--> listThemes")
 	defer log.Info("<-- listThemes")
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
-		log.Info("User is not an administrator")
 		return
 	}
 
@@ -786,8 +785,8 @@ func listThemes(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // setTheme sets the heist theme to the one specified in the command
 func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Info("--> setTheme")
-	defer log.Info("<-- setTheme")
+	log.Debug("--> setTheme")
+	defer log.Debug("<-- setTheme")
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		return
@@ -832,8 +831,8 @@ func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // version shows the version of heist you are running.
 func version(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Info("--> version")
-	defer log.Info("<-- version")
+	log.Debug("--> version")
+	defer log.Debug("<-- version")
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		return
