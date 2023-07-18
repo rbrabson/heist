@@ -715,6 +715,8 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return targets[i].CrewSize < targets[j].CrewSize
 	})
 
+	// Lets return the data in an Ascii table. Ideally, it would be using a Discord embed, but unfortunately
+	// Discord only puts three columns per row, which isn't enough for our purposes.
 	var tableBuffer strings.Builder
 	table := tablewriter.NewWriter(&tableBuffer)
 	table.SetHeader([]string{"ID", "Max Crew", server.Theme.Vault, "Max " + server.Theme.Vault, "Success Rate"})
