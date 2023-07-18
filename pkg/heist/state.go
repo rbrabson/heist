@@ -159,13 +159,13 @@ func NewHeist(planner *Player) *Heist {
 }
 
 // NewTarget creates a new target for a heist
-func NewTarget(id string, maxCrewSize int, success int, maxVault int) *Target {
+func NewTarget(id string, maxCrewSize int, success int, vaultCurrent int, maxVault int) *Target {
 	target := Target{
 		ID:       id,
 		CrewSize: maxCrewSize,
 		Success:  success,
+		Vault:    vaultCurrent,
 		VaultMax: maxVault,
-		Vault:    maxVault,
 	}
 	return &target
 

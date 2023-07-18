@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -20,6 +21,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/olekukonko/tablewriter"
 )
 
 // TODO: ensure heist commands are only run in the #heist channel
@@ -116,6 +118,12 @@ var (
 									Name:        "vault",
 									Description: "Maximum size of the target's vault",
 									Required:    true,
+								},
+								{
+									Type:        discordgo.ApplicationCommandOptionInteger,
+									Name:        "current",
+									Description: "Current size of the target's vault; defaults to `vault`",
+									Required:    false,
 								},
 							},
 							Type: discordgo.ApplicationCommandOptionSubCommand,
@@ -420,12 +428,7 @@ func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> leaveHeist")
 	defer log.Debug("<-- leaveHeist")
 
-	server, ok := servers.Servers[i.GuildID]
-	if !ok {
-		server = NewServer(i.GuildID)
-		servers.Servers[server.ID] = server
-		commandFailure(s, i, "No "+server.Theme.Heist+" could be found.")
-	}
+	server := servers.GetServer(i.GuildID)
 	if server.Heist == nil {
 		commandFailure(s, i, "No "+server.Theme.Heist+" is planned.")
 		return
@@ -465,12 +468,7 @@ func cancelHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> cancelHeist")
 	defer log.Debug("<-- cancelHeist")
 
-	server, ok := servers.Servers[i.GuildID]
-	if !ok {
-		server = NewServer(i.GuildID)
-		servers.Servers[server.ID] = server
-		commandFailure(s, i, "No "+server.Theme.Heist+" could be found.")
-	}
+	server := servers.GetServer(i.GuildID)
 	if server.Heist == nil {
 		commandFailure(s, i, "No "+server.Theme.Heist+" is planned.")
 		return
@@ -500,7 +498,7 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> startHeist")
 	defer log.Debug("<-- startHeist")
 
-	server := servers.Servers[s.State.Application.GuildID]
+	server := servers.GetServer(i.GuildID)
 	err := heistMessage(s, i, "start")
 	if err != nil {
 		log.Fatal(err)
@@ -522,11 +520,7 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> playerStats")
 	defer log.Debug("<-- playerStats")
 
-	server, ok := servers.Servers[i.GuildID]
-	if !ok {
-		server = NewServer(i.GuildID)
-		servers.Servers[server.ID] = server
-	}
+	server := servers.GetServer(i.GuildID)
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username)
 	caser := cases.Caser(cases.Title(language.Und, cases.NoLower))
 	embeds := []*discordgo.MessageEmbed{
@@ -603,11 +597,7 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		return
 	}
-	server, ok := servers.Servers[i.GuildID]
-	if !ok {
-		server = NewServer(i.GuildID)
-		servers.Servers[server.ID] = server
-	}
+	server := servers.GetServer(i.GuildID)
 	if server.Heist == nil || !server.Heist.Planned {
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -650,14 +640,10 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	server, ok := servers.Servers[i.GuildID]
-	if !ok {
-		server = NewServer(i.GuildID)
-		servers.Servers[server.ID] = server
-	}
+	server := servers.GetServer(i.GuildID)
 
 	var id string
-	var crewSize, success, valutMax int
+	var crewSize, success, vaultMax, vaultCurrent int
 	options := i.ApplicationCommandData().Options[0].Options[0].Options
 	for _, option := range options {
 		if option.Name == "id" {
@@ -667,11 +653,16 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		} else if option.Name == "success" {
 			success = int(option.IntValue())
 		} else if option.Name == "vault" {
-			valutMax = int(option.IntValue())
+			vaultMax = int(option.IntValue())
+		} else if option.Name == "current" {
+			vaultCurrent = int(option.IntValue())
 		}
 	}
+	if vaultCurrent == 0 {
+		vaultCurrent = vaultMax
+	}
 
-	_, ok = server.Targets[id]
+	_, ok := server.Targets[id]
 	if ok {
 		commandFailure(s, i, "Target "+id+" already exists.")
 		return
@@ -684,7 +675,7 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	}
 
-	target := NewTarget(id, crewSize, success, valutMax)
+	target := NewTarget(id, crewSize, success, vaultCurrent, vaultMax)
 	server.Targets[target.ID] = target
 
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -708,55 +699,36 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	server, ok := servers.Servers[i.GuildID]
-	if !ok {
-		server = NewServer(i.GuildID)
-		servers.Servers[server.ID] = server
-	}
+	server := servers.GetServer(i.GuildID)
+
 	if len(server.Targets) == 0 {
-		msg := "There aren't any targets! To create a target use `/createtarget`."
+		msg := "There aren't any targets! To create a target use `/heist target add`."
 		commandFailure(s, i, msg)
 		return
 	}
 
-	var targets, crews, vaults strings.Builder
+	targets := make([]*Target, 0, len(server.Targets))
 	for _, target := range server.Targets {
-		targets.WriteString(target.ID + "\n")
-		crews.WriteString(strconv.Itoa(target.CrewSize) + "\n")
-		vaults.WriteString(strconv.Itoa(target.VaultMax) + "\n")
+		targets = append(targets, target)
 	}
+	sort.SliceStable(targets, func(i, j int) bool {
+		return targets[i].CrewSize < targets[j].CrewSize
+	})
 
-	caser := cases.Caser(cases.Title(language.Und, cases.NoLower))
-	embeds := []*discordgo.MessageEmbed{
-		{
-			Type:        discordgo.EmbedTypeRich,
-			Title:       "Available Targets",
-			Description: "Available targets for the Heist bot",
-			Fields: []*discordgo.MessageEmbedField{
-				{
-					Name:   "Target",
-					Value:  targets.String(),
-					Inline: true,
-				},
-				{
-					Name:   "Max Crew",
-					Value:  crews.String(),
-					Inline: true,
-				},
-				{
-					Name:   caser.String(server.Theme.Vault),
-					Value:  vaults.String(),
-					Inline: true,
-				},
-			},
-		},
+	var tableBuffer strings.Builder
+	table := tablewriter.NewWriter(&tableBuffer)
+	table.SetHeader([]string{"ID", "Max Crew", server.Theme.Vault, "Max " + server.Theme.Vault, "Success Rate"})
+	for _, target := range targets {
+		data := []string{target.ID, strconv.Itoa(target.CrewSize), strconv.Itoa(target.Vault), strconv.Itoa(target.VaultMax), strconv.Itoa(target.Success)}
+		table.Append(data)
 	}
+	table.Render()
 
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Embeds: embeds,
-			Flags:  discordgo.MessageFlagsEphemeral,
+			Content: "```\n" + tableBuffer.String() + "\n```",
+			Flags:   discordgo.MessageFlagsEphemeral,
 		},
 	})
 }
@@ -777,11 +749,7 @@ func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			memberID = strings.TrimSpace(option.StringValue())
 		}
 	}
-	server, ok := servers.Servers[i.GuildID]
-	if !ok {
-		server = NewServer(i.GuildID)
-		servers.Servers[server.ID] = server
-	}
+	server := servers.GetServer(i.GuildID)
 	player, ok := server.Players[memberID]
 	if !ok {
 		commandFailure(s, i, "Player not found.")
@@ -889,11 +857,7 @@ func version(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		return
 	}
-	server, ok := servers.Servers[i.GuildID]
-	if !ok {
-		server = NewServer(i.GuildID)
-		servers.Servers[server.ID] = server
-	}
+	server := servers.GetServer(i.GuildID)
 
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
