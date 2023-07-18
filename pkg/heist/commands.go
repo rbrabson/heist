@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -742,8 +743,8 @@ func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // listThemes returns the list of available themes that may be used for heists
 func listThemes(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Info("--> listThemes")
-	defer log.Info("<-- listThemes")
+	log.Debug("--> listThemes")
+	defer log.Debug("<-- listThemes")
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		return
 	}
@@ -800,12 +801,15 @@ func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	if themeName == server.Config.Theme {
-		commandFailure(s, i, "Theme "+themeName+" is already being used.")
+		commandFailure(s, i, "Theme `"+themeName+"` is already being used.")
 		return
 	}
 	theme, err := LoadTheme(themeName)
 	if err != nil {
-		commandFailure(s, i, "Theme "+themeName+" does not exist.")
+		r := []rune(err.Error())
+		r[0] = unicode.ToUpper(r[0])
+		str := string(r)
+		commandFailure(s, i, str)
 		return
 	}
 	server.Config.Theme = themeName
@@ -833,7 +837,6 @@ func version(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	server, ok := servers.Servers[i.GuildID]
 	if !ok {
-		log.Info("Getting new server")
 		server = NewServer(i.GuildID)
 		servers.Servers[server.ID] = server
 	}

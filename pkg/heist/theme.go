@@ -62,17 +62,16 @@ func GetThemes() ([]string, error) {
 // LoadTheme gets the specified theme and returns.
 func LoadTheme(themeName string) (*Theme, error) {
 	fileName := themeDir + themeName + ".json"
-	log.Debug("Loading theme:", fileName)
 	file, err := os.ReadFile(fileName)
 	if err != nil {
-		fmt.Println(themeDir, themeName)
-		return nil, err
+		log.Warning("Unable to load theme, error:", err)
+		return nil, fmt.Errorf("unable to load theme `%s`", themeName)
 	}
 
 	var theme Theme
 	if err = json.Unmarshal(file, &theme); err != nil {
-		fmt.Println(err)
-		return nil, err
+		log.Warning("Unable to parse "+fileName, ".json, error:", err)
+		return nil, fmt.Errorf("invalid theme format for `%s`", themeName)
 	}
 	return &theme, nil
 }
