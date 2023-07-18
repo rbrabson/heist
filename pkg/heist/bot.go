@@ -11,9 +11,7 @@ import (
 
 type Bot struct {
 	Session *discordgo.Session
-	servers *Servers
 	timer   chan int
-	prefix  string
 }
 
 func NewBot() *Bot {
@@ -24,14 +22,12 @@ func NewBot() *Bot {
 
 	bot := &Bot{
 		Session: s,
-		servers: NewServers(),
 		timer:   make(chan int),
-		prefix:  "!heist",
 	}
 	bot.Session.Identify.Intents = discordgo.IntentsAllWithoutPrivileged
 	addBotCommands(bot)
 
-	log.Debug(bot.servers)
+	log.Debug(servers)
 
 	return bot
 }
@@ -71,10 +67,10 @@ func (b *Bot) requirementCheck(author *Player) {
 }
 
 func (b *Bot) scheduleHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	server, ok := bot.servers.Servers[i.GuildID]
+	server, ok := servers.Servers[i.GuildID]
 	if !ok {
 		server = NewServer(i.GuildID)
-		bot.servers.Servers[i.GuildID] = server
+		servers.Servers[i.GuildID] = server
 	}
 	player := getPlayer(server, i)
 	server.Heist.Planned = true
@@ -100,7 +96,7 @@ func (b *Bot) scheduleHeist(s *discordgo.Session, i *discordgo.InteractionCreate
 func (b *Bot) cancelHeist(guildID string) {
 	log.Info("cancelling heist")
 
-	server, ok := bot.servers.Servers[guildID]
+	server, ok := servers.Servers[guildID]
 	if !ok {
 		server = NewServer(guildID)
 	}

@@ -5,11 +5,14 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/joho/godotenv"
 	"github.com/rbrabson/heist/pkg/heist"
 	log "github.com/sirupsen/logrus"
 )
 
 func main() {
+	godotenv.Load()
+
 	bot := heist.NewBot()
 
 	err := bot.Session.Open()

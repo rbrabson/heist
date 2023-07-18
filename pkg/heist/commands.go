@@ -14,7 +14,6 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-	"github.com/joho/godotenv"
 	"github.com/rbrabson/heist/pkg/checks"
 	"github.com/rbrabson/heist/pkg/store"
 	log "github.com/sirupsen/logrus"
@@ -26,14 +25,9 @@ import (
 // TODO: check to see if Heist has been paused (it should be in the state)
 
 var (
-	bot   *Bot
-	appID string
+	servers *Servers
+	appID   string
 )
-
-func init() {
-	godotenv.Load()
-	appID = os.Getenv("APP_ID")
-}
 
 // componentHandlers are the buttons that appear on messages sent by this bot.
 var (
@@ -199,7 +193,7 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 	log.Debug("--> heistMessage")
 	defer log.Debug("<-- heistMessage")
 
-	server := bot.servers.Servers[i.GuildID]
+	server := servers.Servers[i.GuildID]
 	player := getPlayer(server, i)
 	var status string
 	var buttonDisabled bool
@@ -285,13 +279,13 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> planHeist")
 	defer log.Debug("<-- planHeist")
 
-	server, ok := bot.servers.Servers[i.GuildID]
+	server, ok := servers.Servers[i.GuildID]
 	if !ok {
 		server = NewServer(i.GuildID)
-		bot.servers.Servers[server.ID] = server
+		servers.Servers[server.ID] = server
 	}
 	if server.Heist != nil {
-		bot.Session.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
 				Content: "A " + server.Theme.Heist + " is already being planned.",
@@ -314,7 +308,7 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	server.Heist.Timer = newWaitTimer(s, i, server.Config.WaitTime, startHeist)
 
-	file, err := json.MarshalIndent(bot.servers, "", " ")
+	file, err := json.MarshalIndent(servers, "", " ")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -327,10 +321,10 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> joinHeist")
 	defer log.Debug("<-- joinHeist")
 
-	server, ok := bot.servers.Servers[i.GuildID]
+	server, ok := servers.Servers[i.GuildID]
 	if !ok {
 		server = NewServer(i.GuildID)
-		bot.servers.Servers[server.ID] = server
+		servers.Servers[server.ID] = server
 		commandFailure(s, i, "No "+server.Theme.Heist+" could be found.")
 	}
 	if server.Heist == nil {
@@ -367,10 +361,10 @@ func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> leaveHeist")
 	defer log.Debug("<-- leaveHeist")
 
-	server, ok := bot.servers.Servers[i.GuildID]
+	server, ok := servers.Servers[i.GuildID]
 	if !ok {
 		server = NewServer(i.GuildID)
-		bot.servers.Servers[server.ID] = server
+		servers.Servers[server.ID] = server
 		commandFailure(s, i, "No "+server.Theme.Heist+" could be found.")
 	}
 	if server.Heist == nil {
@@ -412,10 +406,10 @@ func cancelHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> cancelHeist")
 	defer log.Debug("<-- cancelHeist")
 
-	server, ok := bot.servers.Servers[i.GuildID]
+	server, ok := servers.Servers[i.GuildID]
 	if !ok {
 		server = NewServer(i.GuildID)
-		bot.servers.Servers[server.ID] = server
+		servers.Servers[server.ID] = server
 		commandFailure(s, i, "No "+server.Theme.Heist+" could be found.")
 	}
 	if server.Heist == nil {
@@ -447,7 +441,7 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> startHeist")
 	defer log.Debug("<-- startHeist")
 
-	server := bot.servers.Servers[s.State.Application.GuildID]
+	server := servers.Servers[s.State.Application.GuildID]
 	err := heistMessage(s, i, "start")
 	if err != nil {
 		log.Fatal(err)
@@ -469,10 +463,10 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> playerStats")
 	defer log.Debug("<-- playerStats")
 
-	server, ok := bot.servers.Servers[i.GuildID]
+	server, ok := servers.Servers[i.GuildID]
 	if !ok {
 		server = NewServer(i.GuildID)
-		bot.servers.Servers[server.ID] = server
+		servers.Servers[server.ID] = server
 	}
 	player := getPlayer(server, i)
 	caser := cases.Caser(cases.Title(language.Und, cases.NoLower))
@@ -550,10 +544,10 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		return
 	}
-	server, ok := bot.servers.Servers[i.GuildID]
+	server, ok := servers.Servers[i.GuildID]
 	if !ok {
 		server = NewServer(i.GuildID)
-		bot.servers.Servers[server.ID] = server
+		servers.Servers[server.ID] = server
 	}
 	if server.Heist == nil || !server.Heist.Planned {
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -597,10 +591,10 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	server, ok := bot.servers.Servers[i.GuildID]
+	server, ok := servers.Servers[i.GuildID]
 	if !ok {
 		server = NewServer(i.GuildID)
-		bot.servers.Servers[server.ID] = server
+		servers.Servers[server.ID] = server
 	}
 
 	var id string
@@ -655,10 +649,10 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	server, ok := bot.servers.Servers[i.GuildID]
+	server, ok := servers.Servers[i.GuildID]
 	if !ok {
 		server = NewServer(i.GuildID)
-		bot.servers.Servers[server.ID] = server
+		servers.Servers[server.ID] = server
 	}
 	if len(server.Targets) == 0 {
 		msg := "There aren't any targets! To create a target use `/createtarget`."
@@ -724,10 +718,10 @@ func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			memberID = strings.TrimSpace(option.StringValue())
 		}
 	}
-	server, ok := bot.servers.Servers[i.GuildID]
+	server, ok := servers.Servers[i.GuildID]
 	if !ok {
 		server = NewServer(i.GuildID)
-		bot.servers.Servers[server.ID] = server
+		servers.Servers[server.ID] = server
 	}
 	player, ok := server.Players[memberID]
 	if !ok {
@@ -792,10 +786,10 @@ func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	server := bot.servers.Servers[i.GuildID]
+	server := servers.Servers[i.GuildID]
 	if server == nil {
 		server = NewServer(i.GuildID)
-		bot.servers.Servers[server.ID] = server
+		servers.Servers[server.ID] = server
 	}
 	var themeName string
 	options := i.ApplicationCommandData().Options
@@ -837,11 +831,11 @@ func version(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		return
 	}
-	server, ok := bot.servers.Servers[i.GuildID]
+	server, ok := servers.Servers[i.GuildID]
 	if !ok {
 		log.Info("Getting new server")
 		server = NewServer(i.GuildID)
-		bot.servers.Servers[server.ID] = server
+		servers.Servers[server.ID] = server
 	}
 
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -857,9 +851,11 @@ func version(s *discordgo.Session, i *discordgo.InteractionCreate) {
 }
 
 // addBotCommands adds all commands that may be issued from a given server.
-func addBotCommands(b *Bot) {
+func addBotCommands(bot *Bot) {
 	log.Debug("adding bot commands")
-	bot = b
+
+	appID = os.Getenv("APP_ID")
+	servers = NewServers()
 
 	bot.Session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
 		log.Info("Heist bot is up!")
