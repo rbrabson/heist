@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	storeType = "mongo"
+	storeType = "file"
 )
 
 type Store interface {
