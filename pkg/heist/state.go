@@ -171,6 +171,28 @@ func NewTarget(id string, maxCrewSize int, success int, maxVault int) *Target {
 
 }
 
+// GetServer returns the server for the guild. If the server does not already exist, one is created.
+func (servers *Servers) GetServer(guildID string) *Server {
+	server := servers.Servers[guildID]
+	if server == nil {
+		server = NewServer(guildID)
+		servers.Servers[server.ID] = server
+	}
+	return server
+}
+
+// GetPlayer returns the player on the server. If the player does not already exist, one is created.
+func (s *Server) GetPlayer(id string, userName string) *Player {
+	player, ok := s.Players[id]
+	if !ok {
+		player = NewPlayer(id, userName)
+		s.Players[player.ID] = player
+	} else {
+		player.Name = userName
+	}
+	return player
+}
+
 // IsPoliceAlerted returns an indication as to whether a new heist can be
 // started and, if not, how long before the heist can be started.
 func (c *Config) IsPoliceAlerted() (int, bool) {
