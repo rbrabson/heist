@@ -16,7 +16,6 @@ import (
 	"golang.org/x/text/language"
 
 	"github.com/rbrabson/heist/pkg/checks"
-	"github.com/rbrabson/heist/pkg/store"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/bwmarrin/discordgo"
@@ -27,9 +26,9 @@ import (
 // TODO: check to see if Heist has been paused (it should be in the state)
 
 var (
-	servers    *Servers
-	heistStore store.Store
-	appID      string
+	servers *Servers
+	store   Store
+	appID   string
 )
 
 // componentHandlers are the buttons that appear on messages sent by this bot.
@@ -381,7 +380,7 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	server.Heist.Timer = newWaitTimer(s, i, server.Config.WaitTime, startHeist)
 
-	StoreServers(heistStore, servers)
+	StoreServers(store, servers)
 }
 
 // joinHeist attempts to join a heist that is being planned
@@ -874,8 +873,8 @@ func addBotCommands(bot *Bot) {
 	log.Debug("adding bot commands")
 
 	appID = os.Getenv("APP_ID")
-	heistStore = store.NewStore()
-	servers = LoadServers(heistStore)
+	store = NewStore()
+	servers = LoadServers(store)
 
 	bot.Session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
 		log.Info("Heist bot is up!")

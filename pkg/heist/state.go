@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/rbrabson/heist/pkg/store"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -24,77 +23,79 @@ const (
 
 // Servers maps the ID of each server to the server settings.
 type Servers struct {
+	ID      string             `json:"id" bson:"_id"`
 	Servers map[string]*Server `json:"servers"`
 }
 
 // Server contains the data for a given server with the specific ID.
 type Server struct {
-	ID      string             `json:"id"`
-	Config  Config             `json:"config"`
-	Players map[string]*Player `json:"players"`
-	Targets map[string]*Target `json:"targets"`
-	Theme   Theme              `json:"theme"`
-	Heist   *Heist             `json:"heist"`
+	ID      string             `json:"id" bson:"_id"`
+	Config  Config             `json:"config" bson:"config"`
+	Players map[string]*Player `json:"players" bson:"players"`
+	Targets map[string]*Target `json:"targets" bson:"targets"`
+	Theme   Theme              `json:"theme" bson:"theme"`
+	Heist   *Heist             `json:"-" bson:"-"`
 }
 
 // Config is the configuration data for a given server.
 // TODO: should the timer values be time.Duration instead of ints?
 type Config struct {
-	AlertTime    int           `json:"alert_time"`
-	BailBase     int           `json:"bail_base"`
-	CrewOutput   string        `json:"crew_output"`
-	DeathTimer   int           `json:"death_timer"`
-	Hardcore     bool          `json:"hardcore"`
-	HeistCost    int           `json:"heist_cost"`
-	PoliceAlert  int           `json:"police_alert"`
-	SentenceBase int           `json:"sentence_base"`
-	Theme        string        `json:"theme"`
-	Version      string        `json:"version"`
-	WaitTime     time.Duration `json:"wait_time"`
+	AlertTime    int           `json:"alert_time" bson:"alert_time"`
+	BailBase     int           `json:"bail_base" bson:"bail_base"`
+	CrewOutput   string        `json:"crew_output" bson:"crew_output"`
+	DeathTimer   int           `json:"death_timer" bson:"death_timer"`
+	Hardcore     bool          `json:"hardcore" bson:"hardcore"`
+	HeistCost    int           `json:"heist_cost" bson:"heist_cost"`
+	PoliceAlert  int           `json:"police_alert" bson:"police_alert"`
+	SentenceBase int           `json:"sentence_base" bson:"sentence_base"`
+	Theme        string        `json:"theme" bson:"theme"`
+	Version      string        `json:"version" bson:"version"`
+	WaitTime     time.Duration `json:"wait_time" bson:"wait_time"`
 }
 
 // Heist is the data for a heist that is either planned or being executed.
 type Heist struct {
-	Planner       string                       `json:"planner"`
-	Crew          []string                     `json:"crew"`
-	SurvivingCrew []string                     `json:"surviving_crew"`
-	Planned       bool                         `json:"planned"`
-	Started       bool                         `json:"started"`
-	MessageID     string                       `json:"message_id"`
-	Interaction   *discordgo.InteractionCreate `json:"interaction"`
+	Planner       string                       `json:"planner" bson:"planner"`
+	Crew          []string                     `json:"crew" bson:"crew"`
+	SurvivingCrew []string                     `json:"surviving_crew" bson:"surviving_crew"`
+	Planned       bool                         `json:"planned" bson:"planned"`
+	Started       bool                         `json:"started" bson:"started"`
+	MessageID     string                       `json:"message_id" bson:"message_id"`
+	Interaction   *discordgo.InteractionCreate `json:"-" bson:"-"`
 	Timer         *waitTimer
 }
 
 // Player is a specific player of the heist game on a given server.
 type Player struct {
-	ID            string        `json:"id"`
-	BailCost      int           `json:"bail_cost"`
-	CriminalLevel CriminalLevel `json:"criminal_level"`
-	DeathTimer    int           `json:"death_timer"`
-	Deaths        int           `json:"deaths"`
-	JailCounter   int           `json:"jail_counter"`
-	Name          string        `json:"name"`
-	OOB           bool          `json:"oob"`
-	Sentence      int           `json:"sentence"`
-	Spree         int           `json:"spree"`
-	Status        string        `json:"status"`
-	TimeServed    int           `json:"time_served"`
-	TotalJail     int           `json:"total_jail"`
+	ID            string        `json:"id" bson:"_id"`
+	BailCost      int           `json:"bail_cost" bson:"bail_cost"`
+	CriminalLevel CriminalLevel `json:"criminal_level" bson:"criminal_level"`
+	DeathTimer    int           `json:"death_timer" bson:"death_timer"`
+	Deaths        int           `json:"deaths" bson:"deaths"`
+	JailCounter   int           `json:"jail_counter" bson:"jail"`
+	Name          string        `json:"name" bson:"name"`
+	OOB           bool          `json:"oob" bson:"oob"`
+	Sentence      int           `json:"sentence" bson:"sentence"`
+	Spree         int           `json:"spree" bson:"spree"`
+	Status        string        `json:"status" bson:"status"`
+	TimeServed    int           `json:"time_served" bson:"time_served"`
+	TotalJail     int           `json:"total_jail" bson:"total_jail"`
 }
 
 // Target is a target of a heist.
 type Target struct {
-	ID       string `json:"id"`
-	CrewSize int    `json:"crew_size"`
-	Success  int    `json:"success"`
-	Vault    int    `json:"vault"`
-	VaultMax int    `json:"vault_max"`
+	ID       string `json:"id" bson:"_id"`
+	CrewSize int    `json:"crew_size" bson:"crew_size"`
+	Success  int    `json:"success" bson:"success"`
+	Vault    int    `json:"vault" bson:"vault"`
+	VaultMax int    `json:"vault_max" bson:"vault_max"`
 }
 
 // NewServers creates a new set of servers. This is typically called when the heist
 // bot is being started.
 func NewServers() *Servers {
 	state := Servers{
+		ID:      "heist",
 		Servers: make(map[string]*Server, 0),
 	}
 
@@ -182,27 +183,13 @@ func (servers *Servers) GetServer(guildID string) *Server {
 	return server
 }
 
-func StoreServers(store store.Store, servers *Servers) {
-	data, err := json.MarshalIndent(servers, "", " ")
-	if err != nil {
-		log.Fatal(err)
-	}
-	store.SaveHeistState(data)
+func StoreServers(store Store, servers *Servers) {
+	store.SaveHeistState(servers)
 }
 
-func LoadServers(store store.Store) *Servers {
-	data, err := store.LoadHeistState()
-	if err != nil {
-		log.Info("no server data found, returning new server")
-		return NewServers()
-	}
-	var servers Servers
-	err = json.Unmarshal(data, &servers)
-	if err != nil {
-		log.Error("unable to unmarshal server data")
-		return NewServers()
-	}
-	return &servers
+func LoadServers(store Store) *Servers {
+	servers := store.LoadHeistState()
+	return servers
 
 }
 
