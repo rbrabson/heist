@@ -45,7 +45,7 @@ func (t *waitTimer) start() {
 
 // cancel disables the wait timer.
 func (t *waitTimer) cancel() {
-	log.Info("--> timer.cancel")
-	defer log.Info("<-- timer.cancel")
+	log.Debug("--> timer.cancel")
+	defer log.Debug("<-- timer.cancel")
 	t.timerChannel <- 1
 }
