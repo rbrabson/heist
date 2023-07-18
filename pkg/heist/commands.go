@@ -173,6 +173,8 @@ var (
 	}
 )
 
+/******** COMMAND ROUTER ********/
+
 // heist routes subcommands to the appropriate interaction handler
 func heist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> heist")
@@ -215,7 +217,6 @@ func heist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	case "version":
 		version(s, i)
 	}
-
 }
 
 /******** UTILITY FUNCTIONS ********/
