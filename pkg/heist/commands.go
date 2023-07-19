@@ -749,6 +749,7 @@ func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	player, ok := server.Players[memberID]
 	if !ok {
 		commandFailure(s, i, "Player not found.")
+		return
 	}
 	player.ClearSettings()
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
