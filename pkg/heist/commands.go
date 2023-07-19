@@ -870,5 +870,5 @@ func addBotCommands(bot *Bot) {
 		}
 	})
 
-	bot.Session.ApplicationCommandBulkOverwrite(appID, "724319470528626738", commands)
+	bot.Session.ApplicationCommandBulkOverwrite(appID, "", commands)
 }
