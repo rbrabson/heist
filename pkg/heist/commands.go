@@ -75,7 +75,7 @@ var (
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 				},
 				{
-					Name:        "targets",
+					Name:        "target",
 					Description: "Commands that affect heist targets",
 					Options: []*discordgo.ApplicationCommandOption{
 						{
@@ -83,13 +83,6 @@ var (
 							Description: "Gets the list of available heist targets",
 							Type:        discordgo.ApplicationCommandOptionSubCommand,
 						},
-					},
-					Type: discordgo.ApplicationCommandOptionSubCommandGroup,
-				},
-				{
-					Name:        "target",
-					Description: "Commands that affect heist targets",
-					Options: []*discordgo.ApplicationCommandOption{
 						{
 							Name:        "add",
 							Description: "Adds a new target to the list of heist targets",
@@ -135,6 +128,11 @@ var (
 					Description: "Commands that interact with the heist themes",
 					Options: []*discordgo.ApplicationCommandOption{
 						{
+							Name:        "list",
+							Description: "Gets the list of available heist themes",
+							Type:        discordgo.ApplicationCommandOptionSubCommand,
+						},
+						{
 							Name:        "set",
 							Description: "Sets the current heist theme",
 							Options: []*discordgo.ApplicationCommandOption{
@@ -146,18 +144,6 @@ var (
 								},
 							},
 							Type: discordgo.ApplicationCommandOptionSubCommand,
-						},
-					},
-					Type: discordgo.ApplicationCommandOptionSubCommandGroup,
-				},
-				{
-					Name:        "themes",
-					Description: "Commands that interact with the heist themes",
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Name:        "list",
-							Description: "Gets the list of available heist themes",
-							Type:        discordgo.ApplicationCommandOptionSubCommand,
 						},
 					},
 					Type: discordgo.ApplicationCommandOptionSubCommandGroup,
@@ -194,22 +180,14 @@ func heist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		switch options[0].Name {
 		case "add":
 			addTarget(s, i)
-		}
-	case "targets":
-		options = options[0].Options
-		switch options[0].Name {
 		case "list":
 			listTargets(s, i)
-		}
-	case "themes":
-		options = options[0].Options
-		switch options[0].Name {
-		case "list":
-			listThemes(s, i)
 		}
 	case "theme":
 		options = options[0].Options
 		switch options[0].Name {
+		case "list":
+			listThemes(s, i)
 		case "set":
 			setTheme(s, i)
 		}
