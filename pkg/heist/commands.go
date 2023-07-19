@@ -596,6 +596,7 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if err != nil {
 			log.Error("Unable to notify the user no heist is being planned, error:", err)
 		}
+		return
 	}
 
 	if server.Heist.Timer != nil {
