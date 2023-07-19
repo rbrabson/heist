@@ -139,11 +139,15 @@ func NewServer(guildID string) *Server {
 
 // NewPlayer creates a new player. It is typically called when a player
 // first plans or joins a heist.
-func NewPlayer(playerID string, playerName string) *Player {
+func NewPlayer(id string, username string, nickname string) *Player {
 	player := Player{
-		ID:     playerID,
-		Name:   playerName,
+		ID:     id,
 		Status: "free",
+	}
+	if nickname != "" {
+		player.Name = nickname
+	} else {
+		player.Name = username
 	}
 	return &player
 }
@@ -194,13 +198,17 @@ func LoadServers(store Store) *Servers {
 }
 
 // GetPlayer returns the player on the server. If the player does not already exist, one is created.
-func (s *Server) GetPlayer(id string, userName string) *Player {
+func (s *Server) GetPlayer(id string, username string, nickname string) *Player {
 	player, ok := s.Players[id]
 	if !ok {
-		player = NewPlayer(id, userName)
+		player = NewPlayer(id, username, nickname)
 		s.Players[player.ID] = player
 	} else {
-		player.Name = userName
+		if nickname != "" {
+			player.Name = nickname
+		} else {
+			player.Name = username
+		}
 	}
 	return player
 }

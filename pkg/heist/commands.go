@@ -248,7 +248,7 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 	defer log.Debug("<-- heistMessage")
 
 	server := servers.GetServer(i.GuildID)
-	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username)
+	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 	var status string
 	var buttonDisabled bool
 	if action == "plan" || action == "join" || action == "leave" {
@@ -345,7 +345,7 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username)
+	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 
 	server.Heist = NewHeist(player)
 	server.Heist.Interaction = i
@@ -371,7 +371,7 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		commandFailure(s, i, "No "+server.Theme.Heist+" is planned.")
 		return
 	}
-	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username)
+	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 	if contains(server.Heist.Crew, player.ID) {
 		commandFailure(s, i, "You are already a member of the "+server.Theme.Heist+".")
 		return
@@ -407,7 +407,7 @@ func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username)
+	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 
 	if server.Heist.Planner == player.ID {
 		commandFailure(s, i, "You can't leave the "+server.Theme.Heist+", as you are the planner.")
@@ -494,7 +494,7 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Debug("<-- playerStats")
 
 	server := servers.GetServer(i.GuildID)
-	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username)
+	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 	caser := cases.Caser(cases.Title(language.Und, cases.NoLower))
 	embeds := []*discordgo.MessageEmbed{
 		{
