@@ -17,11 +17,13 @@ var (
 	storeType = "file"
 )
 
+// Store defines the methods required to load and save the heist state.
 type Store interface {
-	SaveHeistState(*Servers)
 	LoadHeistState() *Servers
+	SaveHeistState(*Servers)
 }
 
+// NewStore creates a new store to be used to load and save the heist state.
 func NewStore() Store {
 	var store Store
 	if storeType == "file" {
@@ -32,10 +34,12 @@ func NewStore() Store {
 	return store
 }
 
+// fileStore is a Store used to load and save the heist state to a file.
 type fileStore struct {
 	fileName string
 }
 
+// newFileStore creates a new file Store.
 func newFileStore() Store {
 	f := &fileStore{
 		fileName: "./store/heist/servers.json",
@@ -43,6 +47,7 @@ func newFileStore() Store {
 	return f
 }
 
+// SaveHeistState writes the heist state to the file system.
 func (f *fileStore) SaveHeistState(servers *Servers) {
 	data, err := json.MarshalIndent(servers, "", " ")
 	if err != nil {
@@ -51,10 +56,12 @@ func (f *fileStore) SaveHeistState(servers *Servers) {
 	}
 	err = os.WriteFile(f.fileName, data, 0644)
 	if err != nil {
-		log.Fatal(err)
+		log.Error("Unable to save the Heist state, error:", err)
 	}
 }
 
+// LoadHeistState reads the heist state from the file system. If the state
+// cannot be found on the file system, then a new state is returned.
 func (f *fileStore) LoadHeistState() *Servers {
 	data, err := os.ReadFile(f.fileName)
 	if err != nil {
@@ -69,6 +76,7 @@ func (f *fileStore) LoadHeistState() *Servers {
 	return &servers
 }
 
+// mongodb is a Store used to load and save the heist state to a MongoDB database.
 type mongodb struct {
 	adminDB string
 	dbName  string
@@ -77,6 +85,7 @@ type mongodb struct {
 	userID  string
 }
 
+// newMongoStore creates a Store to load and save the heiss state to a MongoDB database.
 func newMongoStore() Store {
 	godotenv.Load()
 
@@ -111,6 +120,7 @@ func newMongoStore() Store {
 	return m
 }
 
+// SaveHeistState stores the heist state in the MongoDB database.
 func (m *mongodb) SaveHeistState(servers *Servers) {
 	log.Debug("--> SaveHeistState")
 	defer log.Debug("<-- SaveHeistState")
@@ -154,6 +164,7 @@ func (m *mongodb) SaveHeistState(servers *Servers) {
 	}
 }
 
+// LoadHeistState loads the heist state from the MongoDB database.
 func (m *mongodb) LoadHeistState() *Servers {
 	log.Debug("--> LoadHeistState")
 	defer log.Debug("<-- LoadHeistState")
@@ -178,7 +189,7 @@ func (m *mongodb) LoadHeistState() *Servers {
 	heistDB := client.Database(m.dbName)
 	heistCollection := heistDB.Collection("heist")
 	if heistCollection == nil {
-		log.Error("failed to create the heist collection, error:", err)
+		log.Error("Failed to create the heist collection, error:", err)
 		return NewServers()
 	}
 	// defer heistCollection.Drop(ctx)

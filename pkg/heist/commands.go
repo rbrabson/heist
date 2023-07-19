@@ -202,13 +202,13 @@ func heist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 func getAssignedRoles(s *discordgo.Session, i *discordgo.InteractionCreate) discordgo.Roles {
 	guild, err := s.Guild(i.GuildID)
 	if err != nil {
-		log.Error("Error:", err)
+		log.Error("Unable to retrieve the guild information from Discord, error:", err)
 		return nil
 	}
 
 	member, err := s.GuildMember(i.GuildID, i.Member.User.ID)
 	if err != nil {
-		log.Error(err)
+		log.Error("Unable to retrieve the member information from Discord, error:", err)
 		return nil
 	}
 
@@ -237,7 +237,7 @@ func commandFailure(s *discordgo.Session, i *discordgo.InteractionCreate, msg st
 		},
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Error("Unable to send a response, error:", err)
 	}
 }
 
@@ -353,7 +353,7 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	err := heistMessage(s, i, "plan")
 	if err != nil {
-		log.Fatal(err)
+		log.Error("Unable to create the `Plan Heist` message, error:", err)
 	}
 
 	server.Heist.Timer = newWaitTimer(s, i, server.Config.WaitTime, startHeist)
@@ -386,14 +386,16 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		},
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Error("Unable to notify the member they have joined the heist, error:", err)
 	}
 
 	server.Heist.Crew = append(server.Heist.Crew, player.ID)
 	err = heistMessage(s, server.Heist.Interaction, "join")
 	if err != nil {
-		log.Fatal(err)
+		log.Error("Unable to update the heist message, error:", err)
 	}
+
+	StoreServers(store, servers)
 }
 
 // leaveHeist attempts to leave a heist previously joined
@@ -426,14 +428,16 @@ func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		},
 	})
 	if err != nil {
-		log.Error(err)
+		log.Error("Unable to notify the user they have left the heist, error:", err)
 	}
 	server.Heist.Crew = remove(server.Heist.Crew, player.ID)
 
 	err = heistMessage(s, server.Heist.Interaction, "leave")
 	if err != nil {
-		log.Error(err)
+		log.Error("Unable to update the heist message, error:", err)
 	}
+
+	StoreServers(store, servers)
 }
 
 // cancelHeist cancels a heist that is being planned but has not yet started
@@ -451,19 +455,24 @@ func cancelHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	heistMessage(s, server.Heist.Interaction, "cancel")
+	err := heistMessage(s, server.Heist.Interaction, "cancel")
+	if err != nil {
+		log.Error("Unable to mark the heist message as cancelled, error:", err)
+	}
 	server.Heist.Timer.cancel()
 	server.Heist = nil
 
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Content: "The " + server.Theme.Heist + " has been cancelled.",
 		},
 	})
 	if err != nil {
-		log.Error(err)
+		log.Error("Unable to notify the user the heist has been cancelled, error:", err)
 	}
+
+	StoreServers(store, servers)
 }
 
 // startHeist is called once the wait time for planning the heist completes
@@ -474,7 +483,7 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server := servers.GetServer(i.GuildID)
 	err := heistMessage(s, i, "start")
 	if err != nil {
-		log.Fatal(err)
+		log.Error("Unable to mark the heist message as started, error:", err)
 	}
 
 	// TODO: start the game.
@@ -483,9 +492,11 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	time.Sleep(5 * time.Second)
 	err = s.ChannelMessageDelete(i.ChannelID, i.Message.ID)
 	if err != nil {
-		log.Fatal(err)
+		log.Error("Unable to delete the heist message, error:", err)
 	}
 	server.Heist = nil
+
+	StoreServers(store, servers)
 }
 
 // playerStats shows a player's heist stats
@@ -551,13 +562,16 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		},
 	}
 
-	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Embeds: embeds,
 			Flags:  discordgo.MessageFlagsEphemeral,
 		},
 	})
+	if err != nil {
+		log.Error("Unable to send the player stats to Discord, error:", err)
+	}
 }
 
 /******** ADMIN COMMANDS ********/
@@ -580,7 +594,7 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			},
 		})
 		if err != nil {
-			log.Error(err)
+			log.Error("Unable to notify the user no heist is being planned, error:", err)
 		}
 	}
 
@@ -599,9 +613,11 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			},
 		})
 		if err != nil {
-			log.Error(err)
+			log.Error("Unable to notify the user the heist has been resset, error:", err)
 		}
 	}
+
+	StoreServers(store, servers)
 }
 
 // addTarget adds a target for heists
@@ -659,8 +675,10 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		},
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Error("Unable to notify the user the new target has been added, error:", err)
 	}
+
+	StoreServers(store, servers)
 }
 
 // listTargets displays a list of available heist targets.
@@ -699,13 +717,16 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	table.Render()
 
-	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Content: "```\n" + tableBuffer.String() + "\n```",
 			Flags:   discordgo.MessageFlagsEphemeral,
 		},
 	})
+	if err != nil {
+		log.Error("Unable to sent the list of targets, error:", err)
+	}
 }
 
 // clearMember clears the criminal state of the player.
@@ -738,8 +759,10 @@ func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		},
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Error("Unable to send message that the player settings have been cleared, error:", err)
 	}
+
+	StoreServers(store, servers)
 }
 
 // listThemes returns the list of available themes that may be used for heists
@@ -752,7 +775,7 @@ func listThemes(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	themes, err := GetThemes()
 	if err != nil {
-		return
+		log.Warning("Unable to get the themes, error:", err)
 	}
 
 	embeds := []*discordgo.MessageEmbed{
@@ -770,13 +793,16 @@ func listThemes(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		},
 	}
 
-	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Embeds: embeds,
 			Flags:  discordgo.MessageFlagsEphemeral,
 		},
 	})
+	if err != nil {
+		log.Error("Unable to send list of themes to the user, error:", err)
+	}
 }
 
 // setTheme sets the heist theme to the one specified in the command
@@ -820,8 +846,10 @@ func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		},
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Error("Unable to notify user that the selected theme is now being used, error:", err)
 	}
+
+	StoreServers(store, servers)
 }
 
 // version shows the version of heist you are running.
@@ -842,7 +870,7 @@ func version(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		},
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Error("Unable to send the Heist version to the user, error:", err)
 	}
 }
 
@@ -870,5 +898,9 @@ func addBotCommands(bot *Bot) {
 		}
 	})
 
+	// Delete any old slash commands, and then add in my current set
+	log.Debug("Delete old commands")
+	bot.Session.ApplicationCommandBulkOverwrite(appID, "", nil)
+	log.Debug("Add new commands")
 	bot.Session.ApplicationCommandBulkOverwrite(appID, "", commands)
 }

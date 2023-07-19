@@ -107,11 +107,11 @@ func NewServers() *Servers {
 func NewServer(guildID string) *Server {
 	defaultTheme := os.Getenv("HEIST_DEFAULT_THEME")
 	if defaultTheme == "" {
-		log.Fatal("default theme not set in environment variable `HEIST_DEFAULT_THEME`")
+		log.Fatal("Default theme not set in environment variable `HEIST_DEFAULT_THEME`")
 	}
 	theme, err := LoadTheme(defaultTheme)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Unable to load the default theme, error:", err)
 	}
 	log.Debug(theme)
 
