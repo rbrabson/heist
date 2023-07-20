@@ -62,7 +62,7 @@ type Heist struct {
 	Started       bool                         `json:"started" bson:"started"`
 	MessageID     string                       `json:"message_id" bson:"message_id"`
 	Interaction   *discordgo.InteractionCreate `json:"-" bson:"-"`
-	Timer         *waitTimer
+	Timer         *waitTimer                   `json:"-" bson:"-"`
 }
 
 // Player is a specific player of the heist game on a given server.
@@ -84,11 +84,11 @@ type Player struct {
 
 // Target is a target of a heist.
 type Target struct {
-	ID       string `json:"_id" bson:"_id"`
-	CrewSize int    `json:"crew_size" bson:"crew_size"`
-	Success  int    `json:"success" bson:"success"`
-	Vault    int    `json:"vault" bson:"vault"`
-	VaultMax int    `json:"vault_max" bson:"vault_max"`
+	ID       string  `json:"_id" bson:"_id"`
+	CrewSize int     `json:"crew" bson:"crew"`
+	Success  float64 `json:"success" bson:"success"`
+	Vault    int     `json:"vault" bson:"vault"`
+	VaultMax int     `json:"vault_max" bson:"vault_max"`
 }
 
 // NewServers creates a new set of servers. This is typically called when the heist
@@ -165,7 +165,7 @@ func NewHeist(planner *Player) *Heist {
 }
 
 // NewTarget creates a new target for a heist
-func NewTarget(id string, maxCrewSize int, success int, vaultCurrent int, maxVault int) *Target {
+func NewTarget(id string, maxCrewSize int, success float64, vaultCurrent int, maxVault int) *Target {
 	target := Target{
 		ID:       id,
 		CrewSize: maxCrewSize,

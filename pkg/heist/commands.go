@@ -634,7 +634,8 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server := servers.GetServer(i.GuildID)
 
 	var id string
-	var crewSize, success, vaultMax, vaultCurrent int
+	var crewSize, vaultMax, vaultCurrent int
+	var success float64
 	options := i.ApplicationCommandData().Options[0].Options[0].Options
 	for _, option := range options {
 		if option.Name == "id" {
@@ -642,7 +643,7 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		} else if option.Name == "crew" {
 			crewSize = int(option.IntValue())
 		} else if option.Name == "success" {
-			success = int(option.IntValue())
+			success = option.FloatValue()
 		} else if option.Name == "vault" {
 			vaultMax = int(option.IntValue())
 		} else if option.Name == "current" {
@@ -714,7 +715,8 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	table := tablewriter.NewWriter(&tableBuffer)
 	table.SetHeader([]string{"ID", "Max Crew", server.Theme.Vault, "Max " + server.Theme.Vault, "Success Rate"})
 	for _, target := range targets {
-		data := []string{target.ID, strconv.Itoa(target.CrewSize), strconv.Itoa(target.Vault), strconv.Itoa(target.VaultMax), strconv.Itoa(target.Success)}
+
+		data := []string{target.ID, strconv.Itoa(target.CrewSize), strconv.Itoa(target.Vault), strconv.Itoa(target.VaultMax), fmt.Sprintf("%.2f", target.Success)}
 		table.Append(data)
 	}
 	table.Render()

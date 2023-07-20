@@ -32,12 +32,14 @@ LABEL org.label-schema.vendor="rbrabson" \
 RUN mkdir -p /licenses
 ADD LICENSE /licenses
 
+WORKDIR /
+
 RUN mkdir /store
 RUN mkdir /store/heist
 RUN chmod 777 /store
 RUN chmod 777 /store/heist
+COPY /store/heist/ /store/heist/
 
-WORKDIR /
 COPY --from=builder /workspace/heist /
 COPY /configs/ configs/
 
