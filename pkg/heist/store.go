@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	storeType = "file"
+	storeType = "mongodb"
 )
 
 // Store defines the methods required to load and save the heist state.
