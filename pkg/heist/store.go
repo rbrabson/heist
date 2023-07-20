@@ -110,14 +110,38 @@ func newMongoStore() Store {
 		adminDB = "admin"
 	}
 
-	m := &mongodb{
+	m := mongodb{
 		adminDB: adminDB,
 		dbName:  dbName,
 		pwd:     pwd,
 		uri:     uri,
 		userID:  userID,
 	}
-	return m
+
+	// Wait for MongoDB to become active before proceeding
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	credential := options.Credential{
+		AuthSource: m.adminDB,
+		Username:   m.userID,
+		Password:   m.pwd,
+	}
+	clientOpts := options.Client().ApplyURI(m.uri).SetAuth(credential)
+	client, err := mongo.Connect(ctx, clientOpts)
+	if err != nil {
+		log.Fatal("Unable to connect to the MongoDB database, error:", err)
+		return nil
+	}
+	defer client.Disconnect(ctx)
+	// Check the connection
+	err = client.Ping(ctx, nil)
+
+	if err != nil {
+		log.Fatal("Unable to ping the MongoDB database, error:", err)
+	}
+
+	return &m
 }
 
 // SaveHeistState stores the heist state in the MongoDB database.
