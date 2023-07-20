@@ -451,6 +451,7 @@ func cancelHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	if i.Member.User.ID != server.Heist.Planner {
+		log.Error("Unable to cancel heist, i.Member.User.ID:", i.Member.User.ID, ", server.Heist.Planner:", server.Heist.Planner)
 		commandFailure(s, i, "You cannot cancel the "+server.Theme.Heist+" as you are not the planner.")
 		return
 	}
