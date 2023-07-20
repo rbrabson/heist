@@ -13,10 +13,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var (
-	storeType = "mongodb"
-)
-
 // Store defines the methods required to load and save the heist state.
 type Store interface {
 	LoadHeistState() *Servers
@@ -25,6 +21,8 @@ type Store interface {
 
 // NewStore creates a new store to be used to load and save the heist state.
 func NewStore() Store {
+	storeType := os.Getenv("HEIST_STORE")
+	log.Info(storeType)
 	var store Store
 	if storeType == "file" {
 		store = newFileStore()
