@@ -13,7 +13,7 @@ services:
   mongodb:
     container_name: "heist_mongo"
     image: mongo:latest
-    env_file: ./.env
+    env_file: ./.env_mongo
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_USERNAME}

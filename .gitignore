@@ -23,6 +23,7 @@ go.work
 
 # Environment variables
 .env
+.env_mongo
 
 # Temporary data directory (TODO: remove this)
 /data

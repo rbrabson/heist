@@ -23,13 +23,13 @@ const (
 
 // Servers maps the ID of each server to the server settings.
 type Servers struct {
-	ID      string             `json:"id" bson:"_id"`
+	ID      string             `json:"_id" bson:"_id"`
 	Servers map[string]*Server `json:"servers"`
 }
 
 // Server contains the data for a given server with the specific ID.
 type Server struct {
-	ID      string             `json:"id" bson:"_id"`
+	ID      string             `json:"_id" bson:"_id"`
 	Config  Config             `json:"config" bson:"config"`
 	Players map[string]*Player `json:"players" bson:"players"`
 	Targets map[string]*Target `json:"targets" bson:"targets"`
@@ -67,7 +67,7 @@ type Heist struct {
 
 // Player is a specific player of the heist game on a given server.
 type Player struct {
-	ID            string        `json:"id" bson:"_id"`
+	ID            string        `json:"_id" bson:"_id"`
 	BailCost      int           `json:"bail_cost" bson:"bail_cost"`
 	CriminalLevel CriminalLevel `json:"criminal_level" bson:"criminal_level"`
 	DeathTimer    int           `json:"death_timer" bson:"death_timer"`
@@ -84,7 +84,7 @@ type Player struct {
 
 // Target is a target of a heist.
 type Target struct {
-	ID       string `json:"id" bson:"_id"`
+	ID       string `json:"_id" bson:"_id"`
 	CrewSize int    `json:"crew_size" bson:"crew_size"`
 	Success  int    `json:"success" bson:"success"`
 	Vault    int    `json:"vault" bson:"vault"`

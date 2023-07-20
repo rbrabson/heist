@@ -39,8 +39,10 @@ type fileStore struct {
 
 // newFileStore creates a new file Store.
 func newFileStore() Store {
+	dir := os.Getenv("HEIST_FILE_STORE_DIR")
+	filename := os.Getenv("HEIST_FILE_NAME")
 	f := &fileStore{
-		fileName: "./store/heist/servers.json",
+		fileName: dir + filename,
 	}
 	return f
 }
