@@ -30,3 +30,6 @@ go.work
 
 # Don't save the file stores (we should be using MongoDB anyway)
 store/*
+
+# DS store
+./.DS_Store
