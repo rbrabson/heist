@@ -112,7 +112,7 @@ docker push heist:1.0.0
 #### Start Container
 
 ```bash
-docker run --env BOT_TOKEN="<bot-token>" --env APP_ID="<app-id>" --env HEIST_DEFAULT_THEME="<theme-name>" --env HEIST_THEME_DIR="<theme-dir>" --name <container-name> heist:1.0.0
+docker run --envfile ./.env --name <container-name> heist:1.0.0
 ```
 
 ### Run using `docker-compose`
