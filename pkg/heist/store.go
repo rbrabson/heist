@@ -22,7 +22,7 @@ type Store interface {
 // NewStore creates a new store to be used to load and save the heist state.
 func NewStore() Store {
 	storeType := os.Getenv("HEIST_STORE")
-	log.Info(storeType)
+	log.Debug("Storage type:", storeType)
 	var store Store
 	if storeType == "file" {
 		store = newFileStore()

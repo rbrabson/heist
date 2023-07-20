@@ -54,10 +54,10 @@ be configured for the MongoDB database. Unless you have a unique admin database,
 ```bash
 # MongoDB admin configuration. You should configure the administration database
 # (defaults to `admin`), along with the username and password that should be used
-# when deploying the MongoDB database
+# when deploying the MongoDB database.
 MONGODB_ADMIN_DB="<admin_database>"
-MONGO_ROOT_USERNAME="<root_username>"
-MONGO_ROOT_PASSSWORD="<root_password>"
+MONGO_INITDB_ROOT_USERNAME="<root_username>"
+MONGO_INITDB_ROOT_USERNAME="<root_password>"
 ```
 
 #### Configuring MongoDB for the Heist Bot

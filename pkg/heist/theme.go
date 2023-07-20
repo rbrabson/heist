@@ -44,7 +44,7 @@ type Theme struct {
 func GetThemes() ([]string, error) {
 	files, err := os.ReadDir(themeDir)
 	if err != nil {
-		log.Info(err)
+		log.Warning("Failed to get the list of available themes, error:", err)
 		return nil, err
 	}
 
