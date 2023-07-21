@@ -15,8 +15,8 @@ import (
 
 // Store defines the methods required to load and save the heist state.
 type Store interface {
-	LoadHeistState() *Servers
-	SaveHeistState(*Servers)
+	LoadHeistState() map[string]*Server
+	SaveHeistState(*Server)
 }
 
 // NewStore creates a new store to be used to load and save the heist state.
@@ -34,46 +34,60 @@ func NewStore() Store {
 
 // fileStore is a Store used to load and save the heist state to a file.
 type fileStore struct {
-	fileName string
+	dir string
 }
 
 // newFileStore creates a new file Store.
 func newFileStore() Store {
 	dir := os.Getenv("HEIST_FILE_STORE_DIR")
-	filename := os.Getenv("HEIST_FILE_NAME")
 	f := &fileStore{
-		fileName: dir + filename,
+		dir: dir,
 	}
 	return f
 }
 
 // SaveHeistState writes the heist state to the file system.
-func (f *fileStore) SaveHeistState(servers *Servers) {
-	data, err := json.MarshalIndent(servers, "", " ")
+func (f *fileStore) SaveHeistState(server *Server) {
+	data, err := json.Marshal(server)
 	if err != nil {
-		log.Error("Unable to marshal servers, error:", err)
+		log.Error("Unable to marshal server "+server.ID+", error:", err)
 		return
 	}
-	err = os.WriteFile(f.fileName, data, 0644)
+	filename := f.dir + server.ID + ".json"
+	err = os.WriteFile(filename, data, 0644)
 	if err != nil {
-		log.Error("Unable to save the Heist state, error:", err)
+		log.Error("Unable to save the Heist state for server "+server.ID+", error:", err)
 	}
 }
 
 // LoadHeistState reads the heist state from the file system. If the state
 // cannot be found on the file system, then a new state is returned.
-func (f *fileStore) LoadHeistState() *Servers {
-	data, err := os.ReadFile(f.fileName)
+func (f *fileStore) LoadHeistState() map[string]*Server {
+	servers := make(map[string]*Server)
+
+	files, err := os.ReadDir(f.dir)
 	if err != nil {
-		return NewServers()
+		log.Warning("Failed to get the list of heist server json files, error:", err)
+		return servers
 	}
-	var servers Servers
-	err = json.Unmarshal(data, &servers)
-	if err != nil {
-		log.Error("unable to unmarshal server data")
-		return NewServers()
+
+	for _, file := range files {
+		filename := f.dir + file.Name()
+		data, err := os.ReadFile(filename)
+		if err != nil {
+			log.Warning("Failed to read the data from file "+file.Name()+", error:", err)
+		}
+
+		var server Server
+		err = json.Unmarshal(data, &server)
+		if err != nil {
+			log.Error("Unable to unmarshal server data from file "+file.Name()+", error:", err)
+		} else {
+			servers[server.ID] = &server
+		}
 	}
-	return &servers
+
+	return servers
 }
 
 // mongodb is a Store used to load and save the heist state to a MongoDB database.
@@ -145,7 +159,7 @@ func newMongoStore() Store {
 }
 
 // SaveHeistState stores the heist state in the MongoDB database.
-func (m *mongodb) SaveHeistState(servers *Servers) {
+func (m *mongodb) SaveHeistState(server *Server) {
 	log.Debug("--> SaveHeistState")
 	defer log.Debug("<-- SaveHeistState")
 
@@ -173,25 +187,27 @@ func (m *mongodb) SaveHeistState(servers *Servers) {
 	heistCollection := heistDB.Collection("heist")
 	if heistCollection == nil {
 		if err = heistDB.CreateCollection(ctx, "heist"); err != nil {
-			log.Error("failed to create the heist collection, error:", err)
+			log.Error("Failed to create the heist collection, error:", err)
 			return
 		}
 		heistCollection = heistDB.Collection("heist")
 	}
 
-	_, err = heistCollection.InsertOne(ctx, servers)
+	_, err = heistCollection.InsertOne(ctx, server)
 	if err != nil {
-		_, err = heistCollection.ReplaceOne(ctx, bson.D{{Key: "_id", Value: "heist"}}, servers)
+		_, err = heistCollection.ReplaceOne(ctx, bson.D{{Key: "_id", Value: server.ID}}, server)
 		if err != nil {
-			log.Error("failed to update or insert into heist collection, error:", err)
+			log.Error("failed to update or insert "+server.ID+"into heist collection, error:", err)
 		}
 	}
 }
 
 // LoadHeistState loads the heist state from the MongoDB database.
-func (m *mongodb) LoadHeistState() *Servers {
+func (m *mongodb) LoadHeistState() map[string]*Server {
 	log.Debug("--> LoadHeistState")
 	defer log.Debug("<-- LoadHeistState")
+
+	servers = make(map[string]*Server)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -205,7 +221,7 @@ func (m *mongodb) LoadHeistState() *Servers {
 	client, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
 		log.Error("Unable to connect to the MongoDB database, error:", err)
-		return NewServers()
+		return servers
 	}
 	defer client.Disconnect(ctx)
 	defer log.Debug("Disconnected from DB")
@@ -214,18 +230,26 @@ func (m *mongodb) LoadHeistState() *Servers {
 	heistCollection := heistDB.Collection("heist")
 	if heistCollection == nil {
 		log.Error("Failed to create the heist collection, error:", err)
-		return NewServers()
+		return servers
 	}
 	// defer heistCollection.Drop(ctx)
 	log.Debug("Collection:", heistCollection.Name())
 
-	result := heistCollection.FindOne(ctx, bson.D{{Key: "_id", Value: "heist"}})
-	var servers Servers
-	err = result.Decode(&servers)
+	cur, err := heistCollection.Find(ctx, bson.D{{}})
 	if err != nil {
-		log.Error("Failed to decode servers, error:", err)
-		return NewServers()
+		log.Error("Unable to get a cursor into the heist collection, error:", err)
+		return servers
 	}
 
-	return &servers
+	for cur.Next(ctx) {
+		var server Server
+		err = cur.Decode(&server)
+		if err != nil {
+			log.Error("Failed to decode server, error:", err)
+			continue
+		}
+		servers[server.ID] = &server
+	}
+
+	return servers
 }

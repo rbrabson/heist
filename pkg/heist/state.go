@@ -21,12 +21,6 @@ const (
 	Immortal  CriminalLevel = 100
 )
 
-// Servers maps the ID of each server to the server settings.
-type Servers struct {
-	ID      string             `json:"_id" bson:"_id"`
-	Servers map[string]*Server `json:"servers"`
-}
-
 // Server contains the data for a given server with the specific ID.
 type Server struct {
 	ID      string             `json:"_id" bson:"_id"`
@@ -89,17 +83,6 @@ type Target struct {
 	Success  float64 `json:"success" bson:"success"`
 	Vault    int     `json:"vault" bson:"vault"`
 	VaultMax int     `json:"vault_max" bson:"vault_max"`
-}
-
-// NewServers creates a new set of servers. This is typically called when the heist
-// bot is being started.
-func NewServers() *Servers {
-	state := Servers{
-		ID:      "heist",
-		Servers: make(map[string]*Server, 0),
-	}
-
-	return &state
 }
 
 // NewServer creates a new server with the specified ID. It is typically called when
@@ -178,20 +161,22 @@ func NewTarget(id string, maxCrewSize int, success float64, vaultCurrent int, ma
 }
 
 // GetServer returns the server for the guild. If the server does not already exist, one is created.
-func (servers *Servers) GetServer(guildID string) *Server {
-	server := servers.Servers[guildID]
+func GetServer(servers map[string]*Server, guildID string) *Server {
+	server := servers[guildID]
 	if server == nil {
 		server = NewServer(guildID)
-		servers.Servers[server.ID] = server
+		servers[server.ID] = server
 	}
 	return server
 }
 
-func StoreServers(store Store, servers *Servers) {
-	store.SaveHeistState(servers)
+func StoreServers(store Store, servers map[string]*Server) {
+	for _, server := range servers {
+		store.SaveHeistState(server)
+	}
 }
 
-func LoadServers(store Store) *Servers {
+func LoadServers(store Store) map[string]*Server {
 	servers := store.LoadHeistState()
 	return servers
 
@@ -260,12 +245,6 @@ func (p *Player) ClearSettings() {
 	p.Sentence = 0
 	p.TimeServed = 0
 	p.OOB = false
-}
-
-// String returns a string representation of all servers on the system.
-func (s *Servers) String() string {
-	out, _ := json.Marshal(s)
-	return string(out)
 }
 
 // String returns a string representation of the server.
