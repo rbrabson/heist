@@ -35,7 +35,7 @@ HEIST_FILE_NAME="heist.json"
 # below. If running as a stand-alone application, you can change them to your
 # preferred location.
 HEIST_DEFAULT_THEME="clash"
-HEIST_THEME_DIR="./configs/heist/"
+HEIST_FILE_THEME_DIR="./store/theme/"
 
 # Heist DB configuration. This example shows you how to connect to MongoDB within a
 # container, where the name of the deployed MongoDB container is `heist_mongo`. If 

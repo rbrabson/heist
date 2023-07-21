@@ -1,0 +1,363 @@
+{
+    "_id": "clash",
+    "good": [
+      {
+        "message": "{0} distracted a mini P.E.K.K.A with a butterfly. +500 credits.",
+        "amount": 500
+      },
+      {
+        "message": "{0} brought a cannon cart for everyone to ride. +75 credits.",
+        "amount": 75
+      },
+      {
+        "message": "{0} threw a goblin barrel inside the bank. +500 credits.",
+        "amount": 500
+      },
+      {
+        "message": "{0} cut through the security like a P.E.K.K.A. +750 credits",
+        "amount": 750
+      },
+      {
+        "message": "{0} pulled down the wizard's hood and distracted everyone. +500 credits",
+        "amount": 500
+      },
+      {
+        "message": "{0} stopped the princess from firing at their comrades. +75 credits",
+        "amount": 75
+      },
+      {
+        "message": "{0} sent goblins to loot. +500 credits",
+        "amount": 500
+      },
+      {
+        "message": "{0} was distracting the archer by showing their archery skills. +75 credits",
+        "amount": 75
+      },
+      {
+        "message": "{0} used a skeleton barrel to distract the archers. +75 credits",
+        "amount": 75
+      },
+      {
+        "message": "{0} stole a hog. +500 credits",
+        "amount": 500
+      },
+      {
+        "message": "{0} got the guards to deliver everyone pizza. +25 credits",
+        "amount": 25
+      },
+      {
+        "message": "{0} saved the crew with a heal spell. +25 credits",
+        "amount": 25
+      },
+      {
+        "message": "{0} stole a balloon and got away. +75 credits",
+        "amount": 75
+      },
+      {
+        "message": "{0} befriended a doot. +500 credits.",
+        "amount": 500
+      },
+      {
+        "message": "{0} reprogrammed the flying machine to attack the guards. +1000 credits",
+        "amount": 1000
+      },
+      {
+        "message": "The baby dragon's fumes hid {0} while they were stealing the gold. +750 credits.",
+        "amount": 750
+      },
+      {
+        "message": "{0} brought sleeping gas for the guards. +500 credits.",
+        "amount": 500
+      },
+      {
+        "message": "{0} found a miner's tunnel! +2000 credits.",
+        "amount": 2000
+      },
+      {
+        "message": "{0} released the Royal Hogs to distract the guards +500 credits.",
+        "amount": 500
+      },
+      {
+        "message": "{0} cloned the crew to confuse the guardsmen +250 credits.",
+        "amount": 250
+      },
+      {
+        "message": "{0} used a Rage spell to run past everyone and escaped +20 credits.",
+        "amount": 20
+      },
+      {
+        "message": "{0} rode the Goblin Giant to escape +100 credits.",
+        "amount": 100
+      }
+    ],
+    "Bad": [
+      {
+        "message": "A butterfly brought P.E.K.K.A. to {0}.",
+        "result": "Dead"
+      },
+      {
+        "message": "The Magic Archer took out {0} from far away. Where did he come from?",
+        "result": "Dead"
+      },
+      {
+        "message": "{0} made a big mistake and got caught by the 3 musketeers.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "The baby dragon found something new for their barbeque, grilled {0}",
+        "result": "Dead"
+      },
+      {
+        "message": "The Dark Prince charged at {0} and got them with his mace.",
+        "result": "Dead"
+      },
+      {
+        "message": "The witch used her destructo beams on {0}",
+        "result": "Dead"
+      },
+      {
+        "message": "The baby dragon found something new for their barbeque, grilled {0}",
+        "result": "Dead"
+      },
+      {
+        "message": "The Dark Prince charged at {0} and got them with his mace.",
+        "result": "Dead"
+      },
+      {
+        "message": "The witch used her destructo beams on {0}",
+        "result": "Dead"
+      },
+      {
+        "message": "What's that in the sky? A skeleton barrel fell on {0} and they got surrounded!",
+        "result": "Apprehended"
+      },
+      {
+        "message": "A princess caught {0} on fire!",
+        "result": "Apprehended"
+      },
+      {
+        "message": "The Barbarian Barrel crushed and sliced {0}",
+        "result": "Dead"
+      },
+      {
+        "message": "The Royal Ghost snuck up on {0}",
+        "result": "Apprehended"
+      },
+      {
+        "message": "A goblin barrel landed right on {0}.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "The Zappies made {0} unable to move and they got captured.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "The Executioner did its job with {0}",
+        "result": "Dead"
+      },
+      {
+        "message": "A Valkyrie spun into {0}",
+        "result": "Dead"
+      },
+      {
+        "message": "{0} forgot about the lava hound's pups",
+        "result": "Apprehended"
+      },
+      {
+        "message": "{0} probably shouldn't have brought arrows to a rocket fight.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "The tornado brings {0} straight to the dungeon.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "The lumberjack decided to chop something other than wood and chopped {0} into pieces.",
+        "result": "Dead"
+      },
+      {
+        "message": "{0} found a mini P.E.K.K.A.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "{0} got blown up by a bomber.",
+        "result": "Dead"
+      },
+      {
+        "message": "{0} got pounded by a mega knight.",
+        "result": "Dead"
+      },
+      {
+        "message": "{0} got surrounded by a skeleton army.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "{0} fell into a tombstone and got trapped.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "{0} was burned by a wizard and got thrown into jail.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "An archer was doing trick shots and hit {0}.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "Hog rider ran over {0}.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "The guards found {0}.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "A balloon dropped a bomb on {0}.",
+        "result": "Dead"
+      },
+      {
+        "message": "A dart goblin shot {0} with a paralysis dart.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "The bats heard {0} while they tried to escape through a cave.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "The bowler bowled {0} straight to the dungeon.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "The miner caught {0} in his tunnels.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "{0} got injured from the prince's lance.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "{0} was surrounded by the witch's skeletons and was captured.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "{0} was surrounded by the enemy and captured.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "The barbarians found {0}.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "{0} was frozen by an Ice Spirit and was captured.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "{0} got shot by a musketeer while trying to escape, but survived!",
+        "result": "Apprehended"
+      },
+      {
+        "message": "{0} was sniped by a princess. Gotcha!",
+        "result": "Dead"
+      },
+      {
+        "message": "{0} exploded from a Giant Skeleton's bomb.",
+        "result": "Dead"
+      },
+      {
+        "message": "{0} triggered a tesla.",
+        "result": "Dead"
+      },
+      {
+        "message": "Lightning struck {0} and was electrocuted.",
+        "result": "Dead"
+      },
+      {
+        "message": "The last thing {0} saw was Sparky's shot charged up.",
+        "result": "Dead"
+      },
+      {
+        "message": "{0} tried to sneak behind a giant but failed.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "{0} tripped on a log.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "{0} got distracted by an ice golem and didn't realize they were captured until it was too late.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "{0} got zapped by an electro wizard and got arrested.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "The inferno tower cooked {0}. How did they survive?",
+        "result": "Apprehended"
+      },
+      {
+        "message": "{0} was caught by a bandit at the last minute.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "The Mega Knight smushed {0}.",
+        "result": "Dead"
+      },
+      {
+        "message": "A swarm of goblins stabbed {0} to death.",
+        "result": "Dead"
+      },
+      {
+        "message": "The Magic Archer's arrow pierced through {0}.",
+        "result": "Dead"
+      },
+      {
+        "message": "Zappies stunned {0} and captured them.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "The Hunter hunted down {0}.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "The Royal Ghost jump-scared {0}.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "{0} was buried in a Giant Snowball.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "{0} was trampled by the Royal Hogs.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "Rascals trapped {0} in bubble gum.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "Battle Ram smashed {0} out of the way.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "The Cannon shot {0}.",
+        "result": "Dead"
+      },
+      {
+        "message": "Fire Spirits gave a warm hug to {0}.",
+        "result": "Apprehended"
+      },
+      {
+        "message": "{0} was poisoned.",
+        "result": "Dead"
+      }
+    ],
+    "bail": "heal",
+    "crew": "clan",
+    "heist": "raid",
+    "jail": "resting",
+    "oob": "running on gems",
+    "police": "enemy CC troops",
+    "sentence": "nap",
+    "vault": "village"
+  }
