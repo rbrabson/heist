@@ -1,0 +1,247 @@
+{
+    "_id": "heist",
+    "good": [
+        {
+            "message": "%s had the car gassed up and ready to go. +25 credits.",
+            "amount": 25
+        },
+        {
+            "message": "%s cut the power to the bank. +50 credits.",
+            "amount": 50
+        },
+        {
+            "message": "%s erased the video footage. +50 credits.",
+            "amount": 50
+        },
+        {
+            "message": "%s hacked the security system and put it on a loop feed. +75 credits.",
+            "amount": 75
+        },
+        {
+            "message": "%s stopped the teller from triggering the silent alarm. +50 credits.",
+            "amount": 50
+        },
+        {
+            "message": "%s knocked out the local security. +50 credits.",
+            "amount": 50
+        },
+        {
+            "message": "%s stopped a local from being a hero +50 credits.",
+            "amount": 50
+        },
+        {
+            "message": "%s got the police negotiator to deliver everyone pizza. +25 credits.",
+            "amount": 25
+        },
+        {
+            "message": "%s brought masks of former presidents to hide our identity. +25 credits.",
+            "amount": 25
+        },
+        {
+            "message": "%s found an escape route. +25 credits.",
+            "amount": 25
+        },
+        {
+            "message": "%s brought extra ammunition for the crew. +25 credits.",
+            "amount": 25
+        },
+        {
+            "message": "%s cut through that safe like butter. +25 credits.",
+            "amount": 25
+        },
+        {
+            "message": "%s kept the hostages under control. +25 credits.",
+            "amount": 25
+        },
+        {
+            "message": "%s created a distraction to get the crew out. +50 credits.",
+            "amount": 50
+        },
+        {
+            "message": "%s improvised under pressure and got the crew out. +50 credits.",
+            "amount": 50
+        },
+        {
+            "message": "%s counter sniped a sniper. +100 credits.",
+            "amount": 100
+        },
+        {
+            "message": "%s distracted the guard. +25 credits.",
+            "amount": 25
+        },
+        {
+            "message": "%s brought a Go-Bag for the team. +25 credits.",
+            "amount": 25
+        },
+        {
+            "message": "%s found a secret stash in the deposit box room. +50 credits.",
+            "amount": 50
+        },
+        {
+            "message": "%s found a box of jewelry on a civilian. +25 credits.",
+            "amount": 25
+        },
+        {
+            "message": "%s stayed focused and vigilant. +25 credits.",
+            "amount": 25
+        },
+        {
+            "message": "%s spray painted the video cameras. +25 credits.",
+            "amount": 25
+        },
+        {
+            "message": "%s located the vault manager. +25 credits.",
+            "amount": 25
+        },
+        {
+            "message": "%s set a clever trap for the swat team. +50 credits.",
+            "amount": 50
+        },
+        {
+            "message": "%s Planned the getaway route. +25 credits.",
+            "amount": 25
+        },
+        {
+            "message": "%s Changed vehicles by stealing an old lady's car. +50 credits.",
+            "amount": 50
+        }
+    ],
+    "bad": [
+        {
+            "message": "A shoot out with local authorities began and %s was hit...but survived!",
+            "result": "Apprehended"
+        },
+        {
+            "message": "The cops dusted for finger prints and later arrested %s.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s was gutted in a knife fight.",
+            "result": "Dead"
+        },
+        {
+            "message": "%s blew a tire in the getaway car.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s's gun jammed while fighting local security",
+            "result": "and was knocked out."
+        },
+        {
+            "message": "%s held off the police while the crew was making their getaway.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "A hostage situation went south",
+            "result": "and %s was captured."
+        },
+        {
+            "message": "%s showed up to the heist high as kite",
+            "result": "and was subsequently caught."
+        },
+        {
+            "message": "%s's bag of money contained exploding blue ink and was later caught.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s was sniped by a swat sniper.",
+            "result": "Dead"
+        },
+        {
+            "message": "The crew decided to shaft %s.",
+            "result": "Dead"
+        },
+        {
+            "message": "Evidence was later found at %s's place' linking them to the heist.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "The crew missed a CCTV camera that identified %s and they were caught.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s forgot the escape plan, and took the route leading to the police.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s was hit and killed by friendly fire.",
+            "result": "Dead"
+        },
+        {
+            "message": "Security system's redundancies caused %s to be identified.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s accidentally revealed their identity to the teller.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "The swat team released sleeping gas, %s is sleeping like a baby.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "'FLASH BANG OUT!, was the last thing %s heard.'",
+            "result": "Apprehended"
+        },
+        {
+            "message": "'GRENADE OUT!', %s is now sleeping with the fishes.",
+            "result": "Dead"
+        },
+        {
+            "message": "%s tripped a laser wire and was caught.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "One of the hostages later identified %s from the heist.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "During the power outage, police caught %s in the confusion.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s was left behind for slowing down the crew, due to a leg wound.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "Someone snitched and %s was arrested.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "Before the crew could intervene a guard tazed %s and is now out cold.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "Swat came through the vents, and neutralized %s.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "During a high-speed chase, %s was shot by the cops.",
+            "result": "Dead"
+        },
+        {
+            "message": "A fire was started in the bank, and %s passed out from inhalation.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s cut the wrong wire to the bank's systems and was electrocuted, but lived.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "During the escape, the crew left %s behind.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "The crew knocked out %s because they shot a hostage without cause.",
+            "result": "Apprehended"
+        }
+    ],
+    "jail": "jail",
+    "oob": "out on bail",
+    "police": "Police",
+    "bail": "bail",
+    "crew": "crew",
+    "sentence": "sentence",
+    "heist": "heist",
+    "vault": "vault"
+}
