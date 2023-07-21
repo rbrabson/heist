@@ -49,7 +49,7 @@ func (b *Bot) vaultUpdater() {
 	const timer = time.Duration(120 * time.Second)
 	time.Sleep(20 * time.Second)
 	for {
-		for _, server := range servers.Servers {
+		for _, server := range servers {
 			for _, target := range server.Targets {
 				vault := min(target.Vault+(target.VaultMax*4/100), target.VaultMax)
 				target.Vault = vault
@@ -94,10 +94,10 @@ func (b *Bot) requirementCheck(author *Player) {
 }
 
 func (b *Bot) scheduleHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	server, ok := servers.Servers[i.GuildID]
+	server, ok := servers[i.GuildID]
 	if !ok {
 		server = NewServer(i.GuildID)
-		servers.Servers[i.GuildID] = server
+		servers[server.ID] = server
 	}
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 	server.Heist.Planned = true
@@ -123,7 +123,7 @@ func (b *Bot) scheduleHeist(s *discordgo.Session, i *discordgo.InteractionCreate
 func (b *Bot) cancelHeist(guildID string) {
 	log.Info("cancelling heist")
 
-	server, ok := servers.Servers[guildID]
+	server, ok := servers[guildID]
 	if !ok {
 		server = NewServer(guildID)
 	}

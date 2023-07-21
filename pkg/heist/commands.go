@@ -26,7 +26,7 @@ import (
 // TODO: check to see if Heist has been paused (it should be in the state)
 
 var (
-	servers *Servers
+	servers map[string]*Server
 	store   Store
 	appID   string
 )
@@ -247,7 +247,7 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 	log.Debug("--> heistMessage")
 	defer log.Debug("<-- heistMessage")
 
-	server := servers.GetServer(i.GuildID)
+	server := GetServer(servers, i.GuildID)
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 	var status string
 	var buttonDisabled bool
@@ -333,7 +333,7 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> planHeist")
 	defer log.Debug("<-- planHeist")
 
-	server := servers.GetServer(i.GuildID)
+	server := GetServer(servers, i.GuildID)
 	if server.Heist != nil {
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -366,7 +366,7 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> joinHeist")
 	defer log.Debug("<-- joinHeist")
 
-	server := servers.GetServer(i.GuildID)
+	server := GetServer(servers, i.GuildID)
 	if server.Heist == nil {
 		commandFailure(s, i, "No "+server.Theme.Heist+" is planned.")
 		return
@@ -403,7 +403,7 @@ func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> leaveHeist")
 	defer log.Debug("<-- leaveHeist")
 
-	server := servers.GetServer(i.GuildID)
+	server := GetServer(servers, i.GuildID)
 	if server.Heist == nil {
 		commandFailure(s, i, "No "+server.Theme.Heist+" is planned.")
 		return
@@ -445,7 +445,7 @@ func cancelHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> cancelHeist")
 	defer log.Debug("<-- cancelHeist")
 
-	server := servers.GetServer(i.GuildID)
+	server := GetServer(servers, i.GuildID)
 	if server.Heist == nil {
 		commandFailure(s, i, "No "+server.Theme.Heist+" is planned.")
 		return
@@ -481,7 +481,7 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> startHeist")
 	defer log.Debug("<-- startHeist")
 
-	server := servers.GetServer(i.GuildID)
+	server := GetServer(servers, i.GuildID)
 	err := heistMessage(s, i, "start")
 	if err != nil {
 		log.Error("Unable to mark the heist message as started, error:", err)
@@ -505,7 +505,7 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> playerStats")
 	defer log.Debug("<-- playerStats")
 
-	server := servers.GetServer(i.GuildID)
+	server := GetServer(servers, i.GuildID)
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 	caser := cases.Caser(cases.Title(language.Und, cases.NoLower))
 	embeds := []*discordgo.MessageEmbed{
@@ -585,7 +585,7 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		return
 	}
-	server := servers.GetServer(i.GuildID)
+	server := GetServer(servers, i.GuildID)
 	if server.Heist == nil || !server.Heist.Planned {
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -631,7 +631,7 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	server := servers.GetServer(i.GuildID)
+	server := GetServer(servers, i.GuildID)
 
 	var id string
 	var crewSize, vaultMax, vaultCurrent int
@@ -693,7 +693,7 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	server := servers.GetServer(i.GuildID)
+	server := GetServer(servers, i.GuildID)
 
 	if len(server.Targets) == 0 {
 		msg := "There aren't any targets! To create a target use `/heist target add`."
@@ -749,7 +749,7 @@ func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			memberID = strings.TrimSpace(option.StringValue())
 		}
 	}
-	server := servers.GetServer(i.GuildID)
+	server := GetServer(servers, i.GuildID)
 	player, ok := server.Players[memberID]
 	if !ok {
 		commandFailure(s, i, "Player not found.")
@@ -819,7 +819,7 @@ func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	server := servers.GetServer(i.GuildID)
+	server := GetServer(servers, i.GuildID)
 	var themeName string
 	options := i.ApplicationCommandData().Options[0].Options[0].Options
 	for _, option := range options {
@@ -865,7 +865,7 @@ func version(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		return
 	}
-	server := servers.GetServer(i.GuildID)
+	server := GetServer(servers, i.GuildID)
 
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -904,8 +904,9 @@ func addBotCommands(bot *Bot) {
 	})
 
 	// Delete any old slash commands, and then add in my current set
+	guildID := os.Getenv("HEIST_GUILD_ID")
 	log.Debug("Delete old commands")
-	bot.Session.ApplicationCommandBulkOverwrite(appID, "", nil)
+	bot.Session.ApplicationCommandBulkOverwrite(appID, guildID, nil)
 	log.Debug("Add new commands")
-	bot.Session.ApplicationCommandBulkOverwrite(appID, "", commands)
+	bot.Session.ApplicationCommandBulkOverwrite(appID, guildID, commands)
 }
