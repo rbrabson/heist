@@ -27,7 +27,6 @@ type Server struct {
 	Config  Config             `json:"config" bson:"config"`
 	Players map[string]*Player `json:"players" bson:"players"`
 	Targets map[string]*Target `json:"targets" bson:"targets"`
-	Theme   Theme              `json:"theme" bson:"theme"`
 	Heist   *Heist             `json:"-" bson:"-"`
 }
 
@@ -115,7 +114,6 @@ func NewServer(guildID string) *Server {
 		},
 		Players: make(map[string]*Player, 1),
 		Targets: make(map[string]*Target, 1),
-		Theme:   *theme,
 	}
 	return &server
 }
@@ -177,7 +175,7 @@ func StoreServers(store Store, servers map[string]*Server) {
 }
 
 func LoadServers(store Store) map[string]*Server {
-	servers := store.LoadHeistState()
+	servers := store.LoadHeistStates()
 	return servers
 
 }

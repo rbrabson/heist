@@ -34,14 +34,13 @@ ADD LICENSE /licenses
 
 WORKDIR /
 
-RUN mkdir /store
-RUN mkdir /store/heist
-RUN chmod 777 /store
-RUN chmod 777 /store/heist
-COPY /store/heist/ /store/heist/
+COPY /store/ /store/
+RUN chmod -R 777 /store
+
+COPY /configs/ /configs/
+RUN chmod -R 777 /configs
 
 COPY --from=builder /workspace/heist /
-COPY /configs/ configs/
 
 RUN apk add iputils \
     openssh \

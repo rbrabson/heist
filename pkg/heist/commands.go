@@ -27,6 +27,7 @@ import (
 
 var (
 	servers map[string]*Server
+	themes  map[string]*Theme
 	store   Store
 	appID   string
 )
@@ -263,12 +264,13 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 		buttonDisabled = true
 	}
 
+	theme := themes[server.Config.Theme]
 	caser := cases.Caser(cases.Title(language.Und, cases.NoLower))
 	embeds := []*discordgo.MessageEmbed{
 		{
 			Type:        discordgo.EmbedTypeRich,
 			Title:       "Heist",
-			Description: "A new " + server.Theme.Heist + " is being planned by " + player.Name + ". You can join the " + server.Theme.Heist + " at any time prior to the " + server.Theme.Heist + " starting.",
+			Description: "A new " + theme.Heist + " is being planned by " + player.Name + ". You can join the " + theme.Heist + " at any time prior to the " + theme.Heist + " starting.",
 			Fields: []*discordgo.MessageEmbedField{
 				{
 					Name:   "Status",
@@ -276,7 +278,7 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 					Inline: true,
 				},
 				{
-					Name:   "Number of " + caser.String(server.Theme.Crew) + "  Members",
+					Name:   "Number of " + caser.String(theme.Crew) + "  Members",
 					Value:  strconv.Itoa(len(server.Heist.Crew)),
 					Inline: true,
 				},
@@ -334,11 +336,12 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Debug("<-- planHeist")
 
 	server := GetServer(servers, i.GuildID)
+	theme := themes[server.Config.Theme]
 	if server.Heist != nil {
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content: "A " + server.Theme.Heist + " is already being planned.",
+				Content: "A " + theme.Heist + " is already being planned.",
 				Flags:   discordgo.MessageFlagsEphemeral,
 			},
 		})
@@ -367,13 +370,14 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Debug("<-- joinHeist")
 
 	server := GetServer(servers, i.GuildID)
+	theme := themes[server.Config.Theme]
 	if server.Heist == nil {
-		commandFailure(s, i, "No "+server.Theme.Heist+" is planned.")
+		commandFailure(s, i, "No "+theme.Heist+" is planned.")
 		return
 	}
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 	if contains(server.Heist.Crew, player.ID) {
-		commandFailure(s, i, "You are already a member of the "+server.Theme.Heist+".")
+		commandFailure(s, i, "You are already a member of the "+theme.Heist+".")
 		return
 	}
 	var err error
@@ -381,7 +385,7 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: "You have joined the " + server.Theme.Heist + ".",
+			Content: "You have joined the " + theme.Heist + ".",
 			Flags:   discordgo.MessageFlagsEphemeral,
 		},
 	})
@@ -404,26 +408,27 @@ func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Debug("<-- leaveHeist")
 
 	server := GetServer(servers, i.GuildID)
+	theme := themes[server.Config.Theme]
 	if server.Heist == nil {
-		commandFailure(s, i, "No "+server.Theme.Heist+" is planned.")
+		commandFailure(s, i, "No "+theme.Heist+" is planned.")
 		return
 	}
 
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 
 	if server.Heist.Planner == player.ID {
-		commandFailure(s, i, "You can't leave the "+server.Theme.Heist+", as you are the planner.")
+		commandFailure(s, i, "You can't leave the "+theme.Heist+", as you are the planner.")
 		return
 	}
 	if !contains(server.Heist.Crew, player.ID) {
-		commandFailure(s, i, "You aren't a member of the "+server.Theme.Heist+".")
+		commandFailure(s, i, "You aren't a member of the "+theme.Heist+".")
 		return
 	}
 
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: "You have left the " + server.Theme.Heist + ".",
+			Content: "You have left the " + theme.Heist + ".",
 			Flags:   discordgo.MessageFlagsEphemeral,
 		},
 	})
@@ -446,13 +451,14 @@ func cancelHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Debug("<-- cancelHeist")
 
 	server := GetServer(servers, i.GuildID)
+	theme := themes[server.Config.Theme]
 	if server.Heist == nil {
-		commandFailure(s, i, "No "+server.Theme.Heist+" is planned.")
+		commandFailure(s, i, "No "+theme.Heist+" is planned.")
 		return
 	}
 	if i.Member.User.ID != server.Heist.Planner {
 		log.Error("Unable to cancel heist, i.Member.User.ID:", i.Member.User.ID, ", server.Heist.Planner:", server.Heist.Planner)
-		commandFailure(s, i, "You cannot cancel the "+server.Theme.Heist+" as you are not the planner.")
+		commandFailure(s, i, "You cannot cancel the "+theme.Heist+" as you are not the planner.")
 		return
 	}
 
@@ -466,7 +472,7 @@ func cancelHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: "The " + server.Theme.Heist + " has been cancelled.",
+			Content: "The " + theme.Heist + " has been cancelled.",
 		},
 	})
 	if err != nil {
@@ -506,6 +512,7 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Debug("<-- playerStats")
 
 	server := GetServer(servers, i.GuildID)
+	theme := themes[server.Config.Theme]
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 	caser := cases.Caser(cases.Title(language.Und, cases.NoLower))
 	embeds := []*discordgo.MessageEmbed{
@@ -525,17 +532,17 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 					Inline: true,
 				},
 				{
-					Name:   caser.String(server.Theme.Bail),
+					Name:   caser.String(theme.Bail),
 					Value:  strconv.Itoa(player.BailCost),
 					Inline: true,
 				},
 				{
-					Name:   caser.String(server.Theme.OOB),
+					Name:   caser.String(theme.OOB),
 					Value:  strconv.FormatBool(player.OOB),
 					Inline: true,
 				},
 				{
-					Name:   caser.String(server.Theme.Sentence),
+					Name:   caser.String(theme.Sentence),
 					Value:  strconv.Itoa(player.Sentence),
 					Inline: true,
 				},
@@ -586,11 +593,12 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	server := GetServer(servers, i.GuildID)
+	theme := themes[server.Config.Theme]
 	if server.Heist == nil || !server.Heist.Planned {
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content: "No " + server.Theme.Heist + " is being planned.",
+				Content: "No " + theme.Heist + " is being planned.",
 				Flags:   discordgo.MessageFlagsEphemeral,
 			},
 		})
@@ -610,7 +618,7 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content: "The " + server.Theme.Heist + " has been reset.",
+				Content: "The " + theme.Heist + " has been reset.",
 				Flags:   discordgo.MessageFlagsEphemeral,
 			},
 		})
@@ -694,6 +702,7 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	server := GetServer(servers, i.GuildID)
+	theme := themes[server.Config.Theme]
 
 	if len(server.Targets) == 0 {
 		msg := "There aren't any targets! To create a target use `/heist target add`."
@@ -713,7 +722,7 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// Discord only puts three columns per row, which isn't enough for our purposes.
 	var tableBuffer strings.Builder
 	table := tablewriter.NewWriter(&tableBuffer)
-	table.SetHeader([]string{"ID", "Max Crew", server.Theme.Vault, "Max " + server.Theme.Vault, "Success Rate"})
+	table.SetHeader([]string{"ID", "Max Crew", theme.Vault, "Max " + theme.Vault, "Success Rate"})
 	for _, target := range targets {
 
 		data := []string{target.ID, strconv.Itoa(target.CrewSize), strconv.Itoa(target.Vault), strconv.Itoa(target.VaultMax), fmt.Sprintf("%.2f", target.Success)}
@@ -778,7 +787,7 @@ func listThemes(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	themes, err := GetThemes()
+	themes, err := GetThemeNames(themes)
 	if err != nil {
 		log.Warning("Unable to get the themes, error:", err)
 	}
@@ -840,8 +849,7 @@ func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		commandFailure(s, i, str)
 		return
 	}
-	server.Config.Theme = themeName
-	server.Theme = *theme
+	server.Config.Theme = theme.ID
 
 	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -886,6 +894,7 @@ func addBotCommands(bot *Bot) {
 	appID = os.Getenv("APP_ID")
 	store = NewStore()
 	servers = LoadServers(store)
+	themes = LoadThemes(store)
 
 	bot.Session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
 		log.Info("Heist bot is up!")

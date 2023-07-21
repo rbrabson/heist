@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
@@ -17,46 +16,45 @@ var (
 // init loads in the directory that contains the theme files.
 func init() {
 	godotenv.Load()
-	themeDir = os.Getenv("HEIST_THEME_DIR")
+	themeDir = os.Getenv("HEIST_FILE_THEME_DIR")
 }
 
 // Theme is a heist theme.
 type Theme struct {
+	ID   string `json:"_id" bson:"_id"`
 	Good []struct {
-		Message string `json:"message"`
-		Amount  int    `json:"amount"`
+		Message string `json:"message" bson:"message"`
+		Amount  int    `json:"amount" bson:"amount"`
 	} `json:"good"`
 	Bad []struct {
-		Message string `json:"message"`
-		Result  string `json:"result"`
+		Message string `json:"message" bson:"message"`
+		Result  string `json:"result" bson:"result"`
 	} `json:"bad"`
-	Jail     string `json:"jail"`
-	OOB      string `json:"oob"`
-	Police   string `json:"police"`
-	Bail     string `json:"bail"`
-	Crew     string `json:"crew"`
-	Sentence string `json:"sentence"`
-	Heist    string `json:"heist"`
-	Vault    string `json:"vault"`
+	Jail     string `json:"jail" bson:"jail"`
+	OOB      string `json:"oob" bson:"oob"`
+	Police   string `json:"police" bson:"police"`
+	Bail     string `json:"bail" bson:"bail"`
+	Crew     string `json:"crew" bson:"crew"`
+	Sentence string `json:"sentence" bson:"sentence"`
+	Heist    string `json:"heist" bson:"heist"`
+	Vault    string `json:"vault" bson:"vault"`
 }
 
-// GetThemes returns a list of available themes.
-func GetThemes() ([]string, error) {
-	files, err := os.ReadDir(themeDir)
-	if err != nil {
-		log.Warning("Failed to get the list of available themes, error:", err)
-		return nil, err
-	}
-
+// GetThemeNames returns a list of available themes.
+func GetThemeNames(map[string]*Theme) ([]string, error) {
 	var fileNames []string
-	for _, file := range files {
-		strs := strings.Split(file.Name(), ".json")
-		if len(strs) == 2 {
-			fileNames = append(fileNames, strs[0])
-		}
+	for _, theme := range themes {
+		fileNames = append(fileNames, theme.ID)
 	}
 
 	return fileNames, nil
+}
+
+// LoadThemes loads the themes that may be used by the heist bot.
+func LoadThemes(store Store) map[string]*Theme {
+	themes := store.LoadThemes()
+
+	return themes
 }
 
 // LoadTheme gets the specified theme and returns.
