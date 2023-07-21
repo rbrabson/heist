@@ -1,0 +1,159 @@
+{
+    "_id": "pirate",
+    "good": [
+        {
+            "message": "%s battened down the hatches. +25 credits.",
+            "amount": 25
+        },
+        {
+            "message": "%s plundered a barrel of rum. +50 credits.",
+            "amount": 50
+        },
+        {
+            "message": "%s blew a hole in an enemy ship with a cannon. +50 credits.",
+            "amount": 50
+        },
+        {
+            "message": "%s narrowly steered the ship clear of some rocks. +50 credits.",
+            "amount": 50
+        },
+        {
+            "message": "ARG! %s cut down a man twice their size! +50 credits",
+            "amount": 50
+        },
+        {
+            "message": "%s's flintlock blew the head off a poor sod. +50 credits",
+            "amount": 50
+        },
+        {
+            "message": "%s found where the X marked the spot and uncovered a treasure. +150 credits",
+            "amount": 150
+        },
+        {
+            "message": "While pillaging, %s found some rare jewels. +75 credits",
+            "amount": 0
+        },
+        {
+            "message": "%s sent an enemy to Davy Jones's locker! +50 credits",
+            "amount": 50
+        },
+        {
+            "message": "%s found a replacement peg-leg. +25 credits",
+            "amount": 25
+        },
+        {
+            "message": "%s found a shipment of rations. +25 credits",
+            "amount": 25
+        },
+        {
+            "message": "Well blow me down! %s captured an enemy corsair! +50 credits",
+            "amount": 50
+        },
+        {
+            "message": "Shiver me timbers! %s set fire to an enemy ship! +100 credits",
+            "amount": 100
+        },
+        {
+            "message": "%s found some medical supplies. +25 credits",
+            "amount": 25
+        },
+        {
+            "message": "%s found some medical supplies. +25 credits",
+            "amount": 25
+        },
+        {
+            "message": "%s furled the sails in quick persuit. +25 credits",
+            "amount": 25
+        },
+        {
+            "message": "%s prepared the water barrels for fires. +25 credits",
+            "amount": 25
+        },
+        {
+            "message": "%s hoisted the flag and ordered all hands on deck. +25 credits",
+            "amount": 25
+        },
+        {
+            "message": "%s hoisted the flag and ordered all hands on deck. +25 credits",
+            "amount": 25
+        },
+        {
+            "message": "%s cut the sails of an enemy ship. +50 credits",
+            "amount": 50
+        }
+    ],
+    "bad": [
+        {
+            "message": "Yarr! %s lost a dishonest duel against the enemy.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "Blimey! %s fell overboard!",
+            "result": "Apprehended"
+        },
+        {
+            "message": "The scalliwag %s walked the plank for inciting mutiny.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "The fighting on deck caused a collapse underneath, trapping %s.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s was too sea sick to fight.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s was knocked out and taken prisoner.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s was surrounded by the enemy and captured.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "The enemy sneaked up on %s and was taken prisoner.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s was covered in a net, and was unable to break free.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s drank too much rum before the fight and passed out.",
+            "result": "Apprehended"
+        },
+        {
+            "message": "A storm blew %s off the crow's nest and fell to their death.",
+            "result": "Dead"
+        },
+        {
+            "message": "%s fought hard, but was unable to recover from their wounds due to scurvy.",
+            "result": "Dead"
+        },
+        {
+            "message": "%s was gutted in a sword fight.",
+            "result": "Dead"
+        },
+        {
+            "message": "An explosion on board sent pieces of %s flying everywhere.",
+            "result": "Dead"
+        },
+        {
+            "message": "%s lost his other leg to cannon fire and bled out.",
+            "result": "Dead"
+        },
+        {
+            "message": "%s drowned in a flooded sealed room.",
+            "result": "Dead"
+        }
+    ],
+    "jail": "brig",
+    "oob": "good will",
+    "police": "Royal Navy",
+    "bail": "bribe",
+    "crew": "crew",
+    "sentence": "punishment",
+    "heist": "raid",
+    "vault": "treasure"
+}

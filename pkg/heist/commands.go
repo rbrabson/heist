@@ -361,7 +361,7 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	server.Heist.Timer = newWaitTimer(s, i, server.Config.WaitTime, startHeist)
 
-	StoreServers(store, servers)
+	store.SaveHeistState(server)
 }
 
 // joinHeist attempts to join a heist that is being planned
@@ -399,7 +399,7 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		log.Error("Unable to update the heist message, error:", err)
 	}
 
-	StoreServers(store, servers)
+	store.SaveHeistState(server)
 }
 
 // leaveHeist attempts to leave a heist previously joined
@@ -442,7 +442,7 @@ func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		log.Error("Unable to update the heist message, error:", err)
 	}
 
-	StoreServers(store, servers)
+	store.SaveHeistState(server)
 }
 
 // cancelHeist cancels a heist that is being planned but has not yet started
@@ -479,7 +479,7 @@ func cancelHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		log.Error("Unable to notify the user the heist has been cancelled, error:", err)
 	}
 
-	StoreServers(store, servers)
+	store.SaveHeistState(server)
 }
 
 // startHeist is called once the wait time for planning the heist completes
@@ -503,7 +503,7 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	server.Heist = nil
 
-	StoreServers(store, servers)
+	store.SaveHeistState(server)
 }
 
 // playerStats shows a player's heist stats
@@ -627,7 +627,7 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 	}
 
-	StoreServers(store, servers)
+	store.SaveHeistState(server)
 }
 
 // addTarget adds a target for heists
@@ -689,7 +689,7 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		log.Error("Unable to notify the user the new target has been added, error:", err)
 	}
 
-	StoreServers(store, servers)
+	store.SaveHeistState(server)
 }
 
 // listTargets displays a list of available heist targets.
@@ -776,7 +776,7 @@ func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		log.Error("Unable to send message that the player settings have been cleared, error:", err)
 	}
 
-	StoreServers(store, servers)
+	store.SaveHeistState(server)
 }
 
 // listThemes returns the list of available themes that may be used for heists
@@ -800,7 +800,7 @@ func listThemes(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			Fields: []*discordgo.MessageEmbedField{
 				{
 					Name:   "Themes",
-					Value:  strings.Join(themes[:], ","),
+					Value:  strings.Join(themes[:], ", "),
 					Inline: true,
 				},
 			},
@@ -850,6 +850,7 @@ func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	server.Config.Theme = theme.ID
+	log.Info("Now using theme", server.Config.Theme)
 
 	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -862,7 +863,7 @@ func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		log.Error("Unable to notify user that the selected theme is now being used, error:", err)
 	}
 
-	StoreServers(store, servers)
+	store.SaveHeistState(server)
 }
 
 // version shows the version of heist you are running.

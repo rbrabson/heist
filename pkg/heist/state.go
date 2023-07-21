@@ -168,12 +168,6 @@ func GetServer(servers map[string]*Server, guildID string) *Server {
 	return server
 }
 
-func StoreServers(store Store, servers map[string]*Server) {
-	for _, server := range servers {
-		store.SaveHeistState(server)
-	}
-}
-
 func LoadServers(store Store) map[string]*Server {
 	servers := store.LoadHeistStates()
 	return servers
