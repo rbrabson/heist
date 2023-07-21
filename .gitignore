@@ -32,4 +32,4 @@ go.work
 store/*
 
 # DS store
-./.DS_Store
+.DS_Store
