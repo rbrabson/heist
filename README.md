@@ -27,6 +27,10 @@ HEIST_STORE="mongodb"
 HEIST_FILE_STORE_DIR="./store/heist/"
 HEIST_FILE_NAME="heist.json"
 
+# You can use this variable to point at a development server, in which case any
+# changes you have made will only appear on the development server.
+# HEIST_GUILD_ID="<server ID>"
+
 # Heist Theme Configruation.  If running within a container, you must use the values
 # below. If running as a stand-alone application, you can change them to your
 # preferred location.
