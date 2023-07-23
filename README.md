@@ -51,7 +51,7 @@ MONGODB_DATABASE="<heist_db_name>"
 
 #### MongoDB
 
-If you are deploying MongoDB via `docker-compose`, then the following values should
+If you are deploying MongoDB via `docker compose`, then the following values should
 be configured for the MongoDB database. Unless you have a unique admin database,
 `MONGODB_ADMIN_DB` should be set to `admin`.
 
@@ -119,11 +119,11 @@ docker push heist:1.0.0
 docker run --envfile ./.env --name <container-name> heist:1.0.0
 ```
 
-### Run using `docker-compose`
+### Run using `docker compose`
 
 The following command will both build the container, as well as deploy with both the heist bot as well as MongoDB. You should edit your
 `.env` file to set `HEIST_STORE="mongodb"` when deploying in this manner.
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
