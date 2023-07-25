@@ -18,7 +18,6 @@ type waitTimer struct {
 
 // newWaitTimer creates a waitTimer with the given configuration information.
 func newWaitTimer(s *discordgo.Session, i *discordgo.InteractionCreate, waitTime time.Duration, methodToCall func(*discordgo.Session, *discordgo.InteractionCreate)) *waitTimer {
-	log.Println("WaitTime:", waitTime)
 	timerChannel := make(chan int)
 	expiration := time.Now().Add(waitTime)
 	t := waitTimer{
