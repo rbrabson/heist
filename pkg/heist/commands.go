@@ -590,6 +590,7 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Debug("<-- resetHeist")
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
+		commandFailure(s, i, "You are not allowed to use this command.")
 		return
 	}
 	server := GetServer(servers, i.GuildID)
@@ -636,6 +637,7 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Debug("<-- addTarget")
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
+		commandFailure(s, i, "You are not allowed to use this command.")
 		return
 	}
 
@@ -698,6 +700,7 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Debug("<-- listTargets")
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
+		commandFailure(s, i, "You are not allowed to use this command.")
 		return
 	}
 
@@ -748,6 +751,7 @@ func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("<-- clearMember")
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
+		commandFailure(s, i, "You are not allowed to use this command.")
 		return
 	}
 
@@ -784,6 +788,7 @@ func listThemes(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> listThemes")
 	defer log.Debug("<-- listThemes")
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
+		commandFailure(s, i, "You are not allowed to use this command.")
 		return
 	}
 
@@ -825,6 +830,7 @@ func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Debug("<-- setTheme")
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
+		commandFailure(s, i, "You are not allowed to use this command.")
 		return
 	}
 
@@ -872,6 +878,7 @@ func version(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Debug("<-- version")
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
+		commandFailure(s, i, "You are not allowed to use this command.")
 		return
 	}
 	server := GetServer(servers, i.GuildID)
