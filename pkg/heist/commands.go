@@ -223,6 +223,27 @@ func getAssignedRoles(s *discordgo.Session, i *discordgo.InteractionCreate) disc
 	return roles
 }
 
+// fmtDuration returns duration formatted for inclusion in Discord messages.
+func fmtDuration(d time.Duration) string {
+	d = d.Round(time.Second)
+	m := d / time.Minute
+	d -= m * time.Minute
+	s := d / time.Second
+	if m == 1 {
+		if s <= 30 {
+			return "a minute"
+		}
+		return "2 minutes"
+	}
+	if m > 1 {
+		return fmt.Sprintf("%d minutes", m)
+	}
+	if s <= 1 {
+		return "1 second"
+	}
+	return fmt.Sprintf("%d seconds", s)
+}
+
 /******** MESSAGE UTILITIES ********/
 
 // commandFailure is a utility routine used to send an error response to a user's reaction to a bot's message.
@@ -253,8 +274,12 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 	var status string
 	var buttonDisabled bool
 	if action == "plan" || action == "join" || action == "leave" {
-		timestamp := fmt.Sprintf("<t:%v:R> ", time.Now().Add(server.Config.WaitTime).Unix())
-		status = "Starts " + timestamp
+		until := time.Until(server.Heist.StartTime)
+		status = "Starts in " + fmtDuration(until)
+		buttonDisabled = false
+	} else if action == "update" {
+		until := time.Until(server.Heist.StartTime)
+		status = "Starts in " + fmtDuration(until)
 		buttonDisabled = false
 	} else if action == "start" {
 		status = "Started"
@@ -306,23 +331,25 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 		}},
 	}
 
-	var err error
 	if action == "plan" {
-		err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
 				Embeds:     embeds,
 				Components: components,
 			},
 		})
+		if err != nil {
+			return err
+		}
 	} else {
-		s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 			Embeds:     &embeds,
 			Components: &components,
 		})
-	}
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -350,7 +377,7 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 
-	server.Heist = NewHeist(player)
+	server.Heist = NewHeist(server, player)
 	server.Heist.Interaction = i
 	server.Heist.Planned = true
 
@@ -359,7 +386,7 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		log.Error("Unable to create the `Plan Heist` message, error:", err)
 	}
 
-	server.Heist.Timer = newWaitTimer(s, i, server.Config.WaitTime, startHeist)
+	server.Heist.Timer = newWaitTimer(s, i, time.Until(server.Heist.StartTime), startHeist)
 
 	store.SaveHeistState(server)
 }
@@ -496,11 +523,7 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// TODO: start the game.
 
 	// For now, just clear out the heist so we can continue....
-	time.Sleep(5 * time.Second)
-	err = s.ChannelMessageDelete(i.ChannelID, i.Message.ID)
-	if err != nil {
-		log.Error("Unable to delete the heist message, error:", err)
-	}
+	time.Sleep(10 * time.Second)
 	server.Heist = nil
 
 	store.SaveHeistState(server)

@@ -54,6 +54,7 @@ type Heist struct {
 	Planned       bool                         `json:"planned" bson:"planned"`
 	Started       bool                         `json:"started" bson:"started"`
 	MessageID     string                       `json:"message_id" bson:"message_id"`
+	StartTime     time.Time                    `json:"start_time" bson:"start_time"`
 	Interaction   *discordgo.InteractionCreate `json:"-" bson:"-"`
 	Timer         *waitTimer                   `json:"-" bson:"-"`
 }
@@ -134,11 +135,12 @@ func NewPlayer(id string, username string, nickname string) *Player {
 }
 
 // NewHeist creates a new default heist.
-func NewHeist(planner *Player) *Heist {
+func NewHeist(server *Server, planner *Player) *Heist {
 	heist := Heist{
 		Planner:       planner.ID,
 		Crew:          make([]string, 0, 5),
 		SurvivingCrew: make([]string, 0, 5),
+		StartTime:     time.Now().Add(server.Config.WaitTime * 2),
 	}
 	heist.Crew = append(heist.Crew, heist.Planner)
 

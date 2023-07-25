@@ -35,7 +35,7 @@ func NewBot() *Bot {
 }
 
 type number interface {
-	int | int32 | int64 | float32 | float64
+	int | int32 | int64 | float32 | float64 | time.Duration
 }
 
 func min[N number](v1 N, v2 N) N {
