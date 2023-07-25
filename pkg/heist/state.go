@@ -140,7 +140,7 @@ func NewHeist(server *Server, planner *Player) *Heist {
 		Planner:       planner.ID,
 		Crew:          make([]string, 0, 5),
 		SurvivingCrew: make([]string, 0, 5),
-		StartTime:     time.Now().Add(server.Config.WaitTime * 2),
+		StartTime:     time.Now().Add(server.Config.WaitTime),
 	}
 	heist.Crew = append(heist.Crew, heist.Planner)
 
