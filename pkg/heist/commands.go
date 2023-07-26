@@ -636,11 +636,13 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 	caser := cases.Caser(cases.Title(language.Und, cases.NoLower))
 
-	var resurectTime string
-	if player.DeathTimer.IsZero() || time.Now().After(player.DeathTimer) {
-		resurectTime = "Alive"
+	var resurectStatus string
+	if player.Status != "Dead" {
+		resurectStatus = "Alive"
+	} else if time.Now().After(player.DeathTimer) {
+		resurectStatus = "Ready to be resurected"
 	} else {
-		resurectTime = fmt.Sprintf("<t:%v:R>", player.DeathTimer.Unix())
+		resurectStatus = fmt.Sprintf("Can resurect <t:%v:R>", player.DeathTimer.Unix())
 	}
 
 	embeds := []*discordgo.MessageEmbed{
@@ -680,8 +682,8 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 					Inline: true,
 				},
 				{
-					Name:   "Resurects",
-					Value:  resurectTime,
+					Name:   "Resurect",
+					Value:  resurectStatus,
 					Inline: true,
 				},
 				{
