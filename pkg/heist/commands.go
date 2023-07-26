@@ -40,11 +40,11 @@ var (
 		"leave_heist":  leaveHeist,
 	}
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"heist": heist,
+		"heist2": heist, // TODO: change to "heist"
 	}
 	commands = []*discordgo.ApplicationCommand{
 		{
-			Name:        "heist",
+			Name:        "heist2", // TODO: change to "heist"
 			Description: "Commands for the Heist bot",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
@@ -244,6 +244,8 @@ func fmtDuration(d time.Duration) string {
 	return fmt.Sprintf("%d seconds", s)
 }
 
+// TODO: HeistAccountCheck (verifies if user can participate in the raid. Combine with HeistRequirementCheck. One or both returns msg & error)
+
 /******** MESSAGE UTILITIES ********/
 
 // commandFailure is a utility routine used to send an error response to a user's reaction to a bot's message.
@@ -374,8 +376,15 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		})
 		return
 	}
+	// TODO: do a bunch here...
+	// Make sure the police alert level isn't still active
+	// Make sure the player isn't apprehended (require the player to release themself? Or auto-release?)
+	// Make sure the player isn't dead (require the player to revive themself? Or auto-revive?)
 
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
+
+	// Make sure player has the necessary credits and isn't in prison
+	// Deduct the cost of a new raid from their bank account
 
 	server.Heist = NewHeist(server, player)
 	server.Heist.Interaction = i
@@ -407,6 +416,10 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		commandFailure(s, i, "You are already a member of the "+theme.Heist+".")
 		return
 	}
+
+	// Make sure player has the necessary credits and isn't in prison
+	// Deduct the cost of a new raid from their bank account (do this even if they are just joining the raid)
+
 	var err error
 
 	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -515,18 +528,102 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Debug("<-- startHeist")
 
 	server := GetServer(servers, i.GuildID)
+	theme := themes[server.Config.Theme]
+	if server.Heist == nil {
+		s.ChannelMessageSend(i.ChannelID, "Error: no heist found.")
+		heistMessage(s, i, "cancel")
+		return
+	}
+	if len(server.Targets) == 1 {
+		commandFailure(s, i, "There are no heist targets. Add one using the `/heist target add` command.")
+		server.Heist = nil
+		return
+	}
+
+	server.Heist.Started = true
+	server.Heist.Planned = false
+
 	err := heistMessage(s, i, "start")
 	if err != nil {
 		log.Error("Unable to mark the heist message as started, error:", err)
 	}
 
-	// TODO: start the game.
+	var msg string
+	if len(server.Heist.Crew) <= 1 {
+		msg = fmt.Sprintf("You tried to rally a %s, but no one wanted to follow you. The %s has been cancelled.", theme.Crew, theme.Heist)
+		s.ChannelMessageSend(i.ChannelID, msg)
+		server.Heist = nil
+		return
+	}
 
-	// For now, just clear out the heist so we can continue....
-	time.Sleep(10 * time.Second)
+	target := getTarget(server.Heist, server.Targets)
+	results := getHeistResults(server, target)
+	msg = fmt.Sprintf("Get ready! The %s is starting.\nThe %s has decided to hit **%s**.", theme.Heist, theme.Crew, target.ID)
+	s.ChannelMessageSend(i.ChannelID, msg)
+
+	time.Sleep(3 * time.Second)
+
+	// Process the results
+	for _, result := range results.memberResults {
+		msg = fmt.Sprintf(result.message+"\n", result.player.Name)
+		s.ChannelMessageSend(i.ChannelID, msg)
+		time.Sleep(5 * time.Second)
+	}
+
+	if len(results.survivingCrew) == 0 {
+		msg = "No one made it out safe."
+		s.ChannelMessageSend(i.ChannelID, msg)
+	} else {
+		embeds := make([]*discordgo.MessageEmbed, 0, len(results.survivingCrew)+1)
+		for _, result := range results.survivingCrew {
+			embed := discordgo.MessageEmbed{
+				Fields: []*discordgo.MessageEmbedField{
+					{
+						Name:   "Player",
+						Value:  result.player.Name,
+						Inline: true,
+					},
+					{
+						Name:   "Credits",
+						Value:  strconv.Itoa(result.stolenCredits + result.bonusCredits),
+						Inline: true,
+					},
+				},
+			}
+			embeds = append(embeds, &embed)
+			log.WithFields(log.Fields{
+				"Player":           result.player.Name,
+				"Credits Obtained": result.stolenCredits,
+				"Bonus":            result.bonusCredits,
+				"Total":            result.stolenCredits + result.bonusCredits,
+			}).Debug("Result")
+		}
+		data := &discordgo.MessageSend{
+			Content: "**Heist Payout**",
+			Embeds:  embeds,
+		}
+		_, err = s.ChannelMessageSendComplex(i.ChannelID, data)
+		if err != nil {
+			log.Error("Failed to send heist resuilts, error:", err)
+		}
+	}
+
+	// set server.Config.AlertTime to the current time
+
+	// Table like the following:
+	// Player       Credits Obtained        Bonuses       Total
+	// Table title will be "The credits collected from the %s was split among the winners", theme.Heist
+
+	// get the bank from the economy and deposit credits into the surviving crew's money
+	// subtract off the amount stolen from the target
+	// update the player's status based on the results
+
+	// Reset the heist
 	server.Heist = nil
-
 	store.SaveHeistState(server)
+
+	// Unmute the channel (only if I mute it to start with)
+
 }
 
 // playerStats shows a player's heist stats
@@ -538,6 +635,14 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	theme := themes[server.Config.Theme]
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 	caser := cases.Caser(cases.Title(language.Und, cases.NoLower))
+
+	var resurectTime string
+	if player.DeathTimer.IsZero() || time.Now().After(player.DeathTimer) {
+		resurectTime = "Alive"
+	} else {
+		resurectTime = fmt.Sprintf("<t:%v:R>", player.DeathTimer.Unix())
+	}
+
 	embeds := []*discordgo.MessageEmbed{
 		{
 			Type:        discordgo.EmbedTypeRich,
@@ -551,12 +656,12 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				},
 				{
 					Name:   "Spree",
-					Value:  strconv.Itoa(player.Spree),
+					Value:  strconv.Itoa(int(player.Spree)),
 					Inline: true,
 				},
 				{
 					Name:   caser.String(theme.Bail),
-					Value:  strconv.Itoa(player.BailCost),
+					Value:  strconv.Itoa(int(player.BailCost)),
 					Inline: true,
 				},
 				{
@@ -566,27 +671,27 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				},
 				{
 					Name:   caser.String(theme.Sentence),
-					Value:  strconv.Itoa(player.Sentence),
+					Value:  strconv.Itoa(int(player.Sentence)),
 					Inline: true,
 				},
 				{
 					Name:   "Apprehended",
-					Value:  strconv.Itoa(player.JailCounter),
+					Value:  strconv.Itoa(int(player.JailCounter)),
 					Inline: true,
 				},
 				{
-					Name:   "Death Timer",
-					Value:  strconv.Itoa(player.DeathTimer),
+					Name:   "Resurects",
+					Value:  resurectTime,
 					Inline: true,
 				},
 				{
 					Name:   "Total Deaths",
-					Value:  strconv.Itoa(player.Deaths),
+					Value:  strconv.Itoa(int(player.Deaths)),
 					Inline: true,
 				},
 				{
 					Name:   "Lifetime Apprehensions",
-					Value:  strconv.Itoa(player.TotalJail),
+					Value:  strconv.Itoa(int(player.TotalJail)),
 					Inline: true,
 				},
 			},
@@ -604,6 +709,10 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		log.Error("Unable to send the player stats to Discord, error:", err)
 	}
 }
+
+// TODO: bailout (from jail)
+// TODO: release (from jail, if sentence has been served)
+// TODO: revive (from the dead, if death timer has expired)
 
 /******** ADMIN COMMANDS ********/
 
@@ -667,20 +776,20 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server := GetServer(servers, i.GuildID)
 
 	var id string
-	var crewSize, vaultMax, vaultCurrent int
+	var crewSize, vaultMax, vaultCurrent int64
 	var success float64
 	options := i.ApplicationCommandData().Options[0].Options[0].Options
 	for _, option := range options {
 		if option.Name == "id" {
 			id = strings.TrimSpace(option.StringValue())
 		} else if option.Name == "crew" {
-			crewSize = int(option.IntValue())
+			crewSize = option.IntValue()
 		} else if option.Name == "success" {
 			success = option.FloatValue()
 		} else if option.Name == "vault" {
-			vaultMax = int(option.IntValue())
+			vaultMax = option.IntValue()
 		} else if option.Name == "current" {
-			vaultCurrent = int(option.IntValue())
+			vaultCurrent = option.IntValue()
 		}
 	}
 	if vaultCurrent == 0 {
@@ -717,6 +826,9 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	store.SaveHeistState(server)
 }
 
+// TODO: editTarget
+// TODO: removeTarget
+
 // listTargets displays a list of available heist targets.
 func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> listTargets")
@@ -751,7 +863,7 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	table.SetHeader([]string{"ID", "Max Crew", theme.Vault, "Max " + theme.Vault, "Success Rate"})
 	for _, target := range targets {
 
-		data := []string{target.ID, strconv.Itoa(target.CrewSize), strconv.Itoa(target.Vault), strconv.Itoa(target.VaultMax), fmt.Sprintf("%.2f", target.Success)}
+		data := []string{target.ID, strconv.Itoa(int(target.CrewSize)), strconv.Itoa(int(target.Vault)), strconv.Itoa(int(target.VaultMax)), fmt.Sprintf("%.2f", target.Success)}
 		table.Append(data)
 	}
 	table.Render()

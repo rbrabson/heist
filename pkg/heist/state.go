@@ -31,16 +31,16 @@ type Server struct {
 }
 
 // Config is the configuration data for a given server.
-// TODO: should the timer values be time.Duration instead of ints?
 type Config struct {
-	AlertTime    int           `json:"alert_time" bson:"alert_time"`
-	BailBase     int           `json:"bail_base" bson:"bail_base"`
+	// HeistCooldownTime time.Time     `json:"heist_cooldown_time" bson:"heist_cooldown_time"`
+	AlertTime    time.Duration `json:"alert_time" bson:"alert_time"`
+	BailBase     int64         `json:"bail_base" bson:"bail_base"`
 	CrewOutput   string        `json:"crew_output" bson:"crew_output"`
-	DeathTimer   int           `json:"death_timer" bson:"death_timer"`
+	DeathTimer   time.Duration `json:"death_timer" bson:"death_timer"`
 	Hardcore     bool          `json:"hardcore" bson:"hardcore"`
-	HeistCost    int           `json:"heist_cost" bson:"heist_cost"`
-	PoliceAlert  int           `json:"police_alert" bson:"police_alert"`
-	SentenceBase int           `json:"sentence_base" bson:"sentence_base"`
+	HeistCost    int64         `json:"heist_cost" bson:"heist_cost"`
+	PoliceAlert  time.Duration `json:"police_alert" bson:"police_alert"`
+	SentenceBase int64         `json:"sentence_base" bson:"sentence_base"`
 	Theme        string        `json:"theme" bson:"theme"`
 	Version      string        `json:"version" bson:"version"`
 	WaitTime     time.Duration `json:"wait_time" bson:"wait_time"`
@@ -62,27 +62,27 @@ type Heist struct {
 // Player is a specific player of the heist game on a given server.
 type Player struct {
 	ID            string        `json:"_id" bson:"_id"`
-	BailCost      int           `json:"bail_cost" bson:"bail_cost"`
+	BailCost      int64         `json:"bail_cost" bson:"bail_cost"`
 	CriminalLevel CriminalLevel `json:"criminal_level" bson:"criminal_level"`
-	DeathTimer    int           `json:"death_timer" bson:"death_timer"`
-	Deaths        int           `json:"deaths" bson:"deaths"`
-	JailCounter   int           `json:"jail_counter" bson:"jail"`
+	DeathTimer    time.Time     `json:"death_timer" bson:"death_timer"`
+	Deaths        int64         `json:"deaths" bson:"deaths"`
+	JailCounter   int64         `json:"jail_counter" bson:"jail"`
 	Name          string        `json:"name" bson:"name"`
 	OOB           bool          `json:"oob" bson:"oob"`
-	Sentence      int           `json:"sentence" bson:"sentence"`
-	Spree         int           `json:"spree" bson:"spree"`
+	Sentence      time.Duration `json:"sentence" bson:"sentence"`
+	Spree         int64         `json:"spree" bson:"spree"`
 	Status        string        `json:"status" bson:"status"`
-	TimeServed    int           `json:"time_served" bson:"time_served"`
-	TotalJail     int           `json:"total_jail" bson:"total_jail"`
+	TimeServed    time.Time     `json:"time_served" bson:"time_served"`
+	TotalJail     int64         `json:"total_jail" bson:"total_jail"`
 }
 
 // Target is a target of a heist.
 type Target struct {
 	ID       string  `json:"_id" bson:"_id"`
-	CrewSize int     `json:"crew" bson:"crew"`
+	CrewSize int64   `json:"crew" bson:"crew"`
 	Success  float64 `json:"success" bson:"success"`
-	Vault    int     `json:"vault" bson:"vault"`
-	VaultMax int     `json:"vault_max" bson:"vault_max"`
+	Vault    int64   `json:"vault" bson:"vault"`
+	VaultMax int64   `json:"vault_max" bson:"vault_max"`
 }
 
 // NewServer creates a new server with the specified ID. It is typically called when
@@ -148,7 +148,7 @@ func NewHeist(server *Server, planner *Player) *Heist {
 }
 
 // NewTarget creates a new target for a heist
-func NewTarget(id string, maxCrewSize int, success float64, vaultCurrent int, maxVault int) *Target {
+func NewTarget(id string, maxCrewSize int64, success float64, vaultCurrent int64, maxVault int64) *Target {
 	target := Target{
 		ID:       id,
 		CrewSize: maxCrewSize,
@@ -194,18 +194,18 @@ func (s *Server) GetPlayer(id string, username string, nickname string) *Player 
 
 // IsPoliceAlerted returns an indication as to whether a new heist can be
 // started and, if not, how long before the heist can be started.
-func (c *Config) IsPoliceAlerted() (int, bool) {
+func (c *Config) IsPoliceAlerted() (int64, bool) {
 	if c.AlertTime == 0 {
 		return 0, false
 	}
-	if c.AlertTime- /* time.perf-counter() */ 0 >= c.PoliceAlert {
+	if int64(int(c.AlertTime.Seconds())-time.Now().Second()) >= int64(c.PoliceAlert.Seconds()) {
 		return 0, false
 	}
 
 	seconds := c.AlertTime - c.PoliceAlert
-	log.Info("seconds:", seconds)
+	log.Println("Alter time remaining:", seconds)
 
-	return seconds, true
+	return int64(seconds), true
 }
 
 // String returns a string representation of the criminal level.
@@ -234,10 +234,10 @@ func (p *Player) ClearSettings() {
 	p.Status = "free"
 	p.CriminalLevel = Greenhorn
 	p.JailCounter = 0
-	p.DeathTimer = 0
+	p.DeathTimer = time.Time{}
 	p.BailCost = 0
 	p.Sentence = 0
-	p.TimeServed = 0
+	p.TimeServed = time.Time{}
 	p.OOB = false
 }
 
