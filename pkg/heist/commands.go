@@ -619,7 +619,9 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Debug("<-- startHeist")
 
 	server := GetServer(servers, i.GuildID)
+	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 	theme := themes[server.Config.Theme]
+	bank := economy.GetBank(banks, server.ID)
 	if server.Heist == nil {
 		s.ChannelMessageSend(i.ChannelID, "Error: no heist found.")
 		heistMessage(s, i, "cancel")
@@ -638,10 +640,8 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if err != nil {
 		log.Error("Unable to mark the heist message as started, error:", err)
 	}
-
-	var msg string
 	if len(server.Heist.Crew) <= 1 {
-		msg = fmt.Sprintf("You tried to rally a %s, but no one wanted to follow you. The %s has been cancelled.", theme.Crew, theme.Heist)
+		msg := fmt.Sprintf("You tried to rally a %s, but no one wanted to follow you. The %s has been cancelled.", theme.Crew, theme.Heist)
 		s.ChannelMessageSend(i.ChannelID, msg)
 		server.Heist = nil
 		return
@@ -649,7 +649,7 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	target := getTarget(server.Heist, server.Targets)
 	results := getHeistResults(server, target)
-	msg = fmt.Sprintf("Get ready! The %s is starting.\nThe %s has decided to hit **%s**.", theme.Heist, theme.Crew, target.ID)
+	msg := fmt.Sprintf("Get ready! The %s is starting.\nThe %s has decided to hit **%s**.", theme.Heist, theme.Crew, target.ID)
 	s.ChannelMessageSend(i.ChannelID, msg)
 
 	time.Sleep(3 * time.Second)
@@ -688,7 +688,12 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				"Bonus":            result.bonusCredits,
 				"Total":            result.stolenCredits + result.bonusCredits,
 			}).Debug("Result")
+
+			account := bank.GetAccount(player.ID, player.Name)
+			economy.DepositCredits(bank, account, result.stolenCredits+result.bonusCredits)
 		}
+		economy.SaveBank(bank)
+
 		data := &discordgo.MessageSend{
 			Content: "**Heist Payout**",
 			Embeds:  embeds,

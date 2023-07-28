@@ -25,19 +25,6 @@ type HeistMemberResult struct {
 	bonusCredits  int
 }
 
-// policeAlert returns how much time is remaining for the cooldown phase after a heist.
-func policeAlert(server *Server) time.Duration {
-	if server.Config.AlertTime.IsZero() {
-		return 0
-	}
-	if time.Now().After(server.Config.AlertTime) {
-		server.Config.AlertTime = time.Time{}
-		return 0
-	}
-	timeRemaining := time.Until(server.Config.AlertTime)
-	return timeRemaining
-}
-
 // heistChecks returns an error, with appropriate message, if a heist cannot be started.
 func heistChecks(server *Server, player *Player, targets map[string]*Target) (string, bool) {
 	theme := themes[server.Config.Theme]
@@ -81,10 +68,9 @@ func heistChecks(server *Server, player *Player, targets map[string]*Target) (st
 		msg := fmt.Sprintf("You do not have enough credits to cover the cost of entry. You need %d credits to participate", server.Config.HeistCost)
 		return msg, false
 	}
-
-	alertTime := policeAlert(server)
-	if alertTime != 0 {
-		msg := fmt.Sprintf("The %s are on high alert after the last target. We should wait for things to cool off before hitting another target. Time remaining: %s.", theme.Police, fmtDuration(alertTime))
+	if server.Config.AlertTime.After(time.Now()) {
+		remainingTime := time.Until(server.Config.AlertTime)
+		msg := fmt.Sprintf("The %s are on high alert after the last target. We should wait for things to cool off before hitting another target. Time remaining: %s.", theme.Police, fmtDuration(remainingTime))
 		return msg, false
 	}
 
