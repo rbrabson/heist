@@ -1,9 +1,11 @@
 package heist
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
+	"github.com/rbrabson/heist/pkg/economy"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -21,6 +23,72 @@ type HeistMemberResult struct {
 	message       string
 	stolenCredits int
 	bonusCredits  int
+}
+
+// policeAlert returns how much time is remaining for the cooldown phase after a heist.
+func policeAlert(server *Server) time.Duration {
+	if server.Config.AlertTime.IsZero() {
+		return 0
+	}
+	if time.Now().After(server.Config.AlertTime) {
+		server.Config.AlertTime = time.Time{}
+		return 0
+	}
+	timeRemaining := time.Until(server.Config.AlertTime)
+	return timeRemaining
+}
+
+// heistChecks returns an error, with appropriate message, if a heist cannot be started.
+func heistChecks(server *Server, player *Player, targets map[string]*Target) (string, bool) {
+	theme := themes[server.Config.Theme]
+	bank := economy.GetBank(banks, server.ID)
+
+	if len(targets) == 0 {
+		msg := "Oh no! There are no targets!"
+		return msg, false
+	}
+	if server.Heist != nil && contains(server.Heist.Crew, player.ID) {
+		msg := fmt.Sprintf("You are already in the %s.", theme.Crew)
+		return msg, false
+	}
+	if player.Status == "Apprehended" {
+		if player.JailTimer.After(time.Now()) && !player.OOB {
+			bailCost := server.Config.BailBase
+			if player.OOB {
+				bailCost *= 3
+			}
+			remainingTime := time.Until(player.JailTimer)
+			msg := fmt.Sprintf("You are in %s. You are serving a %s of %s.\nYou can wait out your remaining %s of: %s, or pay %d credits to be relased on %s.",
+				theme.Jail, theme.Sentence, fmtDuration(player.Sentence), theme.Sentence, fmtDuration(remainingTime), bailCost, theme.Bail)
+			return msg, false
+		}
+
+		msg := fmt.Sprintf("Looks like your %s is over, but you're still in %s! Get released released by typing `/heist release`.", theme.Sentence, theme.Jail)
+		return msg, false
+	}
+	if player.Status == "Dead" {
+		fmt.Println("DeathTimer:", player.DeathTimer, ", Now:", time.Now())
+		if player.DeathTimer.After(time.Now()) {
+			remainingTime := time.Until(player.DeathTimer)
+			msg := fmt.Sprintf("You are dead. You will revive in %s", fmtDuration(remainingTime))
+			return msg, false
+		}
+		msg := "Looks like you are still dead, but you can revive at anytime by using the command `/heist revive`."
+		return msg, false
+	}
+	account := bank.GetAccount(player.ID, player.Name)
+	if account.Balance < int(server.Config.HeistCost) {
+		msg := fmt.Sprintf("You do not have enough credits to cover the cost of entry. You need %d credits to participate", server.Config.HeistCost)
+		return msg, false
+	}
+
+	alertTime := policeAlert(server)
+	if alertTime != 0 {
+		msg := fmt.Sprintf("The %s are on high alert after the last target. We should wait for things to cool off before hitting another target. Time remaining: %s.", theme.Police, fmtDuration(alertTime))
+		return msg, false
+	}
+
+	return "", true
 }
 
 // calculateCredits determines the number of credits stolen by each surviving crew member.
@@ -78,7 +146,7 @@ func handleHeistFailure(server *Server, player *Player, badResult BadMessage) {
 		player.Status = "Apprehended"
 		player.BailCost = bail
 		player.Sentence = time.Duration(sentence)
-		player.TimeServed = time.Now()
+		player.JailTimer = time.Now()
 		player.JailCounter += 1
 		player.TotalJail += 1
 		player.CriminalLevel += 1
@@ -93,10 +161,6 @@ func handleHeistFailure(server *Server, player *Player, badResult BadMessage) {
 	player.Status = "Dead"
 	player.JailCounter = 0
 	player.DeathTimer = time.Now().Add(server.Config.DeathTimer)
-
-	if server.Config.Hardcore {
-		// TODO: zero out the player's bank account
-	}
 }
 
 // getHeistResults returns the results of the heist, which contains the outcome

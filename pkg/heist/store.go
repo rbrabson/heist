@@ -41,7 +41,7 @@ type fileStore struct {
 
 // newFileStore creates a new file Store.
 func newFileStore() Store {
-	heistDir := os.Getenv("HEIST_FILE_STORE_DIR")
+	heistDir := os.Getenv("HEIST_FILE_STORE_DIR") + "heist/"
 	themeDir := os.Getenv("HEIST_FILE_THEME_DIR")
 	f := &fileStore{
 		heistDir: heistDir,
