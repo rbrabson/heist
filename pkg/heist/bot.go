@@ -18,8 +18,6 @@ func NewBot() *Bot {
 	token := os.Getenv("BOT_TOKEN")
 	s, _ := discordgo.New("Bot " + token)
 
-	// TODO: load the system state
-
 	bot := &Bot{
 		Session: s,
 		timer:   make(chan int),
