@@ -302,18 +302,10 @@ func fmtDuration(d time.Duration) string {
 		}
 		return fmt.Sprintf("%d minutes", m)
 	}
-	if s > 1 {
-		if s > 30 {
-			h++
-		}
-		return fmt.Sprintf("%d minutes", m)
-	}
-
 	if s <= 1 {
 		return "1 second"
 	}
 	return fmt.Sprintf("%d seconds", s)
-
 }
 
 /******** MESSAGE UTILITIES ********/
@@ -735,14 +727,6 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 	caser := cases.Caser(cases.Title(language.Und, cases.NoLower))
 
-	var resurectStatus string
-	if player.Status != "Dead" {
-		resurectStatus = "Alive"
-	} else if time.Now().After(player.DeathTimer) {
-		resurectStatus = "Ready to be resurected"
-	} else {
-		resurectStatus = fmt.Sprintf("Can resurect <t:%d:R>", player.DeathTimer.Unix())
-	}
 	bank := economy.GetBank(banks, server.ID)
 	account := bank.GetAccount(player.ID, player.Name)
 
@@ -780,11 +764,6 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				{
 					Name:   "Apprehended",
 					Value:  strconv.Itoa(int(player.JailCounter)),
-					Inline: true,
-				},
-				{
-					Name:   "Resurect",
-					Value:  resurectStatus,
 					Inline: true,
 				},
 				{
