@@ -32,8 +32,7 @@ type Server struct {
 
 // Config is the configuration data for a given server.
 type Config struct {
-	// HeistCooldownTime time.Time     `json:"heist_cooldown_time" bson:"heist_cooldown_time"`
-	AlertTime    time.Duration `json:"alert_time" bson:"alert_time"`
+	AlertTime    time.Time     `json:"alert_time" bson:"alert_time"`
 	BailBase     int64         `json:"bail_base" bson:"bail_base"`
 	CrewOutput   string        `json:"crew_output" bson:"crew_output"`
 	DeathTimer   time.Duration `json:"death_timer" bson:"death_timer"`
@@ -72,7 +71,7 @@ type Player struct {
 	Sentence      time.Duration `json:"sentence" bson:"sentence"`
 	Spree         int64         `json:"spree" bson:"spree"`
 	Status        string        `json:"status" bson:"status"`
-	TimeServed    time.Time     `json:"time_served" bson:"time_served"`
+	JailTimer     time.Time     `json:"time_served" bson:"time_served"`
 	TotalJail     int64         `json:"total_jail" bson:"total_jail"`
 }
 
@@ -101,7 +100,7 @@ func NewServer(guildID string) *Server {
 	server := Server{
 		ID: guildID,
 		Config: Config{
-			AlertTime:    0,
+			AlertTime:    time.Time{},
 			BailBase:     250,
 			CrewOutput:   "None",
 			DeathTimer:   45,
@@ -176,6 +175,12 @@ func LoadServers(store Store) map[string]*Server {
 
 }
 
+// cooldown_calculator(playerTime, baseTime)
+// 		if time is after now
+//      	no cooldown
+//    	else
+//			get duration until time
+
 // GetPlayer returns the player on the server. If the player does not already exist, one is created.
 func (s *Server) GetPlayer(id string, username string, nickname string) *Player {
 	player, ok := s.Players[id]
@@ -189,23 +194,8 @@ func (s *Server) GetPlayer(id string, username string, nickname string) *Player 
 			player.Name = username
 		}
 	}
+
 	return player
-}
-
-// IsPoliceAlerted returns an indication as to whether a new heist can be
-// started and, if not, how long before the heist can be started.
-func (c *Config) IsPoliceAlerted() (int64, bool) {
-	if c.AlertTime == 0 {
-		return 0, false
-	}
-	if int64(int(c.AlertTime.Seconds())-time.Now().Second()) >= int64(c.PoliceAlert.Seconds()) {
-		return 0, false
-	}
-
-	seconds := c.AlertTime - c.PoliceAlert
-	log.Println("Alter time remaining:", seconds)
-
-	return int64(seconds), true
 }
 
 // String returns a string representation of the criminal level.
@@ -229,15 +219,42 @@ func (cl CriminalLevel) String() string {
 	return "Unknown"
 }
 
-// ClearSettings clears the jain and death settings for a player.
-func (p *Player) ClearSettings() {
+// RemainingJailTime returns the amount of time remaining on the player's sentence has been served.
+func (p *Player) RemainingJailTime() time.Duration {
+	if p.JailTimer.IsZero() || p.JailTimer.After(time.Now()) {
+		return 0
+	}
+	return time.Until(p.JailTimer)
+}
+
+// RemainingDeathTime returns the amount of time before the player can be resurected.
+func (p *Player) RemainingDeathTime() time.Duration {
+	if p.DeathTimer.IsZero() || p.DeathTimer.After(time.Now()) {
+		return 0
+	}
+	return time.Until(p.DeathTimer)
+}
+
+// ClearJailAndDeathStatus removes the jail and death times. This is used if the player
+// is no longer in jail or has been revived.
+func (p *Player) ClearJailAndDeathStatus() {
+	p.Status = "free"
+	p.DeathTimer = time.Time{}
+	p.BailCost = 0
+	p.Sentence = 0
+	p.JailTimer = time.Time{}
+	p.OOB = false
+}
+
+// Reset clears the jain and death settings for a player.
+func (p *Player) Reset() {
 	p.Status = "free"
 	p.CriminalLevel = Greenhorn
 	p.JailCounter = 0
 	p.DeathTimer = time.Time{}
 	p.BailCost = 0
 	p.Sentence = 0
-	p.TimeServed = time.Time{}
+	p.JailTimer = time.Time{}
 	p.OOB = false
 }
 
