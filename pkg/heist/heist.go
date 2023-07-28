@@ -192,7 +192,7 @@ func getHeistResults(server *Server, target *Target) *HeistResult {
 
 			result := &HeistMemberResult{
 				player:       player,
-				status:       "free",
+				status:       "Free",
 				message:      goodResult.Message,
 				bonusCredits: goodResult.Amount,
 			}
