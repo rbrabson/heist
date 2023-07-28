@@ -619,7 +619,6 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Debug("<-- startHeist")
 
 	server := GetServer(servers, i.GuildID)
-	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 	theme := themes[server.Config.Theme]
 	bank := economy.GetBank(banks, server.ID)
 	if server.Heist == nil {
@@ -688,11 +687,7 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				"Bonus":            result.bonusCredits,
 				"Total":            result.stolenCredits + result.bonusCredits,
 			}).Debug("Result")
-
-			account := bank.GetAccount(player.ID, player.Name)
-			economy.DepositCredits(bank, account, result.stolenCredits+result.bonusCredits)
 		}
-		economy.SaveBank(bank)
 
 		data := &discordgo.MessageSend{
 			Content: "**Heist Payout**",
@@ -704,6 +699,37 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 	}
 
+	// Update the status for each player and then save the information
+	for _, result := range results.memberResults {
+		player := result.player
+		if result.status == "Dead" {
+			player.ClearJailAndDeathStatus()
+			player.Status = "Dead"
+			player.Deaths++
+			player.DeathTimer = time.Now().Add(server.Config.DeathTimer)
+		} else {
+			if result.status == "Apprehended" {
+				bail := server.Config.BailBase
+				sentence := server.Config.SentenceBase
+				if player.OOB {
+					bail *= 3
+					sentence *= 3
+				}
+				player.ClearJailAndDeathStatus()
+				result.player.Status = "Apprehended"
+				player.JailCounter++
+				player.BailCost = bail
+				player.Sentence = time.Duration(sentence)
+				result.player.OOB = false
+				player.JailTimer = time.Now().Add(player.Sentence)
+			}
+			account := bank.GetAccount(player.ID, player.Name)
+			economy.DepositCredits(bank, account, result.stolenCredits+result.bonusCredits)
+		}
+	}
+	economy.SaveBank(bank)
+
+	// Update the heist status information
 	server.Config.AlertTime = time.Now().Add(server.Config.PoliceAlert)
 	server.Heist = nil
 	store.SaveHeistState(server)
