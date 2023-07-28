@@ -43,6 +43,7 @@ type Config struct {
 	Theme        string        `json:"theme" bson:"theme"`
 	Version      string        `json:"version" bson:"version"`
 	WaitTime     time.Duration `json:"wait_time" bson:"wait_time"`
+	PaydayAmount int           `json:"payday_amount" bson:"payday_amount"`
 }
 
 // Heist is the data for a heist that is either planned or being executed.
@@ -73,6 +74,7 @@ type Player struct {
 	Status        string        `json:"status" bson:"status"`
 	JailTimer     time.Time     `json:"time_served" bson:"time_served"`
 	TotalJail     int64         `json:"total_jail" bson:"total_jail"`
+	PaydayTimer   time.Time     `json:"payday_timer" bson:"payday_timer"`
 }
 
 // Target is a target of a heist.
@@ -111,6 +113,7 @@ func NewServer(guildID string) *Server {
 			Theme:        defaultTheme,
 			Version:      "1.0.0",
 			WaitTime:     time.Duration(60 * time.Second),
+			PaydayAmount: 5000,
 		},
 		Players: make(map[string]*Player, 1),
 		Targets: make(map[string]*Target, 1),
@@ -166,20 +169,15 @@ func GetServer(servers map[string]*Server, guildID string) *Server {
 		server = NewServer(guildID)
 		servers[server.ID] = server
 	}
+	// TODO: remove this eventually...
+	server.Config.PaydayAmount = 5000
 	return server
 }
 
 func LoadServers(store Store) map[string]*Server {
 	servers := store.LoadHeistStates()
 	return servers
-
 }
-
-// cooldown_calculator(playerTime, baseTime)
-// 		if time is after now
-//      	no cooldown
-//    	else
-//			get duration until time
 
 // GetPlayer returns the player on the server. If the player does not already exist, one is created.
 func (s *Server) GetPlayer(id string, username string, nickname string) *Player {

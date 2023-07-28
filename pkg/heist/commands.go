@@ -24,11 +24,11 @@ import (
 )
 
 var (
-	servers    map[string]*Server
-	themes     map[string]*Theme
-	banks      map[string]*economy.Bank
-	heistStore Store
-	appID      string
+	servers map[string]*Server
+	themes  map[string]*Theme
+	banks   map[string]*economy.Bank
+	store   Store
+	appID   string
 )
 
 // componentHandlers are the buttons that appear on messages sent by this bot.
@@ -101,6 +101,11 @@ var (
 								},
 							},
 							Type: discordgo.ApplicationCommandOptionSubCommand,
+						},
+						{
+							Name:        "payday",
+							Description: "Deposits your daily check into your bank account",
+							Type:        discordgo.ApplicationCommandOptionSubCommand,
 						},
 					},
 				},
@@ -214,6 +219,8 @@ func heist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			releasePlayer(s, i)
 		case "revive":
 			revivePlayer(s, i)
+		case "payday":
+			payday(s, i)
 		}
 	case "target":
 		options = options[0].Options
@@ -265,22 +272,48 @@ func getAssignedRoles(s *discordgo.Session, i *discordgo.InteractionCreate) disc
 // fmtDuration returns duration formatted for inclusion in Discord messages.
 func fmtDuration(d time.Duration) string {
 	d = d.Round(time.Second)
+	h := d / time.Hour
+	d -= h * time.Hour
 	m := d / time.Minute
 	d -= m * time.Minute
 	s := d / time.Second
-	if m == 1 {
-		if s <= 30 {
-			return "a minute"
+
+	if h == 1 {
+		if m <= 30 {
+			return "1 hour"
 		}
-		return "2 minutes"
+		return "2 hours"
+	}
+	if h > 1 {
+		if m > 30 {
+			h++
+		}
+		if h == 1 {
+			return "1 hour"
+		}
+		return fmt.Sprintf("%d hours", h)
 	}
 	if m > 1 {
+		if s > 30 {
+			m++
+		}
+		if m == 1 {
+			return "1 minute"
+		}
 		return fmt.Sprintf("%d minutes", m)
 	}
+	if s > 1 {
+		if s > 30 {
+			h++
+		}
+		return fmt.Sprintf("%d minutes", m)
+	}
+
 	if s <= 1 {
 		return "1 second"
 	}
 	return fmt.Sprintf("%d seconds", s)
+
 }
 
 /******** MESSAGE UTILITIES ********/
@@ -454,7 +487,7 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	server.Heist.Timer = newWaitTimer(s, i, time.Until(server.Heist.StartTime), startHeist)
 
-	heistStore.SaveHeistState(server)
+	store.SaveHeistState(server)
 }
 
 // joinHeist attempts to join a heist that is being planned
@@ -504,7 +537,7 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		log.Error("Unable to update the heist message, error:", err)
 	}
 
-	heistStore.SaveHeistState(server)
+	store.SaveHeistState(server)
 }
 
 // leaveHeist attempts to leave a heist previously joined
@@ -548,7 +581,7 @@ func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		log.Error("Unable to update the heist message, error:", err)
 	}
 
-	heistStore.SaveHeistState(server)
+	store.SaveHeistState(server)
 }
 
 // cancelHeist cancels a heist that is being planned but has not yet started
@@ -585,7 +618,7 @@ func cancelHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		log.Error("Unable to notify the user the heist has been cancelled, error:", err)
 	}
 
-	heistStore.SaveHeistState(server)
+	store.SaveHeistState(server)
 }
 
 // startHeist is called once the wait time for planning the heist completes
@@ -686,7 +719,7 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	// Reset the heist
 	server.Heist = nil
-	heistStore.SaveHeistState(server)
+	store.SaveHeistState(server)
 
 	// Unmute the channel (only if I mute it to start with)
 
@@ -886,7 +919,31 @@ func revivePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	player.ClearJailAndDeathStatus()
 	sendEphemeralResponse(s, i, "You have risen from the dead!")
+}
 
+// payday gives some credits to the player every 24 hours.
+func payday(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Debug("--> payday")
+	defer log.Debug("<-- payday")
+
+	server := GetServer(servers, i.GuildID)
+	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
+
+	if player.PaydayTimer.After(time.Now()) {
+		remainingTime := time.Until(player.PaydayTimer)
+		msg := fmt.Sprintf("You can't get another payday yet. You need to wait %s.", fmtDuration(remainingTime))
+		sendEphemeralResponse(s, i, msg)
+		return
+	}
+
+	bank := economy.GetBank(banks, server.ID)
+	account := bank.GetAccount(player.ID, player.Name)
+	economy.DepositCredits(bank, account, server.Config.PaydayAmount)
+	player.PaydayTimer = time.Now().Add(24 * time.Hour)
+	store.SaveHeistState(server)
+
+	msg := fmt.Sprintf("You deposited your check of %d into your bank account. You now have %d credits.", server.Config.PaydayAmount, account.Balance)
+	sendEphemeralResponse(s, i, msg)
 }
 
 /******** ADMIN COMMANDS ********/
@@ -935,7 +992,7 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 	}
 
-	heistStore.SaveHeistState(server)
+	store.SaveHeistState(server)
 }
 
 // addTarget adds a target for heists
@@ -998,7 +1055,7 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		log.Error("Unable to notify the user the new target has been added, error:", err)
 	}
 
-	heistStore.SaveHeistState(server)
+	store.SaveHeistState(server)
 }
 
 // TODO: editTarget
@@ -1090,7 +1147,7 @@ func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		log.Error("Unable to send message that the player settings have been cleared, error:", err)
 	}
 
-	heistStore.SaveHeistState(server)
+	store.SaveHeistState(server)
 }
 
 // listThemes returns the list of available themes that may be used for heists
@@ -1179,7 +1236,7 @@ func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		log.Error("Unable to notify user that the selected theme is now being used, error:", err)
 	}
 
-	heistStore.SaveHeistState(server)
+	store.SaveHeistState(server)
 }
 
 // version shows the version of heist you are running.
@@ -1210,9 +1267,9 @@ func addBotCommands(bot *Bot) {
 	log.Debug("adding bot commands")
 
 	appID = os.Getenv("APP_ID")
-	heistStore = NewStore()
-	servers = LoadServers(heistStore)
-	themes = LoadThemes(heistStore)
+	store = NewStore()
+	servers = LoadServers(store)
+	themes = LoadThemes(store)
 	banks = economy.LoadBanks()
 
 	bot.Session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
