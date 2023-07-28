@@ -865,7 +865,7 @@ func releasePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		sendEphemeralResponse(s, i, "I can't remove you from jail if you're not *in* jail")
 		return
 	}
-	if player.JailTimer.Before(time.Now()) {
+	if player.JailTimer.After(time.Now()) {
 		remainingTime := time.Until(player.JailTimer)
 		msg := fmt.Sprintf("You still have time on your %s, you still need to wait %s.", theme.Sentence, fmtDuration(remainingTime))
 		sendEphemeralResponse(s, i, msg)
@@ -890,7 +890,7 @@ func revivePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		sendEphemeralResponse(s, i, "You still have a pulse. I can't reive someone who isn't dead.")
 		return
 	}
-	if player.DeathTimer.Before(time.Now()) {
+	if player.DeathTimer.After(time.Now()) {
 		remainingTime := time.Until(player.DeathTimer)
 		msg := fmt.Sprintf("You can't revive yet. You need to wait %s", fmtDuration(remainingTime))
 		sendEphemeralResponse(s, i, msg)
