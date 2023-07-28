@@ -699,17 +699,7 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 	}
 
-	// set server.Config.AlertTime to the current time
-
-	// Table like the following:
-	// Player       Credits Obtained        Bonuses       Total
-	// Table title will be "The credits collected from the %s was split among the winners", theme.Heist
-
-	// get the bank from the economy and deposit credits into the surviving crew's money
-	// subtract off the amount stolen from the target
-	// update the player's status based on the results
-
-	// Reset the heist
+	server.Config.AlertTime = time.Now().Add(server.Config.PoliceAlert)
 	server.Heist = nil
 	store.SaveHeistState(server)
 
@@ -847,6 +837,7 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	economy.WithdrawCredits(bank, account, int(player.BailCost))
 	player.OOB = true
+	store.SaveHeistState(server)
 
 	msg := fmt.Sprintf("Congratulations, %s, %s bailed you out and now you are free!. Enjoy your freedom while it lasts", player.Name, initiatingPlayer.Name)
 	sendNonephemeralResponse(s, i, msg)
@@ -875,6 +866,10 @@ func releasePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if player.OOB {
 		msg += "/nYou are no longer on probabtion! 3x penalty removed."
 	}
+
+	player.ClearJailAndDeathStatus()
+	store.SaveHeistState(server)
+
 	sendEphemeralResponse(s, i, msg)
 }
 
@@ -896,7 +891,10 @@ func revivePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		sendEphemeralResponse(s, i, msg)
 		return
 	}
+
 	player.ClearJailAndDeathStatus()
+	store.SaveHeistState(server)
+
 	sendEphemeralResponse(s, i, "You have risen from the dead!")
 }
 
