@@ -39,11 +39,11 @@ var (
 		"leave_heist":  leaveHeist,
 	}
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"heist": heist,
+		"heist2": heist,
 	}
 	commands = []*discordgo.ApplicationCommand{
 		{
-			Name:        "heist",
+			Name:        "heist2",
 			Description: "Commands for the Heist bot",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
@@ -702,26 +702,31 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// Update the status for each player and then save the information
 	for _, result := range results.memberResults {
 		player := result.player
-		if result.status == "Dead" {
+		if result.status == DEAD {
 			player.ClearJailAndDeathStatus()
-			player.Status = "Dead"
+			player.Status = DEAD
 			player.Deaths++
 			player.DeathTimer = time.Now().Add(server.Config.DeathTimer)
 		} else {
-			if result.status == "Apprehended" {
+			if result.status == APPREHENDED {
 				bail := server.Config.BailBase
 				sentence := server.Config.SentenceBase
-				if player.OOB {
+				if player.OOB && player.JailTimer.After(time.Now()) {
 					bail *= 3
 					sentence *= 3
 				}
 				player.ClearJailAndDeathStatus()
-				result.player.Status = "Apprehended"
+				result.player.Status = APPREHENDED
+				player.Spree = 0
 				player.JailCounter++
+				player.TotalJail++
+				player.CriminalLevel++
 				player.BailCost = bail
 				player.Sentence = time.Duration(sentence)
 				result.player.OOB = false
 				player.JailTimer = time.Now().Add(player.Sentence)
+			} else {
+				player.Spree++
 			}
 			account := bank.GetAccount(player.ID, player.Name)
 			economy.DepositCredits(bank, account, result.stolenCredits+result.bonusCredits)
@@ -751,6 +756,18 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	bank := economy.GetBank(banks, server.ID)
 	account := bank.GetAccount(player.ID, player.Name)
 
+	var sentence string
+	if player.Status == APPREHENDED {
+		if player.JailTimer.Before(time.Now()) {
+			sentence = "Served"
+		} else {
+			timeRemaining := time.Until(player.JailTimer)
+			sentence = fmtDuration(timeRemaining)
+		}
+	} else {
+		sentence = "None"
+	}
+
 	embeds := []*discordgo.MessageEmbed{
 		{
 			Type:        discordgo.EmbedTypeRich,
@@ -779,11 +796,11 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				},
 				{
 					Name:   caser.String(theme.Sentence),
-					Value:  strconv.Itoa(int(player.Sentence)),
+					Value:  sentence,
 					Inline: true,
 				},
 				{
-					Name:   "Apprehended",
+					Name:   APPREHENDED,
 					Value:  strconv.Itoa(int(player.JailCounter)),
 					Inline: true,
 				},
@@ -849,7 +866,7 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		player = initiatingPlayer
 	}
 
-	if player.Status != "Apprehended" || player.OOB {
+	if player.Status != APPREHENDED || player.OOB {
 		var msg string
 		if player.ID == i.Member.User.ID {
 			msg = "You are not in jail"
@@ -859,7 +876,10 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		sendEphemeralResponse(s, i, msg)
 		return
 	}
-
+	if player.Status == APPREHENDED && player.JailTimer.Before(time.Now()) {
+		sendEphemeralResponse(s, i, "You have already served your sentence. Use `/heist player release` to be released from jail.")
+		return
+	}
 	if account.Balance < int(player.BailCost) {
 		msg := fmt.Sprintf("You do not have enough credits to play the bail of %d", player.BailCost)
 		sendEphemeralResponse(s, i, msg)
@@ -870,8 +890,14 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	player.OOB = true
 	store.SaveHeistState(server)
 
-	msg := fmt.Sprintf("Congratulations, %s, %s bailed you out and now you are free!. Enjoy your freedom while it lasts", player.Name, initiatingPlayer.Name)
-	sendNonephemeralResponse(s, i, msg)
+	var msg string
+	if player.ID == initiatingPlayer.ID {
+		msg = "Congratulations, you are now free! Enjoy your freedom while it lasts."
+		sendEphemeralResponse(s, i, msg)
+	} else {
+		msg = fmt.Sprintf("Congratulations, %s, %s bailed you out and now you are free!. Enjoy your freedom while it lasts.", player.Name, initiatingPlayer.Name)
+		sendNonephemeralResponse(s, i, msg)
+	}
 }
 
 // releasePlayer releases a player from jail if their sentence has been served.
@@ -883,7 +909,13 @@ func releasePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 	theme := themes[server.Config.Theme]
 
-	if (player.Status != "Apprehended" || player.OOB) && player.JailTimer.After(time.Now()) {
+	if player.Status != APPREHENDED || player.OOB {
+		if player.OOB && player.JailTimer.Before(time.Now()) {
+			player.ClearJailAndDeathStatus()
+			store.SaveHeistState(server)
+			sendEphemeralResponse(s, i, "You are no longer on probation! 3x penalty removed.")
+			return
+		}
 		sendEphemeralResponse(s, i, "I can't remove you from jail if you're not *in* jail")
 		return
 	}
@@ -894,14 +926,9 @@ func releasePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	var msg string
-	if player.OOB && player.JailTimer.Before(time.Now()) {
-		msg = "You are no longer on probation! 3x penalty removed."
-	} else {
-		msg = "You served your time. Enjoy the fresh air of freedom while you can."
-		if player.OOB {
-			msg += "/nYou are no longer on probabtion! 3x penalty removed."
-		}
+	msg := "You served your time. Enjoy the fresh air of freedom while you can."
+	if player.OOB {
+		msg += "/nYou are no longer on probabtion! 3x penalty removed."
 	}
 
 	player.ClearJailAndDeathStatus()
@@ -918,7 +945,7 @@ func revivePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server := GetServer(servers, i.GuildID)
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 
-	if player.Status != "Dead" {
+	if player.Status != DEAD {
 		sendEphemeralResponse(s, i, "You still have a pulse. I can't reive someone who isn't dead.")
 		return
 	}

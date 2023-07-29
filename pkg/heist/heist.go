@@ -9,6 +9,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	FREE        = "Free"
+	DEAD        = "Dead"
+	APPREHENDED = "Apprehended"
+)
+
 // HeistResult is the result of a heist.
 type HeistResult struct {
 	memberResults []*HeistMemberResult
@@ -38,7 +44,7 @@ func heistChecks(server *Server, player *Player, targets map[string]*Target) (st
 		msg := fmt.Sprintf("You are already in the %s.", theme.Crew)
 		return msg, false
 	}
-	if player.Status == "Apprehended" && !player.OOB {
+	if player.Status == APPREHENDED && !player.OOB {
 		if player.JailTimer.After(time.Now()) {
 			remainingTime := time.Until(player.JailTimer)
 			msg := fmt.Sprintf("You are in %s. You are serving a %s of %s.\nYou can wait out your remaining %s of: %s, or pay %d credits to be relased on %s.",
@@ -49,14 +55,13 @@ func heistChecks(server *Server, player *Player, targets map[string]*Target) (st
 		msg := fmt.Sprintf("Looks like your %s is over, but you're still in %s! Get released released by typing `/heist player release`.", theme.Sentence, theme.Jail)
 		return msg, false
 	}
-	if player.Status == "Dead" {
-		fmt.Println("DeathTimer:", player.DeathTimer, ", Now:", time.Now())
+	if player.Status == DEAD {
 		if player.DeathTimer.After(time.Now()) {
 			remainingTime := time.Until(player.DeathTimer)
 			msg := fmt.Sprintf("You are dead. You will revive in %s", fmtDuration(remainingTime))
 			return msg, false
 		}
-		msg := "Looks like you are still dead, but you can revive at anytime by using the command `/heist revive`."
+		msg := "Looks like you are still dead, but you can revive at anytime by using the command `/heist player revive`."
 		return msg, false
 	}
 	account := bank.GetAccount(player.ID, player.Name)
@@ -119,13 +124,13 @@ func calculateSuccessRate(heist *Heist, target *Target) int {
 
 // handleHeistFailure updates the status of a player who is apprehended or killed during a heist.
 func handleHeistFailure(server *Server, player *Player, badResult BadMessage) {
-	if badResult.Result == "Apprehended" {
+	if badResult.Result == APPREHENDED {
 		sentence := server.Config.SentenceBase * player.JailCounter
 		bail := server.Config.BailBase
 		if player.OOB {
 			bail *= 3
 		}
-		player.Status = "Apprehended"
+		player.Status = APPREHENDED
 		player.BailCost = bail
 		player.Sentence = time.Duration(sentence)
 		player.JailTimer = time.Now()
@@ -140,7 +145,7 @@ func handleHeistFailure(server *Server, player *Player, badResult BadMessage) {
 	player.OOB = false
 	player.BailCost = 0
 	player.Sentence = 0
-	player.Status = "Dead"
+	player.Status = DEAD
 	player.JailCounter = 0
 	player.DeathTimer = time.Now().Add(server.Config.DeathTimer)
 }
@@ -171,21 +176,27 @@ func getHeistResults(server *Server, target *Target) *HeistResult {
 			updatedResults := make([]GoodMessage, 0, len(goodResults))
 			updatedResults = append(updatedResults, goodResults[:index]...)
 			goodResults = append(updatedResults, goodResults[index+1:]...)
+			if len(goodResults) == 0 {
+				goodResults = theme.Good
+			}
 
 			result := &HeistMemberResult{
 				player:       player,
-				status:       "Free",
+				status:       FREE,
 				message:      goodResult.Message,
 				bonusCredits: goodResult.Amount,
 			}
 			results.memberResults = append(results.memberResults, result)
 			results.survivingCrew = append(results.survivingCrew, result)
 		} else {
-			index := rand.Intn(len(goodResults))
+			index := rand.Intn(len(badResults))
 			badResult := badResults[index]
 			updatedResults := make([]BadMessage, 0, len(badResults))
 			updatedResults = append(updatedResults, badResults[:index]...)
 			badResults = append(updatedResults, badResults[index+1:]...)
+			if len(badResults) == 0 {
+				badResults = theme.Bad
+			}
 
 			result := &HeistMemberResult{
 				player:       player,
@@ -194,7 +205,7 @@ func getHeistResults(server *Server, target *Target) *HeistResult {
 				bonusCredits: 0,
 			}
 			results.memberResults = append(results.memberResults, result)
-			if result.status != "Dead" {
+			if result.status != DEAD {
 				results.survivingCrew = append(results.survivingCrew, result)
 			}
 

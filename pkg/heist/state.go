@@ -126,7 +126,7 @@ func NewServer(guildID string) *Server {
 func NewPlayer(id string, username string, nickname string) *Player {
 	player := Player{
 		ID:     id,
-		Status: "Free",
+		Status: FREE,
 	}
 	if nickname != "" {
 		player.Name = nickname
@@ -236,7 +236,7 @@ func (p *Player) RemainingDeathTime() time.Duration {
 // ClearJailAndDeathStatus removes the jail and death times. This is used if the player
 // is no longer in jail or has been revived.
 func (p *Player) ClearJailAndDeathStatus() {
-	p.Status = "Free"
+	p.Status = FREE
 	p.DeathTimer = time.Time{}
 	p.BailCost = 0
 	p.Sentence = 0
@@ -246,7 +246,7 @@ func (p *Player) ClearJailAndDeathStatus() {
 
 // Reset clears the jain and death settings for a player.
 func (p *Player) Reset() {
-	p.Status = "Free"
+	p.Status = FREE
 	p.CriminalLevel = Greenhorn
 	p.JailCounter = 0
 	p.DeathTimer = time.Time{}

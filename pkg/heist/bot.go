@@ -71,13 +71,13 @@ func (b *Bot) requirementCheck(author *Player) {
 	// Verify there is at least one target
 	// Verify there is no heist underway
 	// Verify the player isn't already in the crew
-	// Verify player.Status == "Apprehended"
+	// Verify player.Status == APPREHENDED
 	//   if remainingTime == "No Cooldown"
 	//		tell user to use !heist release to get released from jail
 	//   else
 	//      tell user they are serving, how long they have to wait, and cost to get out
 	//   return failure w/ the message
-	// Verify playerStatus == "Dead"
+	// Verify playerStatus == DEAD
 	//	  If "No Cooldown"
 	//        tell user they can use !heist revive to revive themself
 	//    else
@@ -197,7 +197,7 @@ func (bot *Bot) Bailout(roles []*discordgo.Role) error {
 	// Else
 	//    player is the specified user
 	//
-	// If user's status is not "Apprehended"
+	// If user's status is not APPREHENDED
 	//    log.Printf("%s is not in jail.\n", player.name)
 	//    return
 	// Get the bail cost. If < amount in the player's bank
