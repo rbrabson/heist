@@ -38,19 +38,15 @@ func heistChecks(server *Server, player *Player, targets map[string]*Target) (st
 		msg := fmt.Sprintf("You are already in the %s.", theme.Crew)
 		return msg, false
 	}
-	if player.Status == "Apprehended" {
-		if player.JailTimer.After(time.Now()) && !player.OOB {
-			bailCost := server.Config.BailBase
-			if player.OOB {
-				bailCost *= 3
-			}
+	if player.Status == "Apprehended" && !player.OOB {
+		if player.JailTimer.After(time.Now()) {
 			remainingTime := time.Until(player.JailTimer)
 			msg := fmt.Sprintf("You are in %s. You are serving a %s of %s.\nYou can wait out your remaining %s of: %s, or pay %d credits to be relased on %s.",
-				theme.Jail, theme.Sentence, fmtDuration(player.Sentence), theme.Sentence, fmtDuration(remainingTime), bailCost, theme.Bail)
+				theme.Jail, theme.Sentence, fmtDuration(player.Sentence), theme.Sentence, fmtDuration(remainingTime), player.BailCost, theme.Bail)
 			return msg, false
 		}
 
-		msg := fmt.Sprintf("Looks like your %s is over, but you're still in %s! Get released released by typing `/heist release`.", theme.Sentence, theme.Jail)
+		msg := fmt.Sprintf("Looks like your %s is over, but you're still in %s! Get released released by typing `/heist player release`.", theme.Sentence, theme.Jail)
 		return msg, false
 	}
 	if player.Status == "Dead" {
@@ -194,7 +190,7 @@ func getHeistResults(server *Server, target *Target) *HeistResult {
 			result := &HeistMemberResult{
 				player:       player,
 				status:       badResult.Result,
-				message:      badResult.Message,
+				message:      fmt.Sprintf("%s %s.", badResult.Message, badResult.Result),
 				bonusCredits: 0,
 			}
 			results.memberResults = append(results.memberResults, result)

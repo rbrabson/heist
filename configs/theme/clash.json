@@ -14,11 +14,11 @@
         "amount": 500
       },
       {
-        "message": "%s cut through the security like a P.E.K.K.A. +750 credits",
+        "message": "%s cut through the security like a P.E.K.K.A. +750 credits.",
         "amount": 750
       },
       {
-        "message": "%s pulled down the wizard's hood and distracted everyone. +500 credits",
+        "message": "%s pulled down the wizard's hood and distracted everyone. +500 credits.",
         "amount": 500
       },
       {
@@ -26,31 +26,31 @@
         "amount": 75
       },
       {
-        "message": "%s sent goblins to loot. +500 credits",
+        "message": "%s sent goblins to loot. +500 credits.",
         "amount": 500
       },
       {
-        "message": "%s was distracting the archer by showing their archery skills. +75 credits",
+        "message": "%s was distracting the archer by showing their archery skills. +75 credits.",
         "amount": 75
       },
       {
-        "message": "%s used a skeleton barrel to distract the archers. +75 credits",
+        "message": "%s used a skeleton barrel to distract the archers. +75 credits.",
         "amount": 75
       },
       {
-        "message": "%s stole a hog. +500 credits",
+        "message": "%s stole a hog. +500 credits.",
         "amount": 500
       },
       {
-        "message": "%s got the guards to deliver everyone pizza. +25 credits",
+        "message": "%s got the guards to deliver everyone pizza. +25 credits.",
         "amount": 25
       },
       {
-        "message": "%s saved the crew with a heal spell. +25 credits",
+        "message": "%s saved the crew with a heal spell. +25 credits.",
         "amount": 25
       },
       {
-        "message": "%s stole a balloon and got away. +75 credits",
+        "message": "%s stole a balloon and got away. +75 credits.",
         "amount": 75
       },
       {
@@ -58,7 +58,7 @@
         "amount": 500
       },
       {
-        "message": "%s reprogrammed the flying machine to attack the guards. +1000 credits",
+        "message": "%s reprogrammed the flying machine to attack the guards. +1000 credits.",
         "amount": 1000
       },
       {
@@ -104,7 +104,7 @@
         "result": "Apprehended"
       },
       {
-        "message": "The baby dragon found something new for their barbeque, grilled %s",
+        "message": "The baby dragon found something new for their barbeque, grilled %s.",
         "result": "Dead"
       },
       {
@@ -112,11 +112,11 @@
         "result": "Dead"
       },
       {
-        "message": "The witch used her destructo beams on %s",
+        "message": "The witch used her destructo beams on %s.",
         "result": "Dead"
       },
       {
-        "message": "The baby dragon found something new for their barbeque, grilled %s",
+        "message": "The baby dragon found something new for their barbeque, grilled %s.",
         "result": "Dead"
       },
       {
@@ -124,7 +124,7 @@
         "result": "Dead"
       },
       {
-        "message": "The witch used her destructo beams on %s",
+        "message": "The witch used her destructo beams on %s.",
         "result": "Dead"
       },
       {
@@ -136,11 +136,11 @@
         "result": "Apprehended"
       },
       {
-        "message": "The Barbarian Barrel crushed and sliced %s",
+        "message": "The Barbarian Barrel crushed and sliced %s.",
         "result": "Dead"
       },
       {
-        "message": "The Royal Ghost snuck up on %s",
+        "message": "The Royal Ghost snuck up on %s.",
         "result": "Apprehended"
       },
       {
@@ -152,11 +152,11 @@
         "result": "Apprehended"
       },
       {
-        "message": "The Executioner did its job with %s",
+        "message": "The Executioner did its job with %s.",
         "result": "Dead"
       },
       {
-        "message": "A Valkyrie spun into %s",
+        "message": "A Valkyrie spun into %s.",
         "result": "Dead"
       },
       {
