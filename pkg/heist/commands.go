@@ -883,7 +883,7 @@ func releasePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 	theme := themes[server.Config.Theme]
 
-	if player.Status != "Apprehended" || player.OOB && player.JailTimer.Before(time.Now()) {
+	if (player.Status != "Apprehended" || player.OOB) && player.JailTimer.After(time.Now()) {
 		sendEphemeralResponse(s, i, "I can't remove you from jail if you're not *in* jail")
 		return
 	}
@@ -895,7 +895,7 @@ func releasePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	var msg string
-	if player.JailTimer.After(time.Now()) {
+	if player.OOB && player.JailTimer.Before(time.Now()) {
 		msg = "You are no longer on probation! 3x penalty removed."
 	} else {
 		msg = "You served your time. Enjoy the fresh air of freedom while you can."
