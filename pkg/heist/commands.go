@@ -284,7 +284,7 @@ func fmtDuration(d time.Duration) string {
 		}
 		return "2 hours"
 	}
-	if h > 1 {
+	if h >= 1 {
 		if m > 30 {
 			h++
 		}
@@ -293,7 +293,7 @@ func fmtDuration(d time.Duration) string {
 		}
 		return fmt.Sprintf("%d hours", h)
 	}
-	if m > 1 {
+	if m >= 1 {
 		if s > 30 {
 			m++
 		}
