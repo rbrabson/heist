@@ -39,11 +39,11 @@ var (
 		"leave_heist":  leaveHeist,
 	}
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"heist2": heist,
+		"heist": heist,
 	}
 	commands = []*discordgo.ApplicationCommand{
 		{
-			Name:        "heist2",
+			Name:        "heist",
 			Description: "Commands for the Heist bot",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
