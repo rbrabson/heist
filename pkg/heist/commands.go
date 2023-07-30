@@ -775,8 +775,8 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	embeds := []*discordgo.MessageEmbed{
 		{
 			Type:        discordgo.EmbedTypeRich,
-			Title:       "Player Stats",
-			Description: "Current stats for " + player.Name + ".",
+			Title:       player.Name,
+			Description: player.CriminalLevel.String(),
 			Fields: []*discordgo.MessageEmbedField{
 				{
 					Name:   "Status",

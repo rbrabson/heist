@@ -198,23 +198,25 @@ func (s *Server) GetPlayer(id string, username string, nickname string) *Player 
 
 // String returns a string representation of the criminal level.
 func (cl CriminalLevel) String() string {
-	switch cl {
-	case Greenhorn:
-		return "Greenhorn"
-	case Renegade:
-		return "Renegade"
-	case Veteran:
-		return "Veteran"
-	case Commander:
-		return "Commander"
-	case WarChief:
-		return "War Chief"
-	case Legend:
-		return "Legend"
-	case Immortal:
+	if cl >= Immortal {
 		return "Immortal"
 	}
-	return "Unknown"
+	if cl >= Legend {
+		return "Legend"
+	}
+	if cl >= WarChief {
+		return "War Chief"
+	}
+	if cl >= Commander {
+		return "Commander"
+	}
+	if cl >= Veteran {
+		return "Veteran"
+	}
+	if cl >= Renegade {
+		return "Renegade"
+	}
+	return "Greenhorn"
 }
 
 // RemainingJailTime returns the amount of time remaining on the player's sentence has been served.
