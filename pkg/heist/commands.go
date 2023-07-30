@@ -39,11 +39,11 @@ var (
 		"leave_heist":  leaveHeist,
 	}
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"heist": heist,
+		"heist2": heist,
 	}
 	commands = []*discordgo.ApplicationCommand{
 		{
-			Name:        "heist",
+			Name:        "heist2",
 			Description: "Commands for the Heist bot",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
@@ -631,6 +631,10 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		server.Heist = nil
 		return
 	}
+
+	channel := newChannelMute(s, i)
+	channel.muteChannel()
+	defer channel.unmuteChannel()
 
 	server.Heist.Started = true
 	server.Heist.Planned = false
