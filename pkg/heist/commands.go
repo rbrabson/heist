@@ -632,6 +632,10 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
+	channel := newChannelMute(s, i)
+	channel.muteChannel()
+	defer channel.unmuteChannel()
+
 	server.Heist.Started = true
 	server.Heist.Planned = false
 
