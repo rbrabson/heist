@@ -39,11 +39,11 @@ type Config struct {
 	Hardcore     bool          `json:"hardcore" bson:"hardcore"`
 	HeistCost    int64         `json:"heist_cost" bson:"heist_cost"`
 	PoliceAlert  time.Duration `json:"police_alert" bson:"police_alert"`
-	SentenceBase int64         `json:"sentence_base" bson:"sentence_base"`
+	SentenceBase time.Duration `json:"sentence_base" bson:"sentence_base"`
 	Theme        string        `json:"theme" bson:"theme"`
 	Version      string        `json:"version" bson:"version"`
 	WaitTime     time.Duration `json:"wait_time" bson:"wait_time"`
-	PaydayAmount int           `json:"payday_amount" bson:"payday_amount"`
+	PaydayAmount int64         `json:"payday_amount" bson:"payday_amount"`
 }
 
 // Heist is the data for a heist that is either planned or being executed.

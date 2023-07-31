@@ -82,7 +82,6 @@ func (b *Bank) GetAccount(playerID string, playerName string) *Account {
 // DepositCredits adds the amount of credits to the account at a given bank
 func DepositCredits(bank *Bank, account *Account, amount int) {
 	account.Balance += amount
-	SaveBank(bank)
 }
 
 // WithDrawCredits deducts the amount of credits from the account at the given bank
@@ -91,18 +90,6 @@ func WithdrawCredits(bank *Bank, account *Account, amount int) error {
 		return ErrInsufficintBalance
 	}
 	account.Balance -= amount
-	SaveBank(bank)
-	return nil
-}
-
-// TransferCredits transfers the credits from one account to another account
-func TransferCredits(bank *Bank, from *Account, to *Account, amount int) error {
-	if from.Balance < amount {
-		return ErrInsufficintBalance
-	}
-	from.Balance -= amount
-	to.Balance += amount
-	SaveBank(bank)
 	return nil
 }
 
