@@ -541,8 +541,11 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 	} else if action == "start" {
 		status = "Started"
 		buttonDisabled = true
-	} else {
+	} else if action == "cancel" {
 		status = "Canceled"
+		buttonDisabled = true
+	} else {
+		status = "Ended"
 		buttonDisabled = true
 	}
 
@@ -871,6 +874,8 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 	}
 	economy.SaveBank(bank)
+
+	heistMessage(s, i, "ended")
 
 	// Update the heist status information
 	server.Config.AlertTime = time.Now().Add(server.Config.PoliceAlert)
