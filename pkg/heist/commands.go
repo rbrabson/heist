@@ -39,11 +39,11 @@ var (
 		"leave_heist":  leaveHeist,
 	}
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"heist2": heist,
+		"heist": heist,
 	}
 	commands = []*discordgo.ApplicationCommand{
 		{
-			Name:        "heist2",
+			Name:        "heist",
 			Description: "Commands for the Heist bot",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
@@ -1708,11 +1708,10 @@ func addBotCommands(bot *Bot) {
 	if err != nil {
 		log.Fatal("Failed to delete all old commands, error:", err)
 	}
-	/*
-		log.Debug("Add new commands")
-		_, err = bot.Session.ApplicationCommandBulkOverwrite(appID, guildID, commands)
-		if err != nil {
-			log.Fatal("Failed to load new commands, error:", err)
-		}
-	*/
+
+	log.Debug("Add new commands")
+	_, err = bot.Session.ApplicationCommandBulkOverwrite(appID, guildID, commands)
+	if err != nil {
+		log.Fatal("Failed to load new commands, error:", err)
+	}
 }
