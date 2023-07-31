@@ -123,31 +123,61 @@ func calculateSuccessRate(heist *Heist, target *Target) int {
 }
 
 // handleHeistFailure updates the status of a player who is apprehended or killed during a heist.
-func handleHeistFailure(server *Server, player *Player, badResult BadMessage) {
-	if badResult.Result == APPREHENDED {
-		sentence := server.Config.SentenceBase * player.JailCounter
+func handleHeistFailure(server *Server, player *Player, result *HeistMemberResult) {
+	log.Debug("--> handleHeistFailure")
+	defer log.Debug("<-- handleHeistFailure")
+
+	if result.status == APPREHENDED {
+		sentence := int64(server.Config.SentenceBase) * (player.JailCounter + 1)
 		bail := server.Config.BailBase
 		if player.OOB {
 			bail *= 3
 		}
-		player.Status = APPREHENDED
 		player.BailCost = bail
-		player.Sentence = time.Duration(sentence)
-		player.JailTimer = time.Now()
-		player.JailCounter += 1
-		player.TotalJail += 1
 		player.CriminalLevel += 1
+		player.JailCounter += 1
+		player.OOB = false
+		player.Sentence = time.Duration(sentence)
+		player.JailTimer = time.Now().Add(player.Sentence)
+		player.Spree = 0
+		player.Status = APPREHENDED
+		player.TotalJail += 1
+
+		log.WithFields(log.Fields{
+			"bail":          player.BailCost,
+			"criminalLevel": player.CriminalLevel,
+			"jailCounter":   player.JailCounter,
+			"jailTimier":    player.JailTimer,
+			"oob":           player.OOB,
+			"sentence":      player.Sentence,
+			"spree":         player.Spree,
+			"status":        player.Status,
+			"totalJail":     player.TotalJail,
+		}).Debug("Apprehended")
 
 		return
 	}
 
-	player.CriminalLevel = 0
-	player.OOB = false
 	player.BailCost = 0
-	player.Sentence = 0
-	player.Status = DEAD
-	player.JailCounter = 0
+	player.CriminalLevel = 0
 	player.DeathTimer = time.Now().Add(server.Config.DeathTimer)
+	player.JailCounter = 0
+	player.JailTimer = time.Time{}
+	player.OOB = false
+	player.Sentence = 0
+	player.Spree = 0
+	player.Status = DEAD
+
+	log.WithFields(log.Fields{
+		"bail":          player.BailCost,
+		"criminalLevel": player.CriminalLevel,
+		"deathTimer":    player.DeathTimer,
+		"jailTimer":     player.JailTimer,
+		"oob":           player.OOB,
+		"sentence":      player.Sentence,
+		"spree":         player.Spree,
+		"status":        player.Status,
+	}).Debug("Dead")
 }
 
 // getHeistResults returns the results of the heist, which contains the outcome
@@ -208,8 +238,6 @@ func getHeistResults(server *Server, target *Target) *HeistResult {
 			if result.status != DEAD {
 				results.survivingCrew = append(results.survivingCrew, result)
 			}
-
-			handleHeistFailure(server, player, badResult)
 		}
 	}
 
