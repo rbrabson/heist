@@ -551,11 +551,12 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 
 	theme := themes[server.Config.Theme]
 	caser := cases.Caser(cases.Title(language.Und, cases.NoLower))
+	msg := fmt.Sprintf("A new %s is being planned by %s. You can join the %s for a cost of %d credits at any time to the %s startting.", theme.Heist, player.Name, theme.Heist, server.Config.HeistCost, theme.Heist)
 	embeds := []*discordgo.MessageEmbed{
 		{
 			Type:        discordgo.EmbedTypeRich,
 			Title:       "Heist",
-			Description: "A new " + theme.Heist + " is being planned by " + player.Name + ". You can join the " + theme.Heist + " at any time prior to the " + theme.Heist + " starting.",
+			Description: msg,
 			Fields: []*discordgo.MessageEmbedField{
 				{
 					Name:   "Status",
@@ -617,7 +618,7 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 
 /******** PLAYER COMMANDS ********/
 
-// planHeist plans a new heist
+// planHeist plans a new heist“
 func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> planHeist")
 	defer log.Debug("<-- planHeist")
@@ -643,17 +644,14 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// as the required number of credits as this is verified in `heistChecks`.
 	bank := economy.GetBank(banks, server.ID)
 	account := bank.GetAccount(player.ID, player.Name)
-	err := economy.WithdrawCredits(bank, account, int(server.Config.HeistCost))
+	economy.WithdrawCredits(bank, account, int(server.Config.HeistCost))
 	economy.SaveBank(bank)
-	if err != nil {
-		log.Errorf("Unable to withdraw credits for the heist from the account of %s, error=%s", player.ID, err.Error())
-	}
 
 	server.Heist = NewHeist(server, player)
 	server.Heist.Interaction = i
 	server.Heist.Planned = true
 
-	err = heistMessage(s, i, "plan")
+	err := heistMessage(s, i, "plan")
 	if err != nil {
 		log.Error("Unable to create the `Plan Heist` message, error:", err)
 	}
@@ -683,24 +681,26 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		sendEphemeralResponse(s, i, msg)
 		return
 	}
+	if server.Heist.Started {
+		sendEphemeralResponse(s, i, "The heist has already been started")
+		return
+	}
+
+	server.Heist.Crew = append(server.Heist.Crew, player.ID)
+	err := heistMessage(s, server.Heist.Interaction, "join")
+	if err != nil {
+		log.Error("Unable to update the heist message, error:", err)
+	}
 
 	// Withdraw the cost of the heist from the player's account. We know the player already
 	// as the required number of credits as this is verified in `heistChecks`.
 	bank := economy.GetBank(banks, server.ID)
 	account := bank.GetAccount(player.ID, player.Name)
-	err := economy.WithdrawCredits(bank, account, int(server.Config.HeistCost))
-	if err != nil {
-		log.Errorf("Unable to withdraw credits to join the heist from the account of %s, error=%s", player.ID, err.Error())
-	}
+	economy.WithdrawCredits(bank, account, int(server.Config.HeistCost))
 	economy.SaveBank(bank)
 
-	sendEphemeralResponse(s, i, "You have joined the "+theme.Heist+".")
-
-	server.Heist.Crew = append(server.Heist.Crew, player.ID)
-	err = heistMessage(s, server.Heist.Interaction, "join")
-	if err != nil {
-		log.Error("Unable to update the heist message, error:", err)
-	}
+	msg := fmt.Sprintf("You have joined the %s at a cost of %d credits.", theme.Heist, server.Config.HeistCost)
+	sendEphemeralResponse(s, i, msg)
 
 	store.SaveHeistState(server)
 }
@@ -753,8 +753,11 @@ func cancelHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	if i.Member.User.ID != server.Heist.Planner {
-		log.Error("Unable to cancel heist, i.Member.User.ID:", i.Member.User.ID, ", server.Heist.Planner:", server.Heist.Planner)
 		sendEphemeralResponse(s, i, "You cannot cancel the "+theme.Heist+" as you are not the planner.")
+		return
+	}
+	if server.Heist.Started {
+		sendEphemeralResponse(s, i, "The "+theme.Heist+" has already started and can't be cancelled.")
 		return
 	}
 
@@ -807,57 +810,70 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
+	time.Sleep(3 * time.Second)
 	target := getTarget(server.Heist, server.Targets)
 	results := getHeistResults(server, target)
 	msg := fmt.Sprintf("Get ready! The %s is starting.\nThe %s has decided to hit **%s**.", theme.Heist, theme.Crew, target.ID)
 	s.ChannelMessageSend(i.ChannelID, msg)
 
-	time.Sleep(3 * time.Second)
-
 	// Process the results
 	for _, result := range results.memberResults {
 		msg = fmt.Sprintf(result.message+"\n", result.player.Name)
 		s.ChannelMessageSend(i.ChannelID, msg)
-		time.Sleep(5 * time.Second)
+		time.Sleep(3 * time.Second)
 	}
 
 	if len(results.survivingCrew) == 0 {
 		msg = "No one made it out safe."
 		s.ChannelMessageSend(i.ChannelID, msg)
 	} else {
-		embeds := make([]*discordgo.MessageEmbed, 0, len(results.survivingCrew)+1)
+		// Render the results into a table and returnt he results.
+		var tableBuffer strings.Builder
+		table := tablewriter.NewWriter(&tableBuffer)
+		table.SetHeader([]string{"Player", "Credits"})
 		for _, result := range results.survivingCrew {
-			embed := discordgo.MessageEmbed{
-				Fields: []*discordgo.MessageEmbedField{
-					{
-						Name:   "Player",
-						Value:  result.player.Name,
-						Inline: true,
-					},
-					{
-						Name:   "Credits",
-						Value:  strconv.Itoa(result.stolenCredits + result.bonusCredits),
-						Inline: true,
-					},
-				},
-			}
-			embeds = append(embeds, &embed)
-			log.WithFields(log.Fields{
-				"Player":           result.player.Name,
-				"Credits Obtained": result.stolenCredits,
-				"Bonus":            result.bonusCredits,
-				"Total":            result.stolenCredits + result.bonusCredits,
-			}).Debug("Result")
+			data := []string{result.player.Name, strconv.Itoa(result.stolenCredits + result.bonusCredits)}
+			table.Append(data)
 		}
+		table.Render()
+		s.ChannelMessageSend(i.ChannelID, "```\n"+tableBuffer.String()+"```")
 
-		data := &discordgo.MessageSend{
-			Content: "**Heist Payout**",
-			Embeds:  embeds,
-		}
-		_, err = s.ChannelMessageSendComplex(i.ChannelID, data)
-		if err != nil {
-			log.Error("Failed to send heist resuilts, error:", err)
-		}
+		/*
+			embeds := make([]*discordgo.MessageEmbed, 0, len(results.survivingCrew)+1)
+			for _, result := range results.survivingCrew {
+				embed := discordgo.MessageEmbed{
+					Fields: []*discordgo.MessageEmbedField{
+						{
+							Name:   "Player",
+							Value:  result.player.Name,
+							Inline: true,
+						},
+						{
+							Name:   "Credits",
+							Value:  strconv.Itoa(result.stolenCredits + result.bonusCredits),
+							Inline: true,
+						},
+					},
+				}
+				embeds = append(embeds, &embed)
+				log.WithFields(log.Fields{
+					"Player":           result.player.Name,
+					"Credits Obtained": result.stolenCredits,
+					"Bonus":            result.bonusCredits,
+					"Total":            result.stolenCredits + result.bonusCredits,
+				}).Debug("Result")
+			}
+
+			data := &discordgo.MessageSend{
+				Content: "**Heist Payout**",
+				Embeds:  embeds,
+			}
+			_, err = s.ChannelMessageSendComplex(i.ChannelID, data)
+			if err != nil {
+				log.Error("Failed to send heist resuilts, error:", err)
+			}
+
+		*/
 	}
 
 	// Update the status for each player and then save the information
