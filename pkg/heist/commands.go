@@ -1278,6 +1278,30 @@ func removeTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> deleteTarget")
 	defer log.Debug("<-- deleteTarget")
 
+	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
+		sendEphemeralResponse(s, i, "You are not allowed to use this command.")
+		return
+	}
+
+	targetID := i.ApplicationCommandData().Options[0].Options[0].Options[0].Value
+
+	server := GetServer(servers, i.GuildID)
+	var target *Target
+	for _, t := range server.Targets {
+		if t.ID == targetID {
+			target = t
+			break
+		}
+	}
+	if target == nil {
+		log.Println("No Target Found")
+	} else {
+		log.Println("Target found, id:", target.ID)
+	}
+
+	// If found, remove it
+	// Save the state
+
 	sendEphemeralResponse(s, i, "Not implemented yet.")
 }
 
@@ -1684,9 +1708,11 @@ func addBotCommands(bot *Bot) {
 	if err != nil {
 		log.Fatal("Failed to delete all old commands, error:", err)
 	}
-	log.Debug("Add new commands")
-	_, err = bot.Session.ApplicationCommandBulkOverwrite(appID, guildID, commands)
-	if err != nil {
-		log.Fatal("Failed to load new commands, error:", err)
-	}
+	/*
+		log.Debug("Add new commands")
+		_, err = bot.Session.ApplicationCommandBulkOverwrite(appID, guildID, commands)
+		if err != nil {
+			log.Fatal("Failed to load new commands, error:", err)
+		}
+	*/
 }
