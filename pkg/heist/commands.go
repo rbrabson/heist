@@ -691,16 +691,7 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	economy.SaveBank(bank)
 
-	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: "You have joined the " + theme.Heist + ".",
-			Flags:   discordgo.MessageFlagsEphemeral,
-		},
-	})
-	if err != nil {
-		log.Error("Unable to notify the member they have joined the heist, error:", err)
-	}
+	sendEphemeralResponse(s, i, "You have joined the "+theme.Heist+".")
 
 	server.Heist.Crew = append(server.Heist.Crew, player.ID)
 	err = heistMessage(s, server.Heist.Interaction, "join")
@@ -735,19 +726,11 @@ func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: "You have left the " + theme.Heist + ".",
-			Flags:   discordgo.MessageFlagsEphemeral,
-		},
-	})
-	if err != nil {
-		log.Error("Unable to notify the user they have left the heist, error:", err)
-	}
+	sendEphemeralResponse(s, i, "You have left the "+theme.Heist+".")
 	server.Heist.Crew = remove(server.Heist.Crew, player.ID)
 
-	err = heistMessage(s, server.Heist.Interaction, "leave")
+	err := heistMessage(s, server.Heist.Interaction, "leave")
+
 	if err != nil {
 		log.Error("Unable to update the heist message, error:", err)
 	}
@@ -779,15 +762,7 @@ func cancelHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server.Heist.Timer.cancel()
 	server.Heist = nil
 
-	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: "The " + theme.Heist + " has been cancelled.",
-		},
-	})
-	if err != nil {
-		log.Error("Unable to notify the user the heist has been cancelled, error:", err)
-	}
+	sendEphemeralResponse(s, i, "The "+theme.Heist+" has been cancelled.")
 
 	store.SaveHeistState(server)
 }
@@ -1163,16 +1138,7 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server := GetServer(servers, i.GuildID)
 	theme := themes[server.Config.Theme]
 	if server.Heist == nil || !server.Heist.Planned {
-		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "No " + theme.Heist + " is being planned.",
-				Flags:   discordgo.MessageFlagsEphemeral,
-			},
-		})
-		if err != nil {
-			log.Error("Unable to notify the user no heist is being planned, error:", err)
-		}
+		sendEphemeralResponse(s, i, "No "+theme.Heist+" is being planned.")
 		return
 	}
 
@@ -1183,16 +1149,7 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server.Heist = nil
 
 	if server.Heist == nil || !server.Heist.Planned {
-		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "The " + theme.Heist + " has been reset.",
-				Flags:   discordgo.MessageFlagsEphemeral,
-			},
-		})
-		if err != nil {
-			log.Error("Unable to notify the user the heist has been resset, error:", err)
-		}
+		sendEphemeralResponse(s, i, "The "+theme.Heist+" has been reset.")
 	}
 
 	store.SaveHeistState(server)
@@ -1215,15 +1172,16 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	var success float64
 	options := i.ApplicationCommandData().Options[0].Options[0].Options
 	for _, option := range options {
-		if option.Name == "id" {
+		switch option.Name {
+		case "id":
 			id = strings.TrimSpace(option.StringValue())
-		} else if option.Name == "crew" {
+		case "crew":
 			crewSize = option.IntValue()
-		} else if option.Name == "success" {
-			success = option.FloatValue()
-		} else if option.Name == "vault" {
+		case "success":
+			success = float64(option.IntValue())
+		case "vault":
 			vaultMax = option.IntValue()
-		} else if option.Name == "current" {
+		case "current":
 			vaultCurrent = option.IntValue()
 		}
 	}
@@ -1233,12 +1191,12 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	_, ok := server.Targets[id]
 	if ok {
-		sendEphemeralResponse(s, i, "Target "+id+" already exists.")
+		sendEphemeralResponse(s, i, "Target \""+id+"\" already exists.")
 		return
 	}
 	for _, target := range server.Targets {
 		if target.CrewSize == crewSize {
-			sendEphemeralResponse(s, i, "Target "+target.ID+" has the same max crew size.")
+			sendEphemeralResponse(s, i, "Target \""+target.ID+"\" has the same max crew size.")
 			return
 		}
 
@@ -1247,16 +1205,7 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	target := NewTarget(id, crewSize, success, vaultCurrent, vaultMax)
 	server.Targets[target.ID] = target
 
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: "You have added target " + target.ID + " to the new heist.",
-			Flags:   discordgo.MessageFlagsEphemeral,
-		},
-	})
-	if err != nil {
-		log.Error("Unable to notify the user the new target has been added, error:", err)
-	}
+	sendEphemeralResponse(s, i, "You have added target "+target.ID+" to the new heist.")
 
 	store.SaveHeistState(server)
 }
@@ -1266,11 +1215,53 @@ func editTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> editTarget")
 	defer log.Debug("<-- editTarget")
 
+	var id string
+	var crew, vault, current int64
+	var success float64
+	for _, option := range i.ApplicationCommandData().Options[0].Options[0].Options {
+		switch option.Name {
+		case "id":
+			id = option.StringValue()
+		case "crew":
+			crew = option.IntValue()
+		case "success":
+			success = float64(option.IntValue())
+		case "vault":
+			vault = option.IntValue()
+		case "current":
+			current = option.IntValue()
+		}
+	}
+
 	server := GetServer(servers, i.GuildID)
+	target, ok := server.Targets[id]
+	if !ok {
+		sendEphemeralResponse(s, i, "Target \""+id+"\" not found.")
+		return
+	}
+	for _, t := range server.Targets {
+		if t.CrewSize == crew && t.ID != target.ID {
+			sendEphemeralResponse(s, i, "The crew size is not unique; target \""+id+"\" was not updated.")
+			return
+		}
+	}
+
+	if crew != 0 {
+		target.CrewSize = crew
+	}
+	if vault != 0 {
+		target.VaultMax = vault
+	}
+	if current != 0 {
+		target.Vault = current
+	}
+	if success != 0.0 {
+		target.Success = success
+	}
+
+	sendEphemeralResponse(s, i, "Target \""+id+"\" updated.")
 
 	store.SaveHeistState(server)
-
-	sendEphemeralResponse(s, i, "Not implemented yet.")
 }
 
 // removeTarget deletes a target.
@@ -1283,30 +1274,20 @@ func removeTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	targetID := i.ApplicationCommandData().Options[0].Options[0].Options[0].Value
+	targetID := i.ApplicationCommandData().Options[0].Options[0].Options[0].StringValue()
 
 	server := GetServer(servers, i.GuildID)
-	var target *Target
-	for _, t := range server.Targets {
-		if t.ID == targetID {
-			target = t
-			break
-		}
+	_, ok := server.Targets[targetID]
+	if !ok {
+		sendEphemeralResponse(s, i, "Target \""+targetID+"\" not found.")
+		return
 	}
-	if target == nil {
-		log.Println("No Target Found")
-	} else {
-		log.Println("Target found, id:", target.ID)
-	}
+	delete(server.Targets, targetID)
 
-	// If found, remove it
+	sendEphemeralResponse(s, i, "Target \""+targetID+"\" removed.")
+
 	// Save the state
-
-	sendEphemeralResponse(s, i, "Not implemented yet.")
 }
-
-// TODO: editTarget
-// TODO: removeTarget
 
 // listTargets displays a list of available heist targets.
 func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -1347,16 +1328,7 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	table.Render()
 
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: "```\n" + tableBuffer.String() + "\n```",
-			Flags:   discordgo.MessageFlagsEphemeral,
-		},
-	})
-	if err != nil {
-		log.Error("Unable to sent the list of targets, error:", err)
-	}
+	sendEphemeralResponse(s, i, "```\n"+tableBuffer.String()+"\n```")
 }
 
 // clearMember clears the criminal state of the player.
@@ -1383,16 +1355,7 @@ func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	player.Reset()
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: "Player settings cleared.",
-			Flags:   discordgo.MessageFlagsEphemeral,
-		},
-	})
-	if err != nil {
-		log.Error("Unable to send message that the player settings have been cleared, error:", err)
-	}
+	sendEphemeralResponse(s, i, "Player settings cleared.")
 
 	store.SaveHeistState(server)
 }
@@ -1470,18 +1433,9 @@ func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	server.Config.Theme = theme.ID
-	log.Info("Now using theme", server.Config.Theme)
+	log.Debug("Now using theme", server.Config.Theme)
 
-	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: "Theme " + themeName + " is now being used.",
-			Flags:   discordgo.MessageFlagsEphemeral,
-		},
-	})
-	if err != nil {
-		log.Error("Unable to notify user that the selected theme is now being used, error:", err)
-	}
+	sendEphemeralResponse(s, i, "Theme "+themeName+" is now being used.")
 
 	store.SaveHeistState(server)
 }
@@ -1663,16 +1617,7 @@ func version(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	server := GetServer(servers, i.GuildID)
 
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: "You are running Heist version " + server.Config.Version + ".",
-			Flags:   discordgo.MessageFlagsEphemeral,
-		},
-	})
-	if err != nil {
-		log.Error("Unable to send the Heist version to the user, error:", err)
-	}
+	sendEphemeralResponse(s, i, "You are running Heist version "+server.Config.Version+".")
 }
 
 // addBotCommands adds all commands that may be issued from a given server.
