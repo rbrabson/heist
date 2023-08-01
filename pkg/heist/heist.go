@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/rbrabson/heist/pkg/economy"
 	log "github.com/sirupsen/logrus"
 )
@@ -32,7 +33,10 @@ type HeistMemberResult struct {
 }
 
 // heistChecks returns an error, with appropriate message, if a heist cannot be started.
-func heistChecks(server *Server, player *Player, targets map[string]*Target) (string, bool) {
+func heistChecks(server *Server, i *discordgo.InteractionCreate, player *Player, targets map[string]*Target) (string, bool) {
+
+	p := getPrinter(i)
+
 	theme := themes[server.Config.Theme]
 	bank := economy.GetBank(banks, server.ID)
 
@@ -52,13 +56,13 @@ func heistChecks(server *Server, player *Player, targets map[string]*Target) (st
 			return msg, false
 		}
 
-		msg := fmt.Sprintf("Looks like your %s is over, but you're still in %s! Get released released by typing `/player release`.", theme.Sentence, theme.Jail)
+		msg := p.Sprintf("Looks like your %s is over, but you're still in %s! Get released released by typing `/player release`.", theme.Sentence, theme.Jail)
 		return msg, false
 	}
 	if player.Status == DEAD {
 		if player.DeathTimer.After(time.Now()) {
 			remainingTime := time.Until(player.DeathTimer)
-			msg := fmt.Sprintf("You are dead. You will revive in %s", fmtDuration(remainingTime))
+			msg := p.Sprintf("You are dead. You will revive in %s", fmtDuration(remainingTime))
 			return msg, false
 		}
 		msg := "Looks like you are still dead, but you can revive at anytime by using the command `/player revive`."
@@ -66,12 +70,12 @@ func heistChecks(server *Server, player *Player, targets map[string]*Target) (st
 	}
 	account := bank.GetAccount(player.ID, player.Name)
 	if account.Balance < int(server.Config.HeistCost) {
-		msg := fmt.Sprintf("You do not have enough credits to cover the cost of entry. You need %d credits to participate", server.Config.HeistCost)
+		msg := p.Sprintf("You do not have enough credits to cover the cost of entry. You need %d credits to participate", server.Config.HeistCost)
 		return msg, false
 	}
 	if server.Config.AlertTime.After(time.Now()) {
 		remainingTime := time.Until(server.Config.AlertTime)
-		msg := fmt.Sprintf("The %s are on high alert after the last target. We should wait for things to cool off before hitting another target. Time remaining: %s.", theme.Police, fmtDuration(remainingTime))
+		msg := p.Sprintf("The %s are on high alert after the last target. We should wait for things to cool off before hitting another target. Time remaining: %s.", theme.Police, fmtDuration(remainingTime))
 		return msg, false
 	}
 

@@ -15,6 +15,8 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
+	"golang.org/x/text/message"
+
 	"github.com/rbrabson/heist/pkg/checks"
 	"github.com/rbrabson/heist/pkg/economy"
 	log "github.com/sirupsen/logrus"
@@ -42,7 +44,11 @@ var (
 		"clear":   clearMember,
 		"config":  config,
 		"start":   planHeist,
-		"player":  player,
+		"bail":    bailoutPlayer,
+		"payday":  payday,
+		"revive":  revivePlayer,
+		"release": releasePlayer,
+		"stats":   playerStats,
 		"target":  target,
 		"theme":   theme,
 		"reset":   resetHeist,
@@ -164,43 +170,32 @@ var (
 			},
 		},
 		{
-			Name:        "player",
-			Description: "Commands that affect individual players",
+			Name:        "bail",
+			Description: "Bail a player out of jail",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Name:        "bail",
-					Description: "Bail a player out of jail",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Type:        discordgo.ApplicationCommandOptionString,
-							Name:        "id",
-							Description: "ID of the player to bail. Defaults to you.",
-							Required:    false,
-						},
-					},
-				},
-				{
-					Name:        "payday",
-					Description: "Deposits your daily check into your bank account",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-				},
-				{
-					Name:        "revive",
-					Description: "Resurect player from the dead",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-				},
-				{
-					Name:        "release",
-					Description: "Releases player from jail",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-				},
-				{
-					Name:        "stats",
-					Description: "Shows a user's stats",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "id",
+					Description: "ID of the player to bail. Defaults to you.",
+					Required:    false,
 				},
 			},
+		},
+		{
+			Name:        "payday",
+			Description: "Deposits your daily check into your bank account",
+		},
+		{
+			Name:        "revive",
+			Description: "Resurect player from the dead",
+		},
+		{
+			Name:        "release",
+			Description: "Releases player from jail",
+		},
+		{
+			Name:        "stats",
+			Description: "Shows a user's stats",
 		},
 		{
 			Name:        "start",
@@ -367,26 +362,6 @@ func config(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 }
 
-// player routes the player commands to the proper handlers.
-func player(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> player")
-	defer log.Debug("<-- player")
-
-	options := i.ApplicationCommandData().Options
-	switch options[0].Name {
-	case "stats":
-		playerStats(s, i)
-	case "bail":
-		bailoutPlayer(s, i)
-	case "release":
-		releasePlayer(s, i)
-	case "revive":
-		revivePlayer(s, i)
-	case "payday":
-		payday(s, i)
-	}
-}
-
 // target routes the target commands to the proper handlers.
 func target(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> target")
@@ -443,6 +418,16 @@ func getAssignedRoles(s *discordgo.Session, i *discordgo.InteractionCreate) disc
 	}
 
 	return roles
+}
+
+// getPrinter returns a printer for the given locale of the user initiating the message.
+func getPrinter(i *discordgo.InteractionCreate) *message.Printer {
+	tag, err := language.Parse(string(i.Locale))
+	if err != nil {
+		log.Error("Unable to parse locale, error:", err)
+		tag = language.English
+	}
+	return message.NewPrinter(tag)
 }
 
 // fmtDuration returns duration formatted for inclusion in Discord messages.
@@ -525,6 +510,8 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 	log.Debug("--> heistMessage")
 	defer log.Debug("<-- heistMessage")
 
+	p := getPrinter(i)
+
 	server := GetServer(servers, i.GuildID)
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 	var status string
@@ -550,7 +537,7 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 
 	theme := themes[server.Config.Theme]
 	caser := cases.Caser(cases.Title(language.Und, cases.NoLower))
-	msg := fmt.Sprintf("A new %s is being planned by %s. You can join the %s for a cost of %d credits at any time to the %s startting.", theme.Heist, player.Name, theme.Heist, server.Config.HeistCost, theme.Heist)
+	msg := p.Sprintf("A new %s is being planned by %s. You can join the %s for a cost of %d credits at any time to the %s startting.", theme.Heist, player.Name, theme.Heist, server.Config.HeistCost, theme.Heist)
 	embeds := []*discordgo.MessageEmbed{
 		{
 			Type:        discordgo.EmbedTypeRich,
@@ -564,7 +551,7 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 				},
 				{
 					Name:   "Number of " + caser.String(theme.Crew) + "  Members",
-					Value:  strconv.Itoa(len(server.Heist.Crew)),
+					Value:  p.Sprintf("%d", server.Heist.Crew),
 					Inline: true,
 				},
 			},
@@ -634,7 +621,7 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 
 	// Basic error checks for the heist
-	if msg, ok := heistChecks(server, player, server.Targets); !ok {
+	if msg, ok := heistChecks(server, i, player, server.Targets); !ok {
 		sendEphemeralResponse(s, i, msg)
 		return
 	}
@@ -665,6 +652,8 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> joinHeist")
 	defer log.Debug("<-- joinHeist")
 
+	p := getPrinter(i)
+
 	server := GetServer(servers, i.GuildID)
 	theme := themes[server.Config.Theme]
 	if server.Heist == nil {
@@ -676,7 +665,7 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		sendEphemeralResponse(s, i, "You are already a member of the "+theme.Heist+".")
 		return
 	}
-	if msg, ok := heistChecks(server, player, server.Targets); !ok {
+	if msg, ok := heistChecks(server, i, player, server.Targets); !ok {
 		sendEphemeralResponse(s, i, msg)
 		return
 	}
@@ -698,7 +687,7 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	economy.WithdrawCredits(bank, account, int(server.Config.HeistCost))
 	economy.SaveBank(bank)
 
-	msg := fmt.Sprintf("You have joined the %s at a cost of %d credits.", theme.Heist, server.Config.HeistCost)
+	msg := p.Sprintf("You have joined the %s at a cost of %d credits.", theme.Heist, server.Config.HeistCost)
 	sendEphemeralResponse(s, i, msg)
 
 	store.SaveHeistState(server)
@@ -777,6 +766,8 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> startHeist")
 	defer log.Debug("<-- startHeist")
 
+	p := getPrinter(i)
+
 	server := GetServer(servers, i.GuildID)
 	theme := themes[server.Config.Theme]
 	bank := economy.GetBank(banks, server.ID)
@@ -804,24 +795,24 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	if len(server.Heist.Crew) <= 1 {
 		heistMessage(s, i, "ended")
-		msg := fmt.Sprintf("You tried to rally a %s, but no one wanted to follow you. The %s has been cancelled.", theme.Crew, theme.Heist)
+		msg := p.Sprintf("You tried to rally a %s, but no one wanted to follow you. The %s has been cancelled.", theme.Crew, theme.Heist)
 		s.ChannelMessageSend(i.ChannelID, msg)
 		server.Heist = nil
 		return
 	}
-	msg := fmt.Sprintf("Get ready! The %s is starting.", theme.Heist)
+	msg := p.Sprintf("Get ready! The %s is starting.", theme.Heist)
 	s.ChannelMessageSend(i.ChannelID, msg)
 	time.Sleep(3 * time.Second)
 	heistMessage(s, i, "start")
 	target := getTarget(server.Heist, server.Targets)
 	results := getHeistResults(server, target)
-	msg = fmt.Sprintf("The %s has decided to hit **%s**.", theme.Crew, target.ID)
+	msg = p.Sprintf("The %s has decided to hit **%s**.", theme.Crew, target.ID)
 	s.ChannelMessageSend(i.ChannelID, msg)
 	time.Sleep(3 * time.Second)
 
 	// Process the results
 	for _, result := range results.memberResults {
-		msg = fmt.Sprintf(result.message+"\n", result.player.Name)
+		msg = p.Sprintf(result.message+"\n", result.player.Name)
 		s.ChannelMessageSend(i.ChannelID, msg)
 		time.Sleep(3 * time.Second)
 	}
@@ -835,7 +826,7 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		table := tablewriter.NewWriter(&tableBuffer)
 		table.SetHeader([]string{"Player", "Credits"})
 		for _, result := range results.survivingCrew {
-			data := []string{result.player.Name, strconv.Itoa(result.stolenCredits + result.bonusCredits)}
+			data := []string{result.player.Name, p.Sprintf("%d", result.stolenCredits+result.bonusCredits)}
 			table.Append(data)
 		}
 		table.Render()
@@ -853,7 +844,7 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 						},
 						{
 							Name:   "Credits",
-							Value:  strconv.Itoa(result.stolenCredits + result.bonusCredits),
+							Value:  p.Sprintf("%d"(result.stolenCredits + result.bonusCredits),
 							Inline: true,
 						},
 					},
@@ -912,6 +903,8 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 	caser := cases.Caser(cases.Title(language.Und, cases.NoLower))
 
+	p := getPrinter(i)
+
 	bank := economy.GetBank(banks, server.ID)
 	account := bank.GetAccount(player.ID, player.Name)
 
@@ -940,12 +933,12 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				},
 				{
 					Name:   "Spree",
-					Value:  strconv.Itoa(int(player.Spree)),
+					Value:  p.Sprintf("%d", player.Spree),
 					Inline: true,
 				},
 				{
 					Name:   caser.String(theme.Bail),
-					Value:  strconv.Itoa(int(player.BailCost)),
+					Value:  p.Sprintf("%d", player.BailCost),
 					Inline: true,
 				},
 				{
@@ -960,22 +953,22 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				},
 				{
 					Name:   APPREHENDED,
-					Value:  strconv.Itoa(int(player.JailCounter)),
+					Value:  p.Sprintf("%d", player.JailCounter),
 					Inline: true,
 				},
 				{
 					Name:   "Total Deaths",
-					Value:  strconv.Itoa(int(player.Deaths)),
+					Value:  p.Sprintf("%d", player.Deaths),
 					Inline: true,
 				},
 				{
 					Name:   "Lifetime Apprehensions",
-					Value:  strconv.Itoa(int(player.TotalJail)),
+					Value:  p.Sprintf("%d", player.TotalJail),
 					Inline: true,
 				},
 				{
 					Name:   "Credits",
-					Value:  strconv.Itoa(account.Balance),
+					Value:  p.Sprintf("%d", account.Balance),
 					Inline: true,
 				},
 			},
@@ -1000,8 +993,10 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> bailoutPlayer")
 	log.Debug("<-- bailoutPlayer")
 
+	p := getPrinter(i)
+
 	var playerID string
-	options := i.ApplicationCommandData().Options[0].Options
+	options := i.ApplicationCommandData().Options
 	for _, option := range options {
 		if option.Name == "id" {
 			playerID = strings.TrimSpace(option.StringValue())
@@ -1030,7 +1025,7 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if player.ID == i.Member.User.ID {
 			msg = "You are not in jail"
 		} else {
-			msg = fmt.Sprintf("%s is not in jail", player.Name)
+			msg = p.Sprintf("%s is not in jail", player.Name)
 		}
 		sendEphemeralResponse(s, i, msg)
 		return
@@ -1040,7 +1035,7 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	if account.Balance < int(player.BailCost) {
-		msg := fmt.Sprintf("You do not have enough credits to play the bail of %d", player.BailCost)
+		msg := p.Sprintf("You do not have enough credits to play the bail of %d", player.BailCost)
 		sendEphemeralResponse(s, i, msg)
 		return
 	}
@@ -1055,7 +1050,7 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		msg = "Congratulations, you are now free! Enjoy your freedom while it lasts."
 		sendEphemeralResponse(s, i, msg)
 	} else {
-		msg = fmt.Sprintf("Congratulations, %s, %s bailed you out and now you are free!. Enjoy your freedom while it lasts.", player.Name, initiatingPlayer.Name)
+		msg = p.Sprintf("Congratulations, %s, %s bailed you out and now you are free!. Enjoy your freedom while it lasts.", player.Name, initiatingPlayer.Name)
 		sendNonephemeralResponse(s, i, msg)
 	}
 }
@@ -1064,6 +1059,8 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 func releasePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> releasePlayer")
 	defer log.Debug("<-- releasePlayer")
+
+	p := getPrinter(i)
 
 	server := GetServer(servers, i.GuildID)
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
@@ -1081,7 +1078,7 @@ func releasePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	if player.JailTimer.After(time.Now()) {
 		remainingTime := time.Until(player.JailTimer)
-		msg := fmt.Sprintf("You still have time on your %s, you still need to wait %s.", theme.Sentence, fmtDuration(remainingTime))
+		msg := p.Sprintf("You still have time on your %s, you still need to wait %s.", theme.Sentence, fmtDuration(remainingTime))
 		sendEphemeralResponse(s, i, msg)
 		return
 	}
@@ -1102,6 +1099,8 @@ func revivePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> revivePlayer")
 	defer log.Debug("<-- revivePlayer")
 
+	p := getPrinter(i)
+
 	server := GetServer(servers, i.GuildID)
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 
@@ -1111,7 +1110,7 @@ func revivePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	if player.DeathTimer.After(time.Now()) {
 		remainingTime := time.Until(player.DeathTimer)
-		msg := fmt.Sprintf("You can't revive yet. You need to wait %s", fmtDuration(remainingTime))
+		msg := p.Sprintf("You can't revive yet. You need to wait %s", fmtDuration(remainingTime))
 		sendEphemeralResponse(s, i, msg)
 		return
 	}
@@ -1127,12 +1126,14 @@ func payday(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> payday")
 	defer log.Debug("<-- payday")
 
+	p := getPrinter(i)
+
 	server := GetServer(servers, i.GuildID)
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 
 	if player.PaydayTimer.After(time.Now()) {
 		remainingTime := time.Until(player.PaydayTimer)
-		msg := fmt.Sprintf("You can't get another payday yet. You need to wait %s.", fmtDuration(remainingTime))
+		msg := p.Sprintf("You can't get another payday yet. You need to wait %s.", fmtDuration(remainingTime))
 		sendEphemeralResponse(s, i, msg)
 		return
 	}
@@ -1144,7 +1145,7 @@ func payday(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	economy.SaveBank(bank)
 	store.SaveHeistState(server)
 
-	msg := fmt.Sprintf("You deposited your check of %d into your bank account. You now have %d credits.", server.Config.PaydayAmount, account.Balance)
+	msg := p.Sprintf("You deposited your check of %d into your bank account. You now have %d credits.", server.Config.PaydayAmount, account.Balance)
 	sendEphemeralResponse(s, i, msg)
 }
 
@@ -1318,6 +1319,8 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> listTargets")
 	defer log.Debug("<-- listTargets")
 
+	p := getPrinter(i)
+
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		sendEphemeralResponse(s, i, "You are not allowed to use this command.")
 		return
@@ -1347,7 +1350,7 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	table.SetHeader([]string{"ID", "Max Crew", theme.Vault, "Max " + theme.Vault, "Success Rate"})
 	for _, target := range targets {
 
-		data := []string{target.ID, strconv.Itoa(int(target.CrewSize)), strconv.Itoa(int(target.Vault)), strconv.Itoa(int(target.VaultMax)), fmt.Sprintf("%.2f", target.Success)}
+		data := []string{target.ID, p.Sprintf("%d", target.CrewSize), p.Sprintf("%d", target.Vault), p.Sprintf("%d", target.VaultMax), p.Sprintf("%.2f", target.Success)}
 		table.Append(data)
 	}
 	table.Render()
@@ -1462,11 +1465,13 @@ func configCost(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> configCost")
 	defer log.Debug("<-- configCost")
 
+	p := getPrinter(i)
+
 	server := GetServer(servers, i.GuildID)
 	cost := i.ApplicationCommandData().Options[0].Options[0].Options[0].IntValue()
 	server.Config.HeistCost = cost
 
-	sendNonephemeralResponse(s, i, "Cost set to "+strconv.Itoa(int(cost)))
+	sendNonephemeralResponse(s, i, p.Sprintf("Cost set to %d", cost))
 
 	store.SaveHeistState(server)
 }
@@ -1476,11 +1481,13 @@ func configSentence(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> configSentence")
 	defer log.Debug("<-- configSentence")
 
+	p := getPrinter(i)
+
 	server := GetServer(servers, i.GuildID)
 	sentence := i.ApplicationCommandData().Options[0].Options[0].Options[0].IntValue()
 	server.Config.SentenceBase = time.Duration(sentence * int64(time.Second))
 
-	sendNonephemeralResponse(s, i, "Sentence set to "+strconv.Itoa(int(sentence)))
+	sendNonephemeralResponse(s, i, p.Sprintf("Sentence set to %d", sentence))
 
 	store.SaveHeistState(server)
 }
@@ -1490,11 +1497,13 @@ func configPatrol(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> configPatrol")
 	defer log.Debug("<-- configPatrol")
 
+	p := getPrinter(i)
+
 	server := GetServer(servers, i.GuildID)
 	patrol := i.ApplicationCommandData().Options[0].Options[0].Options[0].IntValue()
 	server.Config.PoliceAlert = time.Duration(patrol * int64(time.Second))
 
-	sendNonephemeralResponse(s, i, "Patrol set to "+strconv.Itoa(int(patrol)))
+	sendNonephemeralResponse(s, i, p.Sprintf("Patrol set to %d", patrol))
 
 	store.SaveHeistState(server)
 }
@@ -1504,11 +1513,13 @@ func configBail(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> configBail")
 	defer log.Debug("<-- configBail")
 
+	p := getPrinter(i)
+
 	server := GetServer(servers, i.GuildID)
 	bail := i.ApplicationCommandData().Options[0].Options[0].Options[0].IntValue()
 	server.Config.BailBase = bail
 
-	sendNonephemeralResponse(s, i, "Bail set to "+strconv.Itoa(int(bail)))
+	sendNonephemeralResponse(s, i, p.Sprintf("Bail set to %d", bail))
 
 	store.SaveHeistState(server)
 }
@@ -1518,11 +1529,13 @@ func configDeath(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> configDeath")
 	defer log.Debug("<-- configDeath")
 
+	p := getPrinter(i)
+
 	server := GetServer(servers, i.GuildID)
 	death := i.ApplicationCommandData().Options[0].Options[0].Options[0].IntValue()
 	server.Config.PoliceAlert = time.Duration(death * int64(time.Second))
 
-	sendNonephemeralResponse(s, i, "Death set to "+strconv.Itoa(int(death)))
+	sendNonephemeralResponse(s, i, p.Sprintf("Death set to %d", death))
 
 	store.SaveHeistState(server)
 }
@@ -1532,11 +1545,13 @@ func configWait(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> configWait")
 	defer log.Debug("<-- configWait")
 
+	p := getPrinter(i)
+
 	server := GetServer(servers, i.GuildID)
 	wait := i.ApplicationCommandData().Options[0].Options[0].Options[0].IntValue()
 	server.Config.WaitTime = time.Duration(wait * int64(time.Second))
 
-	sendNonephemeralResponse(s, i, "Wait set to "+strconv.Itoa(int(wait)))
+	sendNonephemeralResponse(s, i, p.Sprintf("Wait set to %d", wait))
 
 	store.SaveHeistState(server)
 }
@@ -1546,11 +1561,13 @@ func configPayday(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> configPayday")
 	defer log.Debug("<-- configPayday")
 
+	p := getPrinter(i)
+
 	server := GetServer(servers, i.GuildID)
 	payday := i.ApplicationCommandData().Options[0].Options[0].Options[0].IntValue()
 	server.Config.PaydayAmount = payday
 
-	sendNonephemeralResponse(s, i, "Payday set to "+strconv.Itoa(int(payday)))
+	sendNonephemeralResponse(s, i, p.Sprintf("Payday is set to %d", payday))
 
 	store.SaveHeistState(server)
 }
@@ -1559,6 +1576,8 @@ func configPayday(s *discordgo.Session, i *discordgo.InteractionCreate) {
 func configInfo(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> configInfo")
 	defer log.Debug("<-- configInfo")
+
+	p := getPrinter(i)
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		sendEphemeralResponse(s, i, "You are not allowed to use this command.")
@@ -1571,37 +1590,37 @@ func configInfo(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   "bail",
-				Value:  strconv.Itoa(int(server.Config.BailBase)),
+				Value:  p.Sprintf("%d", server.Config.BailBase),
 				Inline: true,
 			},
 			{
 				Name:   "cost",
-				Value:  strconv.Itoa(int(server.Config.HeistCost)),
+				Value:  p.Sprintf("%d", server.Config.HeistCost),
 				Inline: true,
 			},
 			{
 				Name:   "death",
-				Value:  strconv.Itoa(int(server.Config.DeathTimer.Seconds())),
+				Value:  p.Sprintf("%.f", server.Config.DeathTimer.Seconds()),
 				Inline: true,
 			},
 			{
 				Name:   "patrol",
-				Value:  strconv.Itoa(int(server.Config.PoliceAlert.Seconds())),
+				Value:  p.Sprintf("%.f", server.Config.PoliceAlert.Seconds()),
 				Inline: true,
 			},
 			{
 				Name:   "payday",
-				Value:  strconv.Itoa(int(server.Config.PaydayAmount)),
+				Value:  p.Sprintf("%d", server.Config.PaydayAmount),
 				Inline: true,
 			},
 			{
 				Name:   "sentence",
-				Value:  strconv.Itoa(int(server.Config.SentenceBase.Seconds())),
+				Value:  p.Sprintf("%.f", server.Config.SentenceBase.Seconds()),
 				Inline: true,
 			},
 			{
 				Name:   "wait",
-				Value:  strconv.Itoa(int(server.Config.WaitTime.Seconds())),
+				Value:  p.Sprintf("%.f", server.Config.WaitTime.Seconds()),
 				Inline: true,
 			},
 		},
