@@ -551,7 +551,7 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 				},
 				{
 					Name:   "Number of " + caser.String(theme.Crew) + "  Members",
-					Value:  p.Sprintf("%d", server.Heist.Crew),
+					Value:  p.Sprintf("%d", len(server.Heist.Crew)),
 					Inline: true,
 				},
 			},
