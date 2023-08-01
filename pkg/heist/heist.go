@@ -52,7 +52,7 @@ func heistChecks(server *Server, player *Player, targets map[string]*Target) (st
 			return msg, false
 		}
 
-		msg := fmt.Sprintf("Looks like your %s is over, but you're still in %s! Get released released by typing `/heist player release`.", theme.Sentence, theme.Jail)
+		msg := fmt.Sprintf("Looks like your %s is over, but you're still in %s! Get released released by typing `/player release`.", theme.Sentence, theme.Jail)
 		return msg, false
 	}
 	if player.Status == DEAD {
@@ -61,7 +61,7 @@ func heistChecks(server *Server, player *Player, targets map[string]*Target) (st
 			msg := fmt.Sprintf("You are dead. You will revive in %s", fmtDuration(remainingTime))
 			return msg, false
 		}
-		msg := "Looks like you are still dead, but you can revive at anytime by using the command `/heist player revive`."
+		msg := "Looks like you are still dead, but you can revive at anytime by using the command `/player revive`."
 		return msg, false
 	}
 	account := bank.GetAccount(player.ID, player.Name)
