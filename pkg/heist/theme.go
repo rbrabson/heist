@@ -3,21 +3,9 @@ package heist
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 
-	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
 )
-
-var (
-	themeDir string
-)
-
-// init loads in the directory that contains the theme files.
-func init() {
-	godotenv.Load()
-	themeDir = os.Getenv("HEIST_FILE_THEME_DIR")
-}
 
 // Theme is a heist theme.
 type Theme struct {
@@ -63,19 +51,14 @@ func LoadThemes(store Store) map[string]*Theme {
 
 // LoadTheme gets the specified theme and returns.
 func LoadTheme(themeName string) (*Theme, error) {
-	fileName := themeDir + themeName + ".json"
-	file, err := os.ReadFile(fileName)
-	if err != nil {
-		log.Warning("Unable to load theme, error:", err)
-		return nil, fmt.Errorf("unable to load theme `%s`", themeName)
+	theme, ok := themes[themeName]
+	if !ok {
+		msg := "Theme " + themeName + " does not exist."
+		log.Warning(msg)
+		return nil, fmt.Errorf(msg)
 	}
 
-	var theme Theme
-	if err = json.Unmarshal(file, &theme); err != nil {
-		log.Warning("Unable to parse "+fileName, ".json, error:", err)
-		return nil, fmt.Errorf("invalid theme format for `%s`", themeName)
-	}
-	return &theme, nil
+	return theme, nil
 }
 
 // String returns a string representation of the theme.
