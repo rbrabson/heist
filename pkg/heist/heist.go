@@ -56,7 +56,7 @@ func heistChecks(server *Server, i *discordgo.InteractionCreate, player *Player,
 			return msg, false
 		}
 
-		msg := p.Sprintf("Looks like your %s is over, but you're still in %s! Get released released by typing `/player release`.", theme.Sentence, theme.Jail)
+		msg := p.Sprintf("Looks like your %s is over, but you're still in %s! Get released released by typing `/release`.", theme.Sentence, theme.Jail)
 		return msg, false
 	}
 	if player.Status == DEAD {
@@ -65,7 +65,7 @@ func heistChecks(server *Server, i *discordgo.InteractionCreate, player *Player,
 			msg := p.Sprintf("You are dead. You will revive in %s", fmtDuration(remainingTime))
 			return msg, false
 		}
-		msg := "Looks like you are still dead, but you can revive at anytime by using the command `/player revive`."
+		msg := "Looks like you are still dead, but you can revive at anytime by using the command `/revive`."
 		return msg, false
 	}
 	account := bank.GetAccount(player.ID, player.Name)

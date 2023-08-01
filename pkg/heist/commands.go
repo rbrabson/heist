@@ -1031,7 +1031,7 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	if player.Status == APPREHENDED && player.JailTimer.Before(time.Now()) {
-		sendEphemeralResponse(s, i, "You have already served your sentence. Use `/player release` to be released from jail.")
+		sendEphemeralResponse(s, i, "You have already served your sentence. Use `/release` to be released from jail.")
 		return
 	}
 	if account.Balance < int(player.BailCost) {
