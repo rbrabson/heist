@@ -1376,7 +1376,7 @@ func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	player.Reset()
-	sendEphemeralResponse(s, i, "Player \""+player.Name+"\"'s settings cleared.")
+	sendNonephemeralResponse(s, i, "Player \""+player.Name+"\"'s settings cleared.")
 
 	store.SaveHeistState(server)
 }
