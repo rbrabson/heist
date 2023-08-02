@@ -15,7 +15,7 @@ type fileStore struct {
 }
 
 // newFileStore creates a new file Store.
-func newFileStore() Store {
+func newFileStore() StoreInterface {
 	dir := os.Getenv("HEIST_FILE_STORE_DIR")
 	f := &fileStore{
 		dir: dir,

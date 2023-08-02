@@ -12,8 +12,7 @@ const (
 )
 
 var (
-	bankStore store.Store
-	banks     map[string]*Bank
+	banks map[string]*Bank
 )
 
 // BankStore defines the methods required to load and save the economy state.
@@ -103,21 +102,20 @@ func WithdrawCredits(bank *Bank, account *Account, amount int) error {
 // LoadBanks returns all the banks for the given guilds.
 func LoadBanks() {
 	banks = make(map[string]*Bank)
-	bankIDs := bankStore.ListDocuments(ECONOMY)
+	bankIDs := store.Store.ListDocuments(ECONOMY)
 	for _, bankID := range bankIDs {
 		var bank Bank
-		bankStore.Load(ECONOMY, bankID, &bank)
+		store.Store.Load(ECONOMY, bankID, &bank)
 		banks[bank.ID] = &bank
 	}
 }
 
 // SaveBank saves the bank.
 func SaveBank(bank *Bank) {
-	bankStore.Save(ECONOMY, bank.ID, bank)
+	store.Store.Save(ECONOMY, bank.ID, bank)
 }
 
 // Start intializes the economy.
 func Start() {
-	bankStore = store.NewStore()
 	LoadBanks()
 }

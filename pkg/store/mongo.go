@@ -23,7 +23,7 @@ type mongodb struct {
 }
 
 // newMongoStore creates a Store to load and save documents in a MongoDB database.
-func newMongoStore() Store {
+func newMongoStore() StoreInterface {
 	godotenv.Load()
 
 	uri := os.Getenv("MONGODB_URI")

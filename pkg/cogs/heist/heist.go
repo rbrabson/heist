@@ -268,6 +268,8 @@ func getTarget(heist *Heist, targets map[string]*Target) *Target {
 	return target
 }
 
+// vaultUpdater updates the vault periodically so each vault will, over time, recover its credits after being
+// hit by a raid.
 func vaultUpdater() {
 	const timer = time.Duration(120 * time.Second)
 	time.Sleep(20 * time.Second)

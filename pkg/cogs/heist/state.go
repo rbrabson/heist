@@ -176,7 +176,7 @@ func GetServer(servers map[string]*Server, guildID string) *Server {
 }
 
 // LoadServers loads all the heist servers from the store.
-func LoadServers(heistStore store.Store) map[string]*Server {
+func LoadServers(heistStore store.StoreInterface) map[string]*Server {
 	servers := make(map[string]*Server)
 	serverIDs := heistStore.ListDocuments(HEIST)
 	for _, serverID := range serverIDs {

@@ -32,10 +32,8 @@ const (
 )
 
 var (
-	servers    map[string]*Server
-	themes     map[string]*Theme
-	heistStore store.Store
-	appID      string
+	servers map[string]*Server
+	themes  map[string]*Theme
 )
 
 // componentHandlers are the buttons that appear on messages sent by this bot.
@@ -611,7 +609,7 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	server.Heist.Timer = newWaitTimer(s, i, time.Until(server.Heist.StartTime), startHeist)
 
-	heistStore.Save(HEIST, server.ID, server)
+	store.Store.Save(HEIST, server.ID, server)
 }
 
 // joinHeist attempts to join a heist that is being planned
@@ -657,7 +655,7 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	msg := p.Sprintf("You have joined the %s at a cost of %d credits.", theme.Heist, server.Config.HeistCost)
 	discmsg.SendEphemeralResponse(s, i, msg)
 
-	heistStore.Save(HEIST, server.ID, server)
+	store.Store.Save(HEIST, server.ID, server)
 }
 
 // leaveHeist attempts to leave a heist previously joined
@@ -693,7 +691,7 @@ func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		log.Error("Unable to update the heist message, error:", err)
 	}
 
-	heistStore.Save(HEIST, server.ID, server)
+	store.Store.Save(HEIST, server.ID, server)
 }
 
 // cancelHeist cancels a heist that is being planned but has not yet started
@@ -725,7 +723,7 @@ func cancelHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	discmsg.SendEphemeralResponse(s, i, "The "+theme.Heist+" has been cancelled.")
 
-	heistStore.Save(HEIST, server.ID, server)
+	store.Store.Save(HEIST, server.ID, server)
 }
 
 // startHeist is called once the wait time for planning the heist completes
@@ -820,7 +818,7 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// Update the heist status information
 	server.Config.AlertTime = time.Now().Add(server.Config.PoliceAlert)
 	server.Heist = nil
-	heistStore.Save(HEIST, server.ID, server)
+	store.Store.Save(HEIST, server.ID, server)
 }
 
 // playerStats shows a player's heist stats
@@ -973,7 +971,7 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	economy.WithdrawCredits(bank, account, int(player.BailCost))
 	economy.SaveBank(bank)
 	player.OOB = true
-	heistStore.Save(HEIST, server.ID, server)
+	store.Store.Save(HEIST, server.ID, server)
 
 	var msg string
 	if player.ID == initiatingPlayer.ID {
@@ -999,7 +997,7 @@ func releasePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if player.Status != APPREHENDED || player.OOB {
 		if player.OOB && player.JailTimer.Before(time.Now()) {
 			player.ClearJailAndDeathStatus()
-			heistStore.Save(HEIST, server.ID, server)
+			store.Store.Save(HEIST, server.ID, server)
 			discmsg.SendEphemeralResponse(s, i, "You are no longer on probation! 3x penalty removed.")
 			return
 		}
@@ -1019,7 +1017,7 @@ func releasePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	player.ClearJailAndDeathStatus()
-	heistStore.Save(HEIST, server.ID, server)
+	store.Store.Save(HEIST, server.ID, server)
 
 	discmsg.SendEphemeralResponse(s, i, msg)
 }
@@ -1046,7 +1044,7 @@ func revivePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	player.ClearJailAndDeathStatus()
-	heistStore.Save(HEIST, server.ID, server)
+	store.Store.Save(HEIST, server.ID, server)
 
 	discmsg.SendEphemeralResponse(s, i, "You have risen from the dead!")
 }
@@ -1079,7 +1077,7 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		discmsg.SendNonephemeralResponse(s, i, "The "+theme.Heist+" has been reset.")
 	}
 
-	heistStore.Save(HEIST, server.ID, server)
+	store.Store.Save(HEIST, server.ID, server)
 }
 
 // addTarget adds a target for heists
@@ -1134,7 +1132,7 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	discmsg.SendNonephemeralResponse(s, i, "You have added target "+target.ID+" to the new heist.")
 
-	heistStore.Save(HEIST, server.ID, server)
+	store.Store.Save(HEIST, server.ID, server)
 }
 
 // editTarget edits the target information.
@@ -1188,7 +1186,7 @@ func editTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	discmsg.SendNonephemeralResponse(s, i, "Target \""+id+"\" updated.")
 
-	heistStore.Save(HEIST, server.ID, server)
+	store.Store.Save(HEIST, server.ID, server)
 }
 
 // removeTarget deletes a target.
@@ -1280,7 +1278,7 @@ func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	player.Reset()
 	discmsg.SendNonephemeralResponse(s, i, "Player \""+player.Name+"\"'s settings cleared.")
 
-	heistStore.Save(HEIST, server.ID, server)
+	store.Store.Save(HEIST, server.ID, server)
 }
 
 // listThemes returns the list of available themes that may be used for heists
@@ -1359,7 +1357,7 @@ func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	discmsg.SendNonephemeralResponse(s, i, "Theme "+themeName+" is now being used.")
 
-	heistStore.Save(HEIST, server.ID, server)
+	store.Store.Save(HEIST, server.ID, server)
 }
 
 // configCost sets the cost to plan or join a heist
@@ -1375,7 +1373,7 @@ func configCost(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	discmsg.SendNonephemeralResponse(s, i, p.Sprintf("Cost set to %d", cost))
 
-	heistStore.Save(HEIST, server.ID, server)
+	store.Store.Save(HEIST, server.ID, server)
 }
 
 // configSentence sets the base aprehension time when a player is apprehended.
@@ -1391,7 +1389,7 @@ func configSentence(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	discmsg.SendNonephemeralResponse(s, i, p.Sprintf("Sentence set to %d", sentence))
 
-	heistStore.Save(HEIST, server.ID, server)
+	store.Store.Save(HEIST, server.ID, server)
 }
 
 // configPatrol sets the time authorities will prevent a new heist following one being completed.
@@ -1407,7 +1405,7 @@ func configPatrol(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	discmsg.SendNonephemeralResponse(s, i, p.Sprintf("Patrol set to %d", patrol))
 
-	heistStore.Save(HEIST, server.ID, server)
+	store.Store.Save(HEIST, server.ID, server)
 }
 
 // configBail sets the base cost of bail.
@@ -1423,7 +1421,7 @@ func configBail(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	discmsg.SendNonephemeralResponse(s, i, p.Sprintf("Bail set to %d", bail))
 
-	heistStore.Save(HEIST, server.ID, server)
+	store.Store.Save(HEIST, server.ID, server)
 }
 
 // configDeath sets how long players remain dead.
@@ -1439,7 +1437,7 @@ func configDeath(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	discmsg.SendNonephemeralResponse(s, i, p.Sprintf("Death set to %d", death))
 
-	heistStore.Save(HEIST, server.ID, server)
+	store.Store.Save(HEIST, server.ID, server)
 }
 
 // configWait sets how long players wait for others to join the heist.
@@ -1455,7 +1453,7 @@ func configWait(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	discmsg.SendNonephemeralResponse(s, i, p.Sprintf("Wait set to %d", wait))
 
-	heistStore.Save(HEIST, server.ID, server)
+	store.Store.Save(HEIST, server.ID, server)
 }
 
 // configPayday sets how many credits a player gets for a playday. This is kinda a hack as
@@ -1472,7 +1470,7 @@ func configPayday(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	discmsg.SendNonephemeralResponse(s, i, p.Sprintf("Payday is set to %d", amount))
 
-	heistStore.Save(HEIST, server.ID, server)
+	store.Store.Save(HEIST, server.ID, server)
 }
 
 // configInfo returns the configuration for the Heist bot on this server.
@@ -1558,16 +1556,15 @@ func version(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	discmsg.SendEphemeralResponse(s, i, "You are running Heist version "+server.Config.Version+".")
 }
 
+// Start initializes anything needed by the heist bot.
 func Start(s *discordgo.Session) {
+	servers = LoadServers(store.Store)
+	themes = LoadThemes(store.Store)
 
+	go vaultUpdater()
 }
 
 // GetCommands returns the component handlers, command handlers, and commands for the Heist bot.
 func GetCommands() (map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate), map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate), []*discordgo.ApplicationCommand) {
-	// Do a bit of initialization
-	heistStore = store.NewStore()
-	servers = LoadServers(heistStore)
-	themes = LoadThemes(heistStore)
-
 	return componentHandlers, commandHandlers, commands
 }
