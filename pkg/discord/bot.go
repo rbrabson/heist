@@ -5,10 +5,10 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
+	"github.com/rbrabson/heist/pkg/cogs/heist"
+	"github.com/rbrabson/heist/pkg/cogs/payday"
+	"github.com/rbrabson/heist/pkg/cogs/remind"
 	"github.com/rbrabson/heist/pkg/economy"
-	"github.com/rbrabson/heist/pkg/heist"
-	"github.com/rbrabson/heist/pkg/payday"
-	"github.com/rbrabson/heist/pkg/remind"
 	log "github.com/sirupsen/logrus"
 )
 

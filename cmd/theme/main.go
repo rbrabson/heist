@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
-	"github.com/rbrabson/heist/pkg/heist"
+	"github.com/rbrabson/heist/pkg/cogs/heist"
 	log "github.com/sirupsen/logrus"
 )
 
