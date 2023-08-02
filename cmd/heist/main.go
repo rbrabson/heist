@@ -6,14 +6,14 @@ import (
 	"syscall"
 
 	"github.com/joho/godotenv"
-	"github.com/rbrabson/heist/pkg/heist"
+	"github.com/rbrabson/heist/pkg/discord"
 	log "github.com/sirupsen/logrus"
 )
 
 func main() {
 	godotenv.Load()
 
-	bot := heist.NewBot()
+	bot := discord.NewBot()
 	err := bot.Session.Open()
 	if err != nil {
 		log.Fatal(err)

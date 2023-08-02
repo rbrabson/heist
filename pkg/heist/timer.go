@@ -31,6 +31,17 @@ func newWaitTimer(s *discordgo.Session, i *discordgo.InteractionCreate, waitTime
 	return &t
 }
 
+type number interface {
+	int | int32 | int64 | float32 | float64 | time.Duration
+}
+
+func min[N number](v1 N, v2 N) N {
+	if v1 < v2 {
+		return v1
+	}
+	return v2
+}
+
 // start starts the wait timer. Once it expires, `methodToCall` is called. The timer
 // can be cancelled by calling `canel()`.
 func (t *waitTimer) start() {

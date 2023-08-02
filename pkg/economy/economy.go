@@ -9,6 +9,7 @@ import (
 
 var (
 	store bankStore
+	banks map[string]*Bank
 )
 
 func init() {
@@ -46,7 +47,7 @@ func NewBank(serverID string) *Bank {
 }
 
 // GetBank returns the bank for the server/guild.
-func GetBank(banks map[string]*Bank, serverID string) *Bank {
+func GetBank(serverID string) *Bank {
 	bank, ok := banks[serverID]
 	if !ok {
 		bank = NewBank(serverID)
@@ -94,8 +95,8 @@ func WithdrawCredits(bank *Bank, account *Account, amount int) error {
 }
 
 // LoadBanks returns all the banks for the given guilds.
-func LoadBanks() map[string]*Bank {
-	return store.loadBanks()
+func LoadBanks() {
+	banks = store.loadBanks()
 }
 
 // SaveBank saves the bank.

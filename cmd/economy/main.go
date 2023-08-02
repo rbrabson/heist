@@ -2,24 +2,19 @@
 
 package main
 
-import (
-	"fmt"
-
-	"github.com/joho/godotenv"
-	"github.com/rbrabson/heist/pkg/economy"
-)
-
 type OldEconomy interface{}
 
 func main() {
-	godotenv.Load()
-	banks := economy.LoadBanks()
-	fmt.Println("Number of banks:", len(banks))
-	for _, bank := range banks {
-		fmt.Printf("Bank %s has %d accounts\n", bank.ID, len(bank.Accounts))
-		account := bank.Accounts["149670432331661312"]
-		fmt.Printf("%s's account has %d %s\n", account.Name, account.Balance, bank.Currency)
-	}
+	/*
+		godotenv.Load()
+		economy.LoadBanks()
+		fmt.Println("Number of banks:", len(banks))
+		for _, bank := range banks {
+			fmt.Printf("Bank %s has %d accounts\n", bank.ID, len(bank.Accounts))
+			account := bank.Accounts["149670432331661312"]
+			fmt.Printf("%s's account has %d %s\n", account.Name, account.Balance, bank.Currency)
+		}
+	*/
 
 	/*
 		oldFilename := "./store/economy/old_economy.json"

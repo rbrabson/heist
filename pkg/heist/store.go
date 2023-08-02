@@ -265,7 +265,7 @@ func (m *mongodb) LoadHeistStates() map[string]*Server {
 		log.Error("Failed to create the heist collection, error:", err)
 		return servers
 	}
-	// defer heistCollection.Drop(ctx)
+	// defer heistCollection.Drop(ctx) // Use this if you want to get rid of the collection once done
 	log.Debug("Collection:", heistCollection.Name())
 
 	cur, err := heistCollection.Find(ctx, bson.D{{}})

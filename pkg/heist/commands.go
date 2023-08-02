@@ -5,7 +5,6 @@ package heist
 
 import (
 	"fmt"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -19,6 +18,8 @@ import (
 
 	"github.com/rbrabson/heist/pkg/checks"
 	"github.com/rbrabson/heist/pkg/economy"
+	discmsg "github.com/rbrabson/heist/pkg/msg"
+	"github.com/rbrabson/heist/pkg/payday"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/bwmarrin/discordgo"
@@ -28,14 +29,12 @@ import (
 var (
 	servers map[string]*Server
 	themes  map[string]*Theme
-	banks   map[string]*economy.Bank
 	store   Store
-	appID   string
 )
 
 // componentHandlers are the buttons that appear on messages sent by this bot.
 var (
-	componentsHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+	componentHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"cancel_heist": cancelHeist,
 		"join_heist":   joinHeist,
 		"leave_heist":  leaveHeist,
@@ -45,7 +44,6 @@ var (
 		"config":  config,
 		"start":   planHeist,
 		"bail":    bailoutPlayer,
-		"payday":  payday,
 		"revive":  revivePlayer,
 		"release": releasePlayer,
 		"stats":   playerStats,
@@ -180,10 +178,6 @@ var (
 					Required:    false,
 				},
 			},
-		},
-		{
-			Name:        "payday",
-			Description: "Deposits your daily check into your bank account",
 		},
 		{
 			Name:        "revive",
@@ -471,39 +465,6 @@ func fmtDuration(d time.Duration) string {
 
 /******** MESSAGE UTILITIES ********/
 
-// sendEphemeralResponse is a utility routine used to send an ephemeral response to a user's message or button press.
-func sendNonephemeralResponse(s *discordgo.Session, i *discordgo.InteractionCreate, msg string) {
-	log.Debug("--> sendNonephemeralResponse")
-	defer log.Debug("<-- sendNonephemeralResponse")
-
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: msg,
-		},
-	})
-	if err != nil {
-		log.Error("Unable to send a response, error:", err)
-	}
-}
-
-// sendEphemeralResponse is a utility routine used to send an ephemeral response to a user's message or button press.
-func sendEphemeralResponse(s *discordgo.Session, i *discordgo.InteractionCreate, msg string) {
-	log.Debug("--> sendEphemeralResponse")
-	defer log.Debug("<-- sendEphemeralResponse")
-
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: msg,
-			Flags:   discordgo.MessageFlagsEphemeral,
-		},
-	})
-	if err != nil {
-		log.Error("Unable to send a response, error:", err)
-	}
-}
-
 // heistMessage sends the main command used to plan, join and leave a heist. It also handles the case where
 // the heist starts, disabling the buttons to join/leave/cancel the heist.
 func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action string) error {
@@ -614,7 +575,7 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	// Heist is already in progress
 	if server.Heist != nil {
-		sendEphemeralResponse(s, i, "A "+theme.Heist+" is already being planned.")
+		discmsg.SendEphemeralResponse(s, i, "A "+theme.Heist+" is already being planned.")
 		return
 	}
 
@@ -622,13 +583,13 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	// Basic error checks for the heist
 	if msg, ok := heistChecks(server, i, player, server.Targets); !ok {
-		sendEphemeralResponse(s, i, msg)
+		discmsg.SendEphemeralResponse(s, i, msg)
 		return
 	}
 
 	// Withdraw the cost of the heist from the player's account. We know the player already
 	// as the required number of credits as this is verified in `heistChecks`.
-	bank := economy.GetBank(banks, server.ID)
+	bank := economy.GetBank(server.ID)
 	account := bank.GetAccount(player.ID, player.Name)
 	economy.WithdrawCredits(bank, account, int(server.Config.HeistCost))
 	economy.SaveBank(bank)
@@ -657,20 +618,20 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server := GetServer(servers, i.GuildID)
 	theme := themes[server.Config.Theme]
 	if server.Heist == nil {
-		sendEphemeralResponse(s, i, "No "+theme.Heist+" is planned.")
+		discmsg.SendEphemeralResponse(s, i, "No "+theme.Heist+" is planned.")
 		return
 	}
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 	if contains(server.Heist.Crew, player.ID) {
-		sendEphemeralResponse(s, i, "You are already a member of the "+theme.Heist+".")
+		discmsg.SendEphemeralResponse(s, i, "You are already a member of the "+theme.Heist+".")
 		return
 	}
 	if msg, ok := heistChecks(server, i, player, server.Targets); !ok {
-		sendEphemeralResponse(s, i, msg)
+		discmsg.SendEphemeralResponse(s, i, msg)
 		return
 	}
 	if server.Heist.Started {
-		sendEphemeralResponse(s, i, "The heist has already been started")
+		discmsg.SendEphemeralResponse(s, i, "The heist has already been started")
 		return
 	}
 
@@ -682,13 +643,13 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	// Withdraw the cost of the heist from the player's account. We know the player already
 	// as the required number of credits as this is verified in `heistChecks`.
-	bank := economy.GetBank(banks, server.ID)
+	bank := economy.GetBank(server.ID)
 	account := bank.GetAccount(player.ID, player.Name)
 	economy.WithdrawCredits(bank, account, int(server.Config.HeistCost))
 	economy.SaveBank(bank)
 
 	msg := p.Sprintf("You have joined the %s at a cost of %d credits.", theme.Heist, server.Config.HeistCost)
-	sendEphemeralResponse(s, i, msg)
+	discmsg.SendEphemeralResponse(s, i, msg)
 
 	store.SaveHeistState(server)
 }
@@ -702,22 +663,22 @@ func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	theme := themes[server.Config.Theme]
 	if server.Heist == nil {
 		log.Error("There should be a heist, server:", server.ID, ", heist:", server.Heist)
-		sendEphemeralResponse(s, i, "No "+theme.Heist+" is planned.")
+		discmsg.SendEphemeralResponse(s, i, "No "+theme.Heist+" is planned.")
 		return
 	}
 
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 
 	if server.Heist.Planner == player.ID {
-		sendEphemeralResponse(s, i, "You can't leave the "+theme.Heist+", as you are the planner.")
+		discmsg.SendEphemeralResponse(s, i, "You can't leave the "+theme.Heist+", as you are the planner.")
 		return
 	}
 	if !contains(server.Heist.Crew, player.ID) {
-		sendEphemeralResponse(s, i, "You aren't a member of the "+theme.Heist+".")
+		discmsg.SendEphemeralResponse(s, i, "You aren't a member of the "+theme.Heist+".")
 		return
 	}
 
-	sendEphemeralResponse(s, i, "You have left the "+theme.Heist+".")
+	discmsg.SendEphemeralResponse(s, i, "You have left the "+theme.Heist+".")
 	server.Heist.Crew = remove(server.Heist.Crew, player.ID)
 
 	err := heistMessage(s, server.Heist.Interaction, "leave")
@@ -737,15 +698,15 @@ func cancelHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server := GetServer(servers, i.GuildID)
 	theme := themes[server.Config.Theme]
 	if server.Heist == nil {
-		sendEphemeralResponse(s, i, "No "+theme.Heist+" is planned.")
+		discmsg.SendEphemeralResponse(s, i, "No "+theme.Heist+" is planned.")
 		return
 	}
 	if i.Member.User.ID != server.Heist.Planner {
-		sendEphemeralResponse(s, i, "You cannot cancel the "+theme.Heist+" as you are not the planner.")
+		discmsg.SendEphemeralResponse(s, i, "You cannot cancel the "+theme.Heist+" as you are not the planner.")
 		return
 	}
 	if server.Heist.Started {
-		sendEphemeralResponse(s, i, "The "+theme.Heist+" has already started and can't be cancelled.")
+		discmsg.SendEphemeralResponse(s, i, "The "+theme.Heist+" has already started and can't be cancelled.")
 		return
 	}
 
@@ -756,7 +717,7 @@ func cancelHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server.Heist.Timer.cancel()
 	server.Heist = nil
 
-	sendEphemeralResponse(s, i, "The "+theme.Heist+" has been cancelled.")
+	discmsg.SendEphemeralResponse(s, i, "The "+theme.Heist+" has been cancelled.")
 
 	store.SaveHeistState(server)
 }
@@ -770,14 +731,14 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	server := GetServer(servers, i.GuildID)
 	theme := themes[server.Config.Theme]
-	bank := economy.GetBank(banks, server.ID)
+	bank := economy.GetBank(server.ID)
 	if server.Heist == nil {
 		s.ChannelMessageSend(i.ChannelID, "Error: no heist found.")
 		heistMessage(s, i, "cancel")
 		return
 	}
 	if len(server.Targets) == 1 {
-		sendEphemeralResponse(s, i, "There are no heist targets. Add one using the `/target add` command.")
+		discmsg.SendEphemeralResponse(s, i, "There are no heist targets. Add one using the `/target add` command.")
 		server.Heist = nil
 		return
 	}
@@ -831,43 +792,6 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 		table.Render()
 		s.ChannelMessageSend(i.ChannelID, "```\n"+tableBuffer.String()+"```")
-
-		/*
-			embeds := make([]*discordgo.MessageEmbed, 0, len(results.survivingCrew)+1)
-			for _, result := range results.survivingCrew {
-				embed := discordgo.MessageEmbed{
-					Fields: []*discordgo.MessageEmbedField{
-						{
-							Name:   "Player",
-							Value:  result.player.Name,
-							Inline: true,
-						},
-						{
-							Name:   "Credits",
-							Value:  p.Sprintf("%d"(result.stolenCredits + result.bonusCredits),
-							Inline: true,
-						},
-					},
-				}
-				embeds = append(embeds, &embed)
-				log.WithFields(log.Fields{
-					"Player":           result.player.Name,
-					"Credits Obtained": result.stolenCredits,
-					"Bonus":            result.bonusCredits,
-					"Total":            result.stolenCredits + result.bonusCredits,
-				}).Debug("Result")
-			}
-
-			data := &discordgo.MessageSend{
-				Content: "**Heist Payout**",
-				Embeds:  embeds,
-			}
-			_, err = s.ChannelMessageSendComplex(i.ChannelID, data)
-			if err != nil {
-				log.Error("Failed to send heist resuilts, error:", err)
-			}
-
-		*/
 	}
 
 	// Update the status for each player and then save the information
@@ -905,7 +829,7 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	p := getPrinter(i)
 
-	bank := economy.GetBank(banks, server.ID)
+	bank := economy.GetBank(server.ID)
 	account := bank.GetAccount(player.ID, player.Name)
 
 	var sentence string
@@ -1005,7 +929,7 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	server := GetServer(servers, i.GuildID)
 	initiatingPlayer := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
-	bank := economy.GetBank(banks, server.ID)
+	bank := economy.GetBank(server.ID)
 	account := bank.GetAccount(initiatingPlayer.ID, initiatingPlayer.Name)
 
 	var player *Player
@@ -1013,7 +937,7 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		var ok bool
 		player, ok = server.Players[playerID]
 		if !ok {
-			sendEphemeralResponse(s, i, "Player "+playerID+" does not exist.")
+			discmsg.SendEphemeralResponse(s, i, "Player "+playerID+" does not exist.")
 			return
 		}
 	} else {
@@ -1027,16 +951,16 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		} else {
 			msg = p.Sprintf("%s is not in jail", player.Name)
 		}
-		sendEphemeralResponse(s, i, msg)
+		discmsg.SendEphemeralResponse(s, i, msg)
 		return
 	}
 	if player.Status == APPREHENDED && player.JailTimer.Before(time.Now()) {
-		sendEphemeralResponse(s, i, "You have already served your sentence. Use `/release` to be released from jail.")
+		discmsg.SendEphemeralResponse(s, i, "You have already served your sentence. Use `/release` to be released from jail.")
 		return
 	}
 	if account.Balance < int(player.BailCost) {
 		msg := p.Sprintf("You do not have enough credits to play the bail of %d", player.BailCost)
-		sendEphemeralResponse(s, i, msg)
+		discmsg.SendEphemeralResponse(s, i, msg)
 		return
 	}
 
@@ -1048,10 +972,10 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	var msg string
 	if player.ID == initiatingPlayer.ID {
 		msg = "Congratulations, you are now free! Enjoy your freedom while it lasts."
-		sendEphemeralResponse(s, i, msg)
+		discmsg.SendEphemeralResponse(s, i, msg)
 	} else {
 		msg = p.Sprintf("Congratulations, %s, %s bailed you out and now you are free!. Enjoy your freedom while it lasts.", player.Name, initiatingPlayer.Name)
-		sendNonephemeralResponse(s, i, msg)
+		discmsg.SendNonephemeralResponse(s, i, msg)
 	}
 }
 
@@ -1070,16 +994,16 @@ func releasePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if player.OOB && player.JailTimer.Before(time.Now()) {
 			player.ClearJailAndDeathStatus()
 			store.SaveHeistState(server)
-			sendEphemeralResponse(s, i, "You are no longer on probation! 3x penalty removed.")
+			discmsg.SendEphemeralResponse(s, i, "You are no longer on probation! 3x penalty removed.")
 			return
 		}
-		sendEphemeralResponse(s, i, "I can't remove you from jail if you're not *in* jail")
+		discmsg.SendEphemeralResponse(s, i, "I can't remove you from jail if you're not *in* jail")
 		return
 	}
 	if player.JailTimer.After(time.Now()) {
 		remainingTime := time.Until(player.JailTimer)
 		msg := p.Sprintf("You still have time on your %s, you still need to wait %s.", theme.Sentence, fmtDuration(remainingTime))
-		sendEphemeralResponse(s, i, msg)
+		discmsg.SendEphemeralResponse(s, i, msg)
 		return
 	}
 
@@ -1091,7 +1015,7 @@ func releasePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	player.ClearJailAndDeathStatus()
 	store.SaveHeistState(server)
 
-	sendEphemeralResponse(s, i, msg)
+	discmsg.SendEphemeralResponse(s, i, msg)
 }
 
 // revivePlayer raises a player from the dead if their death timer has expired.
@@ -1105,48 +1029,20 @@ func revivePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 
 	if player.Status != DEAD {
-		sendEphemeralResponse(s, i, "You still have a pulse. I can't reive someone who isn't dead.")
+		discmsg.SendEphemeralResponse(s, i, "You still have a pulse. I can't reive someone who isn't dead.")
 		return
 	}
 	if player.DeathTimer.After(time.Now()) {
 		remainingTime := time.Until(player.DeathTimer)
 		msg := p.Sprintf("You can't revive yet. You need to wait %s", fmtDuration(remainingTime))
-		sendEphemeralResponse(s, i, msg)
+		discmsg.SendEphemeralResponse(s, i, msg)
 		return
 	}
 
 	player.ClearJailAndDeathStatus()
 	store.SaveHeistState(server)
 
-	sendEphemeralResponse(s, i, "You have risen from the dead!")
-}
-
-// payday gives some credits to the player every 24 hours.
-func payday(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> payday")
-	defer log.Debug("<-- payday")
-
-	p := getPrinter(i)
-
-	server := GetServer(servers, i.GuildID)
-	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
-
-	if player.PaydayTimer.After(time.Now()) {
-		remainingTime := time.Until(player.PaydayTimer)
-		msg := p.Sprintf("You can't get another payday yet. You need to wait %s.", fmtDuration(remainingTime))
-		sendEphemeralResponse(s, i, msg)
-		return
-	}
-
-	bank := economy.GetBank(banks, server.ID)
-	account := bank.GetAccount(player.ID, player.Name)
-	economy.DepositCredits(bank, account, int(server.Config.PaydayAmount))
-	player.PaydayTimer = time.Now().Add(24 * time.Hour)
-	economy.SaveBank(bank)
-	store.SaveHeistState(server)
-
-	msg := p.Sprintf("You deposited your check of %d into your bank account. You now have %d credits.", server.Config.PaydayAmount, account.Balance)
-	sendEphemeralResponse(s, i, msg)
+	discmsg.SendEphemeralResponse(s, i, "You have risen from the dead!")
 }
 
 /******** ADMIN COMMANDS ********/
@@ -1157,13 +1053,13 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Debug("<-- resetHeist")
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
-		sendEphemeralResponse(s, i, "You are not allowed to use this command.")
+		discmsg.SendEphemeralResponse(s, i, "You are not allowed to use this command.")
 		return
 	}
 	server := GetServer(servers, i.GuildID)
 	theme := themes[server.Config.Theme]
 	if server.Heist == nil || !server.Heist.Planned {
-		sendEphemeralResponse(s, i, "No "+theme.Heist+" is being planned.")
+		discmsg.SendEphemeralResponse(s, i, "No "+theme.Heist+" is being planned.")
 		return
 	}
 
@@ -1174,7 +1070,7 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server.Heist = nil
 
 	if server.Heist == nil || !server.Heist.Planned {
-		sendNonephemeralResponse(s, i, "The "+theme.Heist+" has been reset.")
+		discmsg.SendNonephemeralResponse(s, i, "The "+theme.Heist+" has been reset.")
 	}
 
 	store.SaveHeistState(server)
@@ -1186,7 +1082,7 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Debug("<-- addTarget")
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
-		sendEphemeralResponse(s, i, "You are not allowed to use this command.")
+		discmsg.SendEphemeralResponse(s, i, "You are not allowed to use this command.")
 		return
 	}
 
@@ -1216,12 +1112,12 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	_, ok := server.Targets[id]
 	if ok {
-		sendEphemeralResponse(s, i, "Target \""+id+"\" already exists.")
+		discmsg.SendEphemeralResponse(s, i, "Target \""+id+"\" already exists.")
 		return
 	}
 	for _, target := range server.Targets {
 		if target.CrewSize == crewSize {
-			sendEphemeralResponse(s, i, "Target \""+target.ID+"\" has the same max crew size.")
+			discmsg.SendEphemeralResponse(s, i, "Target \""+target.ID+"\" has the same max crew size.")
 			return
 		}
 
@@ -1230,7 +1126,7 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	target := NewTarget(id, crewSize, success, vaultCurrent, vaultMax)
 	server.Targets[target.ID] = target
 
-	sendNonephemeralResponse(s, i, "You have added target "+target.ID+" to the new heist.")
+	discmsg.SendNonephemeralResponse(s, i, "You have added target "+target.ID+" to the new heist.")
 
 	store.SaveHeistState(server)
 }
@@ -1261,12 +1157,12 @@ func editTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server := GetServer(servers, i.GuildID)
 	target, ok := server.Targets[id]
 	if !ok {
-		sendEphemeralResponse(s, i, "Target \""+id+"\" not found.")
+		discmsg.SendEphemeralResponse(s, i, "Target \""+id+"\" not found.")
 		return
 	}
 	for _, t := range server.Targets {
 		if t.CrewSize == crew && t.ID != target.ID {
-			sendEphemeralResponse(s, i, "The crew size is not unique; target \""+id+"\" was not updated.")
+			discmsg.SendEphemeralResponse(s, i, "The crew size is not unique; target \""+id+"\" was not updated.")
 			return
 		}
 	}
@@ -1284,7 +1180,7 @@ func editTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		target.Success = success
 	}
 
-	sendNonephemeralResponse(s, i, "Target \""+id+"\" updated.")
+	discmsg.SendNonephemeralResponse(s, i, "Target \""+id+"\" updated.")
 
 	store.SaveHeistState(server)
 }
@@ -1295,7 +1191,7 @@ func removeTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Debug("<-- deleteTarget")
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
-		sendEphemeralResponse(s, i, "You are not allowed to use this command.")
+		discmsg.SendEphemeralResponse(s, i, "You are not allowed to use this command.")
 		return
 	}
 
@@ -1304,12 +1200,12 @@ func removeTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server := GetServer(servers, i.GuildID)
 	_, ok := server.Targets[targetID]
 	if !ok {
-		sendEphemeralResponse(s, i, "Target \""+targetID+"\" not found.")
+		discmsg.SendEphemeralResponse(s, i, "Target \""+targetID+"\" not found.")
 		return
 	}
 	delete(server.Targets, targetID)
 
-	sendNonephemeralResponse(s, i, "Target \""+targetID+"\" removed.")
+	discmsg.SendNonephemeralResponse(s, i, "Target \""+targetID+"\" removed.")
 
 	// Save the state
 }
@@ -1322,7 +1218,7 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	p := getPrinter(i)
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
-		sendEphemeralResponse(s, i, "You are not allowed to use this command.")
+		discmsg.SendEphemeralResponse(s, i, "You are not allowed to use this command.")
 		return
 	}
 
@@ -1331,7 +1227,7 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	if len(server.Targets) == 0 {
 		msg := "There aren't any targets! To create a target use `/target add`."
-		sendEphemeralResponse(s, i, msg)
+		discmsg.SendEphemeralResponse(s, i, msg)
 		return
 	}
 
@@ -1355,7 +1251,7 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	table.Render()
 
-	sendNonephemeralResponse(s, i, "```\n"+tableBuffer.String()+"\n```")
+	discmsg.SendNonephemeralResponse(s, i, "```\n"+tableBuffer.String()+"\n```")
 }
 
 // clearMember clears the criminal state of the player.
@@ -1364,7 +1260,7 @@ func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("<-- clearMember")
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
-		sendEphemeralResponse(s, i, "You are not allowed to use this command.")
+		discmsg.SendEphemeralResponse(s, i, "You are not allowed to use this command.")
 		return
 	}
 
@@ -1372,11 +1268,11 @@ func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server := GetServer(servers, i.GuildID)
 	player, ok := server.Players[memberID]
 	if !ok {
-		sendEphemeralResponse(s, i, "Player \""+memberID+"\" not found.")
+		discmsg.SendEphemeralResponse(s, i, "Player \""+memberID+"\" not found.")
 		return
 	}
 	player.Reset()
-	sendNonephemeralResponse(s, i, "Player \""+player.Name+"\"'s settings cleared.")
+	discmsg.SendNonephemeralResponse(s, i, "Player \""+player.Name+"\"'s settings cleared.")
 
 	store.SaveHeistState(server)
 }
@@ -1386,7 +1282,7 @@ func listThemes(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> listThemes")
 	defer log.Debug("<-- listThemes")
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
-		sendEphemeralResponse(s, i, "You are not allowed to use this command.")
+		discmsg.SendEphemeralResponse(s, i, "You are not allowed to use this command.")
 		return
 	}
 
@@ -1427,7 +1323,7 @@ func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Debug("<-- setTheme")
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
-		sendEphemeralResponse(s, i, "You are not allowed to use this command.")
+		discmsg.SendEphemeralResponse(s, i, "You are not allowed to use this command.")
 		return
 	}
 
@@ -1441,7 +1337,7 @@ func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	if themeName == server.Config.Theme {
-		sendEphemeralResponse(s, i, "Theme `"+themeName+"` is already being used.")
+		discmsg.SendEphemeralResponse(s, i, "Theme `"+themeName+"` is already being used.")
 		return
 	}
 	theme, err := LoadTheme(themeName)
@@ -1449,13 +1345,13 @@ func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		r := []rune(err.Error())
 		r[0] = unicode.ToUpper(r[0])
 		str := string(r)
-		sendEphemeralResponse(s, i, str)
+		discmsg.SendEphemeralResponse(s, i, str)
 		return
 	}
 	server.Config.Theme = theme.ID
 	log.Debug("Now using theme", server.Config.Theme)
 
-	sendNonephemeralResponse(s, i, "Theme "+themeName+" is now being used.")
+	discmsg.SendNonephemeralResponse(s, i, "Theme "+themeName+" is now being used.")
 
 	store.SaveHeistState(server)
 }
@@ -1471,7 +1367,7 @@ func configCost(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	cost := i.ApplicationCommandData().Options[0].Options[0].Options[0].IntValue()
 	server.Config.HeistCost = cost
 
-	sendNonephemeralResponse(s, i, p.Sprintf("Cost set to %d", cost))
+	discmsg.SendNonephemeralResponse(s, i, p.Sprintf("Cost set to %d", cost))
 
 	store.SaveHeistState(server)
 }
@@ -1487,7 +1383,7 @@ func configSentence(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	sentence := i.ApplicationCommandData().Options[0].Options[0].Options[0].IntValue()
 	server.Config.SentenceBase = time.Duration(sentence * int64(time.Second))
 
-	sendNonephemeralResponse(s, i, p.Sprintf("Sentence set to %d", sentence))
+	discmsg.SendNonephemeralResponse(s, i, p.Sprintf("Sentence set to %d", sentence))
 
 	store.SaveHeistState(server)
 }
@@ -1503,7 +1399,7 @@ func configPatrol(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	patrol := i.ApplicationCommandData().Options[0].Options[0].Options[0].IntValue()
 	server.Config.PoliceAlert = time.Duration(patrol * int64(time.Second))
 
-	sendNonephemeralResponse(s, i, p.Sprintf("Patrol set to %d", patrol))
+	discmsg.SendNonephemeralResponse(s, i, p.Sprintf("Patrol set to %d", patrol))
 
 	store.SaveHeistState(server)
 }
@@ -1519,7 +1415,7 @@ func configBail(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	bail := i.ApplicationCommandData().Options[0].Options[0].Options[0].IntValue()
 	server.Config.BailBase = bail
 
-	sendNonephemeralResponse(s, i, p.Sprintf("Bail set to %d", bail))
+	discmsg.SendNonephemeralResponse(s, i, p.Sprintf("Bail set to %d", bail))
 
 	store.SaveHeistState(server)
 }
@@ -1535,7 +1431,7 @@ func configDeath(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	death := i.ApplicationCommandData().Options[0].Options[0].Options[0].IntValue()
 	server.Config.PoliceAlert = time.Duration(death * int64(time.Second))
 
-	sendNonephemeralResponse(s, i, p.Sprintf("Death set to %d", death))
+	discmsg.SendNonephemeralResponse(s, i, p.Sprintf("Death set to %d", death))
 
 	store.SaveHeistState(server)
 }
@@ -1551,12 +1447,13 @@ func configWait(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	wait := i.ApplicationCommandData().Options[0].Options[0].Options[0].IntValue()
 	server.Config.WaitTime = time.Duration(wait * int64(time.Second))
 
-	sendNonephemeralResponse(s, i, p.Sprintf("Wait set to %d", wait))
+	discmsg.SendNonephemeralResponse(s, i, p.Sprintf("Wait set to %d", wait))
 
 	store.SaveHeistState(server)
 }
 
-// configPayday sets how many credits a player gets for a playday.
+// configPayday sets how many credits a player gets for a playday. This is kinda a hack as
+// the configuration is in heist and not in payday, which should one day be fixed.
 func configPayday(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> configPayday")
 	defer log.Debug("<-- configPayday")
@@ -1564,10 +1461,10 @@ func configPayday(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	p := getPrinter(i)
 
 	server := GetServer(servers, i.GuildID)
-	payday := i.ApplicationCommandData().Options[0].Options[0].Options[0].IntValue()
-	server.Config.PaydayAmount = payday
+	amount := i.ApplicationCommandData().Options[0].Options[0].Options[0].IntValue()
+	payday.PaydayAmount = int(amount)
 
-	sendNonephemeralResponse(s, i, p.Sprintf("Payday is set to %d", payday))
+	discmsg.SendNonephemeralResponse(s, i, p.Sprintf("Payday is set to %d", amount))
 
 	store.SaveHeistState(server)
 }
@@ -1580,7 +1477,7 @@ func configInfo(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	p := getPrinter(i)
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
-		sendEphemeralResponse(s, i, "You are not allowed to use this command.")
+		discmsg.SendEphemeralResponse(s, i, "You are not allowed to use this command.")
 		return
 	}
 
@@ -1610,7 +1507,7 @@ func configInfo(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			},
 			{
 				Name:   "payday",
-				Value:  p.Sprintf("%d", server.Config.PaydayAmount),
+				Value:  p.Sprintf("%d", payday.PaydayAmount),
 				Inline: true,
 			},
 			{
@@ -1647,53 +1544,24 @@ func version(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Debug("<-- version")
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
-		sendNonephemeralResponse(s, i, "You are not allowed to use this command.")
+		discmsg.SendNonephemeralResponse(s, i, "You are not allowed to use this command.")
 		return
 	}
 	server := GetServer(servers, i.GuildID)
 
-	sendEphemeralResponse(s, i, "You are running Heist version "+server.Config.Version+".")
+	discmsg.SendEphemeralResponse(s, i, "You are running Heist version "+server.Config.Version+".")
 }
 
-// addBotCommands adds all commands that may be issued from a given server.
-func addBotCommands(bot *Bot) {
-	log.Debug("adding bot commands")
+func Start(s *discordgo.Session) {
+	go vaultUpdater()
+}
 
-	appID = os.Getenv("APP_ID")
+// GetCommands returns the component handlers, command handlers, and commands for the Heist bot.
+func GetCommands() (map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate), map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate), []*discordgo.ApplicationCommand) {
+	// Do a bit of initialization
 	store = NewStore()
 	servers = LoadServers(store)
 	themes = LoadThemes(store)
-	banks = economy.LoadBanks()
 
-	bot.Session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
-		log.Info("Heist bot is up!")
-	})
-	bot.Session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		switch i.Type {
-		case discordgo.InteractionApplicationCommand:
-			if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
-				h(s, i)
-			}
-		case discordgo.InteractionMessageComponent:
-			if h, ok := componentsHandlers[i.MessageComponentData().CustomID]; ok {
-				h(s, i)
-			}
-		}
-	})
-
-	guildID := os.Getenv("HEIST_GUILD_ID")
-	/*
-		// Delete any old slash commands, and then add in my current set
-		log.Debug("Delete old commands")
-		_, err := bot.Session.ApplicationCommandBulkOverwrite(appID, guildID, nil)
-		if err != nil {
-			log.Fatal("Failed to delete all old commands, error:", err)
-		}
-	*/
-
-	log.Debug("Add new commands")
-	_, err := bot.Session.ApplicationCommandBulkOverwrite(appID, guildID, commands)
-	if err != nil {
-		log.Fatal("Failed to load new commands, error:", err)
-	}
+	return componentHandlers, commandHandlers, commands
 }

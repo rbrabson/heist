@@ -38,7 +38,7 @@ func heistChecks(server *Server, i *discordgo.InteractionCreate, player *Player,
 	p := getPrinter(i)
 
 	theme := themes[server.Config.Theme]
-	bank := economy.GetBank(banks, server.ID)
+	bank := economy.GetBank(server.ID)
 
 	if len(targets) == 0 {
 		msg := "Oh no! There are no targets!"
@@ -266,4 +266,18 @@ func getTarget(heist *Heist, targets map[string]*Target) *Target {
 		}
 	}
 	return target
+}
+
+func vaultUpdater() {
+	const timer = time.Duration(120 * time.Second)
+	time.Sleep(20 * time.Second)
+	for {
+		for _, server := range servers {
+			for _, target := range server.Targets {
+				vault := min(target.Vault+(target.VaultMax*4/100), target.VaultMax)
+				target.Vault = vault
+			}
+		}
+		time.Sleep(timer)
+	}
 }
