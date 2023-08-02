@@ -338,8 +338,8 @@ var (
 
 // config routes the configuration commands to the proper handlers.
 func config(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> config")
-	defer log.Debug("<-- config")
+	log.Info("--> config")
+	defer log.Info("<-- config")
 
 	options := i.ApplicationCommandData().Options
 	switch options[0].Name {
@@ -1370,7 +1370,7 @@ func configCost(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	p := getPrinter(i)
 
 	server := GetServer(servers, i.GuildID)
-	cost := i.ApplicationCommandData().Options[0].Options[0].Options[0].IntValue()
+	cost := i.ApplicationCommandData().Options[0].Options[0].IntValue()
 	server.Config.HeistCost = cost
 
 	discmsg.SendNonephemeralResponse(s, i, p.Sprintf("Cost set to %d", cost))
@@ -1386,7 +1386,7 @@ func configSentence(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	p := getPrinter(i)
 
 	server := GetServer(servers, i.GuildID)
-	sentence := i.ApplicationCommandData().Options[0].Options[0].Options[0].IntValue()
+	sentence := i.ApplicationCommandData().Options[0].Options[0].IntValue()
 	server.Config.SentenceBase = time.Duration(sentence * int64(time.Second))
 
 	discmsg.SendNonephemeralResponse(s, i, p.Sprintf("Sentence set to %d", sentence))
@@ -1402,7 +1402,7 @@ func configPatrol(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	p := getPrinter(i)
 
 	server := GetServer(servers, i.GuildID)
-	patrol := i.ApplicationCommandData().Options[0].Options[0].Options[0].IntValue()
+	patrol := i.ApplicationCommandData().Options[0].Options[0].IntValue()
 	server.Config.PoliceAlert = time.Duration(patrol * int64(time.Second))
 
 	discmsg.SendNonephemeralResponse(s, i, p.Sprintf("Patrol set to %d", patrol))
@@ -1418,7 +1418,7 @@ func configBail(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	p := getPrinter(i)
 
 	server := GetServer(servers, i.GuildID)
-	bail := i.ApplicationCommandData().Options[0].Options[0].Options[0].IntValue()
+	bail := i.ApplicationCommandData().Options[0].Options[0].IntValue()
 	server.Config.BailBase = bail
 
 	discmsg.SendNonephemeralResponse(s, i, p.Sprintf("Bail set to %d", bail))
@@ -1434,7 +1434,7 @@ func configDeath(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	p := getPrinter(i)
 
 	server := GetServer(servers, i.GuildID)
-	death := i.ApplicationCommandData().Options[0].Options[0].Options[0].IntValue()
+	death := i.ApplicationCommandData().Options[0].Options[0].IntValue()
 	server.Config.PoliceAlert = time.Duration(death * int64(time.Second))
 
 	discmsg.SendNonephemeralResponse(s, i, p.Sprintf("Death set to %d", death))
@@ -1450,7 +1450,7 @@ func configWait(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	p := getPrinter(i)
 
 	server := GetServer(servers, i.GuildID)
-	wait := i.ApplicationCommandData().Options[0].Options[0].Options[0].IntValue()
+	wait := i.ApplicationCommandData().Options[0].Options[0].IntValue()
 	server.Config.WaitTime = time.Duration(wait * int64(time.Second))
 
 	discmsg.SendNonephemeralResponse(s, i, p.Sprintf("Wait set to %d", wait))
@@ -1467,7 +1467,7 @@ func configPayday(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	p := getPrinter(i)
 
 	server := GetServer(servers, i.GuildID)
-	amount := i.ApplicationCommandData().Options[0].Options[0].Options[0].IntValue()
+	amount := i.ApplicationCommandData().Options[0].Options[0].IntValue()
 	payday.PaydayAmount = int(amount)
 
 	discmsg.SendNonephemeralResponse(s, i, p.Sprintf("Payday is set to %d", amount))
