@@ -3,7 +3,6 @@ package economy
 import (
 	"time"
 
-	"github.com/joho/godotenv"
 	"github.com/rbrabson/heist/pkg/store"
 	log "github.com/sirupsen/logrus"
 )
@@ -16,11 +15,6 @@ var (
 	bankStore store.Store
 	banks     map[string]*Bank
 )
-
-func init() {
-	godotenv.Load()
-	bankStore = store.NewStore()
-}
 
 // BankStore defines the methods required to load and save the economy state.
 type BankStore interface {
@@ -62,8 +56,9 @@ func GetBank(serverID string) *Bank {
 	bank, ok := banks[serverID]
 	if !ok {
 		bank = NewBank(serverID)
+		log.Println(len(banks), bank)
 		banks[bank.ID] = bank
-		log.Error("Bank not found for server:", serverID)
+		log.Infof("Bank not found for server %s, new one created", serverID)
 	}
 	return bank
 }
@@ -107,7 +102,7 @@ func WithdrawCredits(bank *Bank, account *Account, amount int) error {
 
 // LoadBanks returns all the banks for the given guilds.
 func LoadBanks() {
-	banks := make(map[string]*Bank)
+	banks = make(map[string]*Bank)
 	bankIDs := bankStore.ListDocuments(ECONOMY)
 	for _, bankID := range bankIDs {
 		var bank Bank
@@ -119,4 +114,10 @@ func LoadBanks() {
 // SaveBank saves the bank.
 func SaveBank(bank *Bank) {
 	bankStore.Save(ECONOMY, bank.ID, bank)
+}
+
+// Start intializes the economy.
+func Start() {
+	bankStore = store.NewStore()
+	LoadBanks()
 }

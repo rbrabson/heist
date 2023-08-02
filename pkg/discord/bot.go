@@ -65,8 +65,7 @@ func NewBot() *Bot {
 		log.Info("Heist bot is up!")
 	})
 
-	economy.LoadBanks()
-
+	economy.Start()
 	heist.Start(bot.Session)
 	payday.Start(bot.Session)
 	remind.Start(bot.Session)
