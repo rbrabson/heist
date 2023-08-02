@@ -338,8 +338,8 @@ var (
 
 // config routes the configuration commands to the proper handlers.
 func config(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Info("--> config")
-	defer log.Info("<-- config")
+	log.Debug("--> config")
+	defer log.Debug("<-- config")
 
 	options := i.ApplicationCommandData().Options
 	switch options[0].Name {
