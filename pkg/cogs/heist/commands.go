@@ -1466,7 +1466,7 @@ func configPayday(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	server := GetServer(servers, i.GuildID)
 	amount := i.ApplicationCommandData().Options[0].Options[0].IntValue()
-	payday.PaydayAmount = int(amount)
+	payday.SetPaydayAmount(server.ID, amount)
 
 	discmsg.SendNonephemeralResponse(s, i, p.Sprintf("Payday is set to %d", amount))
 
@@ -1511,7 +1511,7 @@ func configInfo(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			},
 			{
 				Name:   "payday",
-				Value:  p.Sprintf("%d", payday.PaydayAmount),
+				Value:  p.Sprintf("%d", payday.GetPaydayAmount(server.ID)),
 				Inline: true,
 			},
 			{
@@ -1558,8 +1558,8 @@ func version(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // Start initializes anything needed by the heist bot.
 func Start(s *discordgo.Session) {
-	servers = LoadServers(store.Store)
-	themes = LoadThemes(store.Store)
+	servers = LoadServers()
+	themes = LoadThemes()
 
 	go vaultUpdater()
 }

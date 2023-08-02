@@ -48,7 +48,7 @@ func GetThemeNames(map[string]*Theme) ([]string, error) {
 }
 
 // LoadThemes loads the themes that may be used by the heist bot.
-func LoadThemes(themeStore store.StoreInterface) map[string]*Theme {
+func LoadThemes() map[string]*Theme {
 	themes := make(map[string]*Theme)
 	themeIDs := store.Store.ListDocuments(THEME)
 	for _, themeID := range themeIDs {
