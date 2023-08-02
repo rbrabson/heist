@@ -20,6 +20,7 @@ func main() {
 	}
 	defer bot.Session.Close()
 
+	// log.SetLevel(log.DebugLevel)
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	log.Info("Press Ctrl+C to exit")

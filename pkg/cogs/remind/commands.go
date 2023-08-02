@@ -64,9 +64,9 @@ func addReminder(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	var response string
 	if message == "" {
-		response, _ = CreateReminder(i.Member.User.ID, when)
+		response, _ = createReminder(i.GuildID, i.Member.User.ID, when)
 	} else {
-		response, _ = CreateReminder(i.Member.User.ID, when, message)
+		response, _ = createReminder(i.GuildID, i.Member.User.ID, when, message)
 	}
 
 	msg.SendEphemeralResponse(s, i, response)
@@ -77,7 +77,7 @@ func listReminders(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> listReminders")
 	defer log.Debug("<-- listReminders")
 
-	response, _ := ListReminders(i.Member.User.ID)
+	response, _ := getReminders(i.GuildID, i.Member.User.ID)
 	msg.SendEphemeralResponse(s, i, response)
 }
 
@@ -86,7 +86,7 @@ func removeReminders(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> removeReminders")
 	defer log.Debug("<-- removeReminders")
 
-	response, _ := ForgetReminders(i.Member.User.ID)
+	response, _ := deleteReminders(i.GuildID, i.Member.User.ID)
 	msg.SendEphemeralResponse(s, i, response)
 
 }
@@ -99,5 +99,6 @@ func GetCommands() (map[string]func(s *discordgo.Session, i *discordgo.Interacti
 // Start starts up the bot
 func Start(s *discordgo.Session) {
 	session = s
+	loadReminders()
 	go sendReminders()
 }

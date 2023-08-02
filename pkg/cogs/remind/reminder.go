@@ -8,12 +8,23 @@ import (
 	"time"
 
 	"github.com/rbrabson/heist/pkg/format"
+	"github.com/rbrabson/heist/pkg/store"
 	log "github.com/sirupsen/logrus"
 )
 
-var (
-	state map[string]*reminderList
+const (
+	REMINDER = "reminder"
 )
+
+var (
+	servers map[string]*server
+)
+
+// Server represents the server on which members may create reminders
+type server struct {
+	ID      string                   `json:"_id" bson:"_id"`
+	Members map[string]*reminderList `json:"members" bson:"members"`
+}
 
 // reminderList is a set of reminders for a given member
 type reminderList struct {
@@ -23,26 +34,40 @@ type reminderList struct {
 
 // reminder is a reminder for a given member.
 type reminder struct {
-	Duration time.Duration `json:"duragion" bson:"duration"`
+	Duration time.Duration `json:"duration" bson:"duration"`
 	When     time.Time     `json:"when" bson:"when"`
 	Message  *string       `json:"message,omitempty" bson:"message,omitempty"`
 }
 
 // init initializes the set of reminders
 func init() {
-	state = make(map[string]*reminderList)
+	servers = make(map[string]*server)
+}
+
+func getServer(serverID string) *server {
+	s, ok := servers[serverID]
+	if !ok {
+		memberList := make(map[string]*reminderList)
+		s = &server{
+			ID:      serverID,
+			Members: memberList,
+		}
+		servers[s.ID] = s
+	}
+
+	return s
 }
 
 // newReminder creates a new reminder and adds it to the set of reminders for a given member.
-func newReminder(memberID string, wait time.Duration, message ...string) {
-	rl, ok := state[memberID]
+func (s *server) newReminder(memberID string, wait time.Duration, message ...string) {
+	rl, ok := s.Members[memberID]
 	if !ok {
 		reminders := make([]*reminder, 0, 1)
 		rl = &reminderList{
 			MemberID:  memberID,
 			Reminders: reminders,
 		}
-		state[rl.MemberID] = rl
+		s.Members[rl.MemberID] = rl
 	}
 
 	// There is at most one message, so save it if it is present
@@ -62,11 +87,11 @@ func newReminder(memberID string, wait time.Duration, message ...string) {
 	})
 }
 
-// CreateReminder sets a reminder for a person that will be sent via a Direct Message once the
+// createReminder sets a reminder for a person that will be sent via a Direct Message once the
 // timer expires.
-func CreateReminder(memberID string, when string, message ...string) (string, error) {
-	log.Debug("--> CreateReminder")
-	defer log.Debug("<-- CreateReminder")
+func createReminder(serverID string, memberID string, when string, message ...string) (string, error) {
+	log.Debug("--> createReminder")
+	defer log.Debug("<-- createReminder")
 
 	// If the time is just a number, default to hours
 	_, err := strconv.Atoi(when)
@@ -80,18 +105,21 @@ func CreateReminder(memberID string, when string, message ...string) (string, er
 		return msg, ErrInvalidDuration
 	}
 
-	newReminder(memberID, wait, message...)
+	s := getServer(serverID)
+	s.newReminder(memberID, wait, message...)
+	saveReminder(s)
 
 	msg := fmt.Sprintf("I will remind you of that in %s", format.Duration(wait))
 	return msg, nil
 }
 
-// ListReminders returns the list of upcoming reminders for the user.
-func ListReminders(memberID string) (string, error) {
-	log.Debug("--> ListReminders")
-	defer log.Debug("<-- ListReminders")
+// getReminders returns the list of upcoming reminders for the user.
+func getReminders(serverID string, memberID string) (string, error) {
+	log.Debug("--> getReminders")
+	defer log.Debug("<-- getReminders")
 
-	reminders, ok := state[memberID]
+	s := getServer(serverID)
+	reminders, ok := s.Members[memberID]
 	if !ok {
 		msg := "You don't have any upcoming notifications"
 		return msg, ErrNoReminders
@@ -111,16 +139,19 @@ func ListReminders(memberID string) (string, error) {
 	return sb.String(), nil
 }
 
-// ForgetReminders deletes all reminders for the member.
-func ForgetReminders(memberID string) (string, error) {
-	log.Debug("--> ForgetReminders")
-	defer log.Debug("<-- ForgetReminders")
+// deleteReminders deletes all reminders for the member.
+func deleteReminders(serverID string, memberID string) (string, error) {
+	log.Debug("--> deleteReminders")
+	defer log.Debug("<-- deleteReminders")
 
-	if _, ok := state[memberID]; !ok {
+	s := getServer(serverID)
+	if _, ok := s.Members[memberID]; !ok {
 		return "You don't have any upcoming notifications.", ErrNoReminders
 	}
-	delete(state, memberID)
+	delete(s.Members, memberID)
+	saveReminder(s)
 	return "All your notifications have been removed.", nil
+
 }
 
 // sendReminders sends a reminder to players who have set a reminder whose wait duration has expired.
@@ -128,35 +159,64 @@ func sendReminders() {
 	for {
 		time.Sleep(15 * time.Second)
 		now := time.Now()
-		for _, rl := range state {
-			for len(rl.Reminders) > 0 {
-				reminder := rl.Reminders[0]
-				if reminder.When.After(now) {
-					break
-				}
+		for _, s := range servers {
+			saveServer := false
+			for _, member := range s.Members {
+				for len(member.Reminders) > 0 {
+					reminder := member.Reminders[0]
+					if reminder.When.After(now) {
+						break
+					}
 
-				c, err := session.UserChannelCreate(rl.MemberID)
-				if err != nil {
-					log.Errorf("Error creating private channel to %s, error=%s", rl.MemberID, err.Error())
-					break
-				}
+					c, err := session.UserChannelCreate(member.MemberID)
+					if err != nil {
+						log.Errorf("Error creating private channel to %s, error=%s", member.MemberID, err.Error())
+						break
+					}
 
-				var message string
-				if reminder.Message == nil {
-					message = fmt.Sprintf(":bell: Reminder! :bell:\nFrom %s ago", format.Duration(reminder.Duration))
-				} else {
-					message = fmt.Sprintf(":bell: Reminder! :bell:\nFrom %s ago\n\n%s", format.Duration(reminder.Duration), *reminder.Message)
-				}
-				_, err = session.ChannelMessageSend(c.ID, message)
-				if err != nil {
-					log.Errorf("Failed to send DM, message=%s", err.Error())
-					break
-				} else {
-					log.Debugf("Sent DM to %s\nmessage=%s", rl.MemberID, message)
-				}
+					var message string
+					if reminder.Message == nil {
+						message = fmt.Sprintf(":bell: Reminder! :bell:\nFrom %s ago", format.Duration(reminder.Duration))
+					} else {
+						message = fmt.Sprintf(":bell: Reminder! :bell:\nFrom %s ago\n\n%s", format.Duration(reminder.Duration), *reminder.Message)
+					}
+					_, err = session.ChannelMessageSend(c.ID, message)
+					if err != nil {
+						log.Errorf("Failed to send DM, message=%s", err.Error())
+						break
+					} else {
+						log.Debugf("Sent DM to %s\nmessage=%s", member.MemberID, message)
+					}
 
-				rl.Reminders = rl.Reminders[1:]
+					member.Reminders = member.Reminders[1:]
+					saveServer = true
+				}
+			}
+			if saveServer {
+				saveReminder(s)
 			}
 		}
 	}
+}
+
+// loadReminders loads reminders for all members.
+func loadReminders() {
+	log.Debug("--> LoadReminders")
+	defer log.Debug("<-- LoadReminders")
+
+	servers := make(map[string]*server)
+	serverIDs := store.Store.ListDocuments(REMINDER)
+	for _, serverID := range serverIDs {
+		var server server
+		store.Store.Load(REMINDER, serverID, &server)
+		servers[server.ID] = &server
+	}
+}
+
+// saveReminder saves the reminders for a member.
+func saveReminder(server *server) {
+	log.Debug("--> SaveReminder")
+	defer log.Debug("<-- SaveReminder")
+
+	store.Store.Save(REMINDER, server.ID, server)
 }
