@@ -7,8 +7,7 @@ import (
 )
 
 func main() {
-	db := "./store/"
-	store := store.NewStore(db)
+	store := store.NewStore()
 
 	idList := store.ListDocuments("heist")
 	for _, id := range idList {

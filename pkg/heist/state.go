@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/rbrabson/heist/pkg/store"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -93,7 +94,7 @@ func NewServer(guildID string) *Server {
 	if defaultTheme == "" {
 		log.Fatal("Default theme not set in environment variable `HEIST_DEFAULT_THEME`")
 	}
-	theme, err := LoadTheme(defaultTheme)
+	theme, err := GetTheme(defaultTheme)
 	if err != nil {
 		log.Fatal("Unable to load the default theme, error:", err)
 	}
@@ -174,8 +175,16 @@ func GetServer(servers map[string]*Server, guildID string) *Server {
 	return server
 }
 
-func LoadServers(store Store) map[string]*Server {
-	servers := store.LoadHeistStates()
+// LoadServers loads all the heist servers from the store.
+func LoadServers(heistStore store.Store) map[string]*Server {
+	servers := make(map[string]*Server)
+	serverIDs := heistStore.ListDocuments(HEIST)
+	for _, serverID := range serverIDs {
+		var server Server
+		heistStore.Load(HEIST, serverID, &server)
+		servers[server.ID] = &server
+	}
+
 	return servers
 }
 

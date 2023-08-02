@@ -4,7 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/rbrabson/heist/pkg/store"
 	log "github.com/sirupsen/logrus"
+)
+
+const (
+	THEME = "theme"
 )
 
 // Theme is a heist theme.
@@ -43,14 +48,20 @@ func GetThemeNames(map[string]*Theme) ([]string, error) {
 }
 
 // LoadThemes loads the themes that may be used by the heist bot.
-func LoadThemes(store Store) map[string]*Theme {
-	themes := store.LoadThemes()
+func LoadThemes(themeStore store.Store) map[string]*Theme {
+	themes := make(map[string]*Theme)
+	themeIDs := heistStore.ListDocuments(THEME)
+	for _, themeID := range themeIDs {
+		var theme Theme
+		heistStore.Load(THEME, themeID, &theme)
+		themes[theme.ID] = &theme
+	}
 
 	return themes
 }
 
-// LoadTheme gets the specified theme and returns.
-func LoadTheme(themeName string) (*Theme, error) {
+// GetTheme gets the specified theme and returns.
+func GetTheme(themeName string) (*Theme, error) {
 	theme, ok := themes[themeName]
 	if !ok {
 		msg := "Theme " + themeName + " does not exist."

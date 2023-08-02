@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -24,14 +25,16 @@ func newFileStore() Store {
 
 // ListDocuments returns the list of files in the sub-directory (collection).
 func (f *fileStore) ListDocuments(collection string) []string {
-	files, err := os.ReadDir(f.dir)
+	dirName := f.dir + "/" + collection
+	files, err := os.ReadDir(dirName)
 	if err != nil {
-		log.Warning("Failed to get the list of heist server json files, error:", err)
+		log.Errorf("Failed to get the list of files for colledction %s, error=%s", collection, err.Error())
 		return nil
 	}
 	fileNames := make([]string, 0, len(files))
 	for _, file := range files {
-		fileNames = append(fileNames, file.Name())
+		split := strings.Split(file.Name(), ".json")
+		fileNames = append(fileNames, split[0])
 	}
 	return fileNames
 }
@@ -44,7 +47,8 @@ func (f *fileStore) Load(collection string, documentID string, data interface{})
 	filename := fmt.Sprintf("%s%s/%s.json", f.dir, collection, documentID)
 	b, err := os.ReadFile(filename)
 	if err != nil {
-		log.Warning("Failed to read the data from file "+filename+", error:", err)
+		log.Errorf("Failed to read the data from file %s, error=%s", filename, err.Error())
+		return
 	}
 
 	err = json.Unmarshal(b, data)

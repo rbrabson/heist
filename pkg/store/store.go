@@ -14,7 +14,7 @@ type Store interface {
 }
 
 // NewStore creates a new store to be used to load and save the heist state.
-func NewStore(db string) Store {
+func NewStore() Store {
 	storeType := os.Getenv("HEIST_STORE")
 	log.Debug("Storage type:", storeType)
 	var store Store

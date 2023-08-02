@@ -4,17 +4,28 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/rbrabson/heist/pkg/store"
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	ECONOMY = "economy"
+)
+
 var (
-	store bankStore
-	banks map[string]*Bank
+	bankStore store.Store
+	banks     map[string]*Bank
 )
 
 func init() {
 	godotenv.Load()
-	store = newStore()
+	bankStore = store.NewStore()
+}
+
+// BankStore defines the methods required to load and save the economy state.
+type BankStore interface {
+	loadBanks() map[string]*Bank
+	saveBank(*Bank)
 }
 
 // Bank is the repository for all accounts for a given server/guild.
@@ -96,10 +107,16 @@ func WithdrawCredits(bank *Bank, account *Account, amount int) error {
 
 // LoadBanks returns all the banks for the given guilds.
 func LoadBanks() {
-	banks = store.loadBanks()
+	banks := make(map[string]*Bank)
+	bankIDs := bankStore.ListDocuments(ECONOMY)
+	for _, bankID := range bankIDs {
+		var bank Bank
+		bankStore.Load(ECONOMY, bankID, &bank)
+		banks[bank.ID] = &bank
+	}
 }
 
 // SaveBank saves the bank.
 func SaveBank(bank *Bank) {
-	store.saveBank(bank)
+	bankStore.Save(ECONOMY, bank.ID, bank)
 }
