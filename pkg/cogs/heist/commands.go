@@ -1564,7 +1564,7 @@ func Start(s *discordgo.Session) {
 	go vaultUpdater()
 }
 
-// GetCommands returns the component handlers, command handlers, and commands for the Heist bot.
+// GetCommands ret urns the component handlers, command handlers, and commands for the Heist bot.
 func GetCommands() (map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate), map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate), []*discordgo.ApplicationCommand) {
 	return componentHandlers, commandHandlers, commands
 }
