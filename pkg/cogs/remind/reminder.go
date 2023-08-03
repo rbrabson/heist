@@ -80,13 +80,11 @@ func (s *server) newReminder(memberID string, wait time.Duration, message ...str
 		When:     time.Now().Add(wait),
 		Message:  msg,
 	}
-	log.Infof("%s has %d reminders before adding", rl.MemberID, len(rl.Reminders))
 	rl.Reminders = append(rl.Reminders, r)
 
 	sort.Slice(rl.Reminders, func(i, j int) bool {
 		return rl.Reminders[i].When.Before(rl.Reminders[j].When)
 	})
-	log.Infof("%s has %d reminders before adding", rl.MemberID, len(rl.Reminders))
 }
 
 // createReminder sets a reminder for a person that will be sent via a Direct Message once the
