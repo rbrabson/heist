@@ -64,8 +64,19 @@ func addReminder(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	var response string
 	if message == "" {
+		log.WithFields(log.Fields{
+			"GuildID":  i.GuildID,
+			"MemberID": i.Member.User.ID,
+			"When":     when,
+		}).Debug("Creating a reminder")
 		response, _ = createReminder(i.GuildID, i.Member.User.ID, when)
 	} else {
+		log.WithFields(log.Fields{
+			"GuildID":  i.GuildID,
+			"MemberID": i.Member.User.ID,
+			"When":     when,
+			"Message":  message,
+		}).Debug("Creating a reminder")
 		response, _ = createReminder(i.GuildID, i.Member.User.ID, when, message)
 	}
 

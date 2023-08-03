@@ -57,7 +57,7 @@ func GetBank(serverID string) *Bank {
 		bank = NewBank(serverID)
 		log.Println(len(banks), bank)
 		banks[bank.ID] = bank
-		log.Infof("Bank not found for server %s, new one created", serverID)
+		log.Warningf("Bank not found for server %s, new one created", serverID)
 	}
 	return bank
 }
