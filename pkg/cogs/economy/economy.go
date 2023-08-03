@@ -114,8 +114,3 @@ func LoadBanks() {
 func SaveBank(bank *Bank) {
 	store.Store.Save(ECONOMY, bank.ID, bank)
 }
-
-// Start intializes the economy.
-func Start() {
-	LoadBanks()
-}

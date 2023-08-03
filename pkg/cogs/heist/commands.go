@@ -17,8 +17,8 @@ import (
 	"golang.org/x/text/message"
 
 	"github.com/rbrabson/heist/pkg/checks"
+	"github.com/rbrabson/heist/pkg/cogs/economy"
 	"github.com/rbrabson/heist/pkg/cogs/payday"
-	"github.com/rbrabson/heist/pkg/economy"
 	discmsg "github.com/rbrabson/heist/pkg/msg"
 	"github.com/rbrabson/heist/pkg/store"
 	log "github.com/sirupsen/logrus"

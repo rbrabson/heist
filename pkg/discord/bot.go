@@ -5,10 +5,10 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
+	"github.com/rbrabson/heist/pkg/cogs/economy"
 	"github.com/rbrabson/heist/pkg/cogs/heist"
 	"github.com/rbrabson/heist/pkg/cogs/payday"
 	"github.com/rbrabson/heist/pkg/cogs/remind"
-	"github.com/rbrabson/heist/pkg/economy"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -18,11 +18,13 @@ const (
 		discordgo.IntentDirectMessages
 )
 
+// Bot is a Discord bot which is capable of running multiple sub-bots ("cogs"), which implement various commands.
 type Bot struct {
 	Session *discordgo.Session
 	timer   chan int
 }
 
+// addCommands adds the commands from a given cog to the overall set
 func addCommands(componentHandlers map[string]func(*discordgo.Session, *discordgo.InteractionCreate),
 	commandHandlers map[string]func(*discordgo.Session, *discordgo.InteractionCreate),
 	commands []*discordgo.ApplicationCommand,
@@ -65,16 +67,20 @@ func NewBot() *Bot {
 		log.Info("Heist bot is up!")
 	})
 
-	economy.Start()
-	heist.Start(bot.Session)
-	payday.Start(bot.Session)
-	remind.Start(bot.Session)
-
 	componentHandlers := make(map[string]func(*discordgo.Session, *discordgo.InteractionCreate))
 	commandHandlers := make(map[string]func(*discordgo.Session, *discordgo.InteractionCreate))
 	commands := make([]*discordgo.ApplicationCommand, 0)
+
+	economy.Start(bot.Session)
+	commands = addCommands(componentHandlers, commandHandlers, commands, economy.GetCommands)
+
+	heist.Start(bot.Session)
 	commands = addCommands(componentHandlers, commandHandlers, commands, heist.GetCommands)
+
+	payday.Start(bot.Session)
 	commands = addCommands(componentHandlers, commandHandlers, commands, payday.GetCommands)
+
+	remind.Start(bot.Session)
 	commands = addCommands(componentHandlers, commandHandlers, commands, remind.GetCommands)
 
 	log.Debug("Add bot handlers")

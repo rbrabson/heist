@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/rbrabson/heist/pkg/economy"
+	"github.com/rbrabson/heist/pkg/cogs/economy"
 	log "github.com/sirupsen/logrus"
 )
 
