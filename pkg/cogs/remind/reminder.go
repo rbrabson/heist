@@ -161,6 +161,7 @@ func sendReminders() {
 		now := time.Now()
 		for _, s := range servers {
 			saveServer := false
+			delIDs := make([]string, 0, 1)
 			for _, member := range s.Members {
 				for len(member.Reminders) > 0 {
 					reminder := member.Reminders[0]
@@ -191,6 +192,12 @@ func sendReminders() {
 					member.Reminders = member.Reminders[1:]
 					saveServer = true
 				}
+				if len(member.Reminders) == 0 {
+					delIDs = append(delIDs, member.MemberID)
+				}
+			}
+			for _, delID := range delIDs {
+				delete(s.Members, delID)
 			}
 			if saveServer {
 				saveReminder(s)
