@@ -10,7 +10,8 @@ import (
 
 var (
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"bank": bank,
+		"bank":     bank,
+		"transfer": transferCredits,
 	}
 
 	commands = []*discordgo.ApplicationCommand{
@@ -39,22 +40,40 @@ var (
 				},
 				{
 					Name:        "transfer",
-					Description: "Transfers all credits from one account to another.",
+					Description: "Transfers the account balance from one account to another.",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Options: []*discordgo.ApplicationCommandOption{
 						{
 							Type:        discordgo.ApplicationCommandOptionString,
 							Name:        "from",
-							Description: "The ID of the member to transfer credits from.",
+							Description: "The ID of the account to transfer credits from.",
 							Required:    true,
 						},
 						{
-							Type:        discordgo.ApplicationCommandOptionString,
+							Type:        discordgo.ApplicationCommandOptionInteger,
 							Name:        "to",
-							Description: "The ID of the member to transfer credits to.",
+							Description: "The ID of the account to receive account balance.",
 							Required:    true,
 						},
 					},
+				},
+			},
+		},
+		{
+			Name:        "transfer",
+			Description: "Transfers a set amount of credits from your account to another player's account.",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "to",
+					Description: "The ID of the member to transfer credits to.",
+					Required:    true,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionInteger,
+					Name:        "amount",
+					Description: "The amount of credits to transfer.",
+					Required:    true,
 				},
 			},
 		},
@@ -75,20 +94,63 @@ func bank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 }
 
+// transferCredits removes a specified amount of credits from initiators account and deposits them in the target's account.
+func transferCredits(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Debug("--> bank")
+	defer log.Debug("<-- bank")
+
+	var toID string
+	var amount int
+	options := i.ApplicationCommandData().Options
+	for _, option := range options {
+		switch option.Name {
+		case "to":
+			toID = option.StringValue()
+		case "amount":
+			amount = int(option.IntValue())
+		}
+	}
+
+	p := getPrinter(i)
+
+	member, err := s.GuildMember(i.GuildID, toID)
+	if err != nil {
+		resp := p.Sprintf("A account with ID `%s` is not a member of this server", toID)
+		msg.SendEphemeralResponse(s, i, resp)
+		return
+	}
+
+	bank := GetBank(i.GuildID)
+	fromAccount := bank.GetAccount(i.Member.User.ID, getMemberName(i.Member.User.ID, i.Member.Nick))
+	toAccount := bank.GetAccount(toID, getMemberName(member.User.ID, member.Nick))
+
+	if fromAccount.Balance < amount {
+		resp := p.Sprintf("Your account only has %d credits, which is less than the transfer amount of %d.", fromAccount.Balance, amount)
+		msg.SendEphemeralResponse(s, i, resp)
+		return
+	}
+
+	fromAccount.Balance -= amount
+	toAccount.Balance += amount
+	SaveBank(bank)
+	resp := p.Sprintf("You transfered %d credits to %s's account.", amount, toAccount.Name)
+	msg.SendResponse(s, i, resp)
+}
+
 // setAccount sets the account to the specified number of credits.
 func setAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> setAccount")
 	defer log.Debug("<-- setAccount")
 
 	var id string
-	var amount int64
+	var amount int
 	options := i.ApplicationCommandData().Options[0].Options
 	for _, option := range options {
 		switch option.Name {
 		case "id":
 			id = strings.TrimSpace(option.StringValue())
 		case "amount":
-			amount = option.IntValue()
+			amount = int(option.IntValue())
 		}
 	}
 
@@ -103,7 +165,7 @@ func setAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	bank := GetBank(i.GuildID)
 	account := bank.GetAccount(id, getMemberName(member.User.ID, member.Nick))
-	account.Balance = int(amount)
+	account.Balance = amount
 	SaveBank(bank)
 
 	resp := p.Sprintf("Account for %s was set to %d credits.", account.Name, account.Balance)
