@@ -3,8 +3,11 @@ package economy
 import (
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/rbrabson/heist/pkg/store"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 const (
@@ -113,4 +116,22 @@ func LoadBanks() {
 // SaveBank saves the bank.
 func SaveBank(bank *Bank) {
 	store.Store.Save(ECONOMY, bank.ID, bank)
+}
+
+// getMemberName returns the member's nickname, if there is one, or the username otherwise.
+func getMemberName(username string, nickname string) string {
+	if nickname != "" {
+		return nickname
+	}
+	return username
+}
+
+// getPrinter returns a printer for the given locale of the user initiating the message.
+func getPrinter(i *discordgo.InteractionCreate) *message.Printer {
+	tag, err := language.Parse(string(i.Locale))
+	if err != nil {
+		log.Error("Unable to parse locale, error:", err)
+		tag = language.English
+	}
+	return message.NewPrinter(tag)
 }

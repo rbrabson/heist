@@ -7,6 +7,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/rbrabson/heist/pkg/cogs/economy"
+	"github.com/rbrabson/heist/pkg/format"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -52,7 +53,7 @@ func heistChecks(server *Server, i *discordgo.InteractionCreate, player *Player,
 		if player.JailTimer.After(time.Now()) {
 			remainingTime := time.Until(player.JailTimer)
 			msg := fmt.Sprintf("You are in %s. You are serving a %s of %s.\nYou can wait out your remaining %s of: %s, or pay %d credits to be relased on %s.",
-				theme.Jail, theme.Sentence, fmtDuration(player.Sentence), theme.Sentence, fmtDuration(remainingTime), player.BailCost, theme.Bail)
+				theme.Jail, theme.Sentence, format.Duration(player.Sentence), theme.Sentence, format.Duration(remainingTime), player.BailCost, theme.Bail)
 			return msg, false
 		}
 
@@ -62,7 +63,7 @@ func heistChecks(server *Server, i *discordgo.InteractionCreate, player *Player,
 	if player.Status == DEAD {
 		if player.DeathTimer.After(time.Now()) {
 			remainingTime := time.Until(player.DeathTimer)
-			msg := p.Sprintf("You are dead. You will revive in %s", fmtDuration(remainingTime))
+			msg := p.Sprintf("You are dead. You will revive in %s", format.Duration(remainingTime))
 			return msg, false
 		}
 		msg := "Looks like you are still dead, but you can revive at anytime by using the command `/revive`."
@@ -75,7 +76,7 @@ func heistChecks(server *Server, i *discordgo.InteractionCreate, player *Player,
 	}
 	if server.Config.AlertTime.After(time.Now()) {
 		remainingTime := time.Until(server.Config.AlertTime)
-		msg := p.Sprintf("The %s are on high alert after the last target. We should wait for things to cool off before hitting another target. Time remaining: %s.", theme.Police, fmtDuration(remainingTime))
+		msg := p.Sprintf("The %s are on high alert after the last target. We should wait for things to cool off before hitting another target. Time remaining: %s.", theme.Police, format.Duration(remainingTime))
 		return msg, false
 	}
 
