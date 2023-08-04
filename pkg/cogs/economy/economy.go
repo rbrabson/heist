@@ -26,28 +26,34 @@ type BankStore interface {
 
 // Bank is the repository for all accounts for a given server/guild.
 type Bank struct {
-	ID             string              `json:"_id" bson:"_id"`
-	BankName       string              `json:"bank_name" bson:"bank_name"`
-	Currency       string              `json:"currency" bson:"currency"`
-	DefaultBalance int                 `json:"default_balance" bson:"default_balance"`
-	Accounts       map[string]*Account `json:"accounts" bson:"accounts"`
+	ID                  string              `json:"_id" bson:"_id"`
+	BankName            string              `json:"bank_name" bson:"bank_name"`
+	Currency            string              `json:"currency" bson:"currency"`
+	DefaultBalance      int                 `json:"default_balance" bson:"default_balance"`
+	Accounts            map[string]*Account `json:"accounts" bson:"accounts"`
+	MaxTransferAmount   int                 `json:"max_transfer_amount" bson:"max_transfer_amount"`
+	MinTransferDuration time.Duration       `json:"min_transfer_duration" bson:"min_transfer_duration"`
 }
 
 // Account is the bank account for a member of the server/guild.
 type Account struct {
-	ID        string    `json:"_id" bson:"_id"`
-	Balance   int       `json:"balance" bson:"balance"`
-	CreatedAt time.Time `json:"created_at" bson:"created_at"`
-	Name      string    `json:"name" bson:"name"`
+	ID              string    `json:"_id" bson:"_id"`
+	Balance         int       `json:"balance" bson:"balance"`
+	CreatedAt       time.Time `json:"created_at" bson:"created_at"`
+	Name            string    `json:"name" bson:"name"`
+	NextTransferIn  time.Time `json:"next_transfer_in" bson:"next_transfer_in"`
+	NextTransferOut time.Time `json:"next_transfer_out" bson:"next_transfer_out"`
 }
 
 // NewBank creates a new bank for the given server/guild.
 func NewBank(serverID string) *Bank {
 	bank := Bank{
-		ID:             serverID,
-		DefaultBalance: 0,
-		BankName:       "Treasury",
-		Currency:       "Coins",
+		ID:                  serverID,
+		DefaultBalance:      0,
+		BankName:            "Treasury",
+		Currency:            "Coins",
+		MaxTransferAmount:   50000,
+		MinTransferDuration: time.Duration(24 * time.Hour),
 	}
 	bank.Accounts = make(map[string]*Account)
 	return &bank

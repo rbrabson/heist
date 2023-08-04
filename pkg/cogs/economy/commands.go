@@ -2,8 +2,10 @@ package economy
 
 import (
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/rbrabson/heist/pkg/format"
 	"github.com/rbrabson/heist/pkg/msg"
 	log "github.com/sirupsen/logrus"
 )
@@ -124,14 +126,40 @@ func transferCredits(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	fromAccount := bank.GetAccount(i.Member.User.ID, getMemberName(i.Member.User.ID, i.Member.Nick))
 	toAccount := bank.GetAccount(toID, getMemberName(member.User.ID, member.Nick))
 
+	if fromAccount.NextTransferOut.After(time.Now()) {
+		duration := time.Until(fromAccount.NextTransferOut)
+		resp := p.Sprintf("You can't transfer credits yet. Please wait %s to transfer credits.", format.Duration(duration))
+		msg.SendEphemeralResponse(s, i, resp)
+		return
+	}
+	if toAccount.NextTransferIn.After(time.Now()) {
+		duration := time.Until(toAccount.NextTransferIn)
+		resp := p.Sprintf("%s can't receive credits yet. Please wait %s to transfer credits.", format.Duration(duration))
+		msg.SendEphemeralResponse(s, i, resp)
+		return
+	}
+	if amount > bank.MaxTransferAmount {
+		resp := p.Sprintf("You can only transfer a maximum of %d credits.", bank.MaxTransferAmount)
+		msg.SendEphemeralResponse(s, i, resp)
+		return
+	}
 	if fromAccount.Balance < amount {
-		resp := p.Sprintf("Your account only has %d credits, which is less than the transfer amount of %d.", fromAccount.Balance, amount)
+		resp := p.Sprintf("Your can't transfer %d credits as your account only has %d credits", amount, fromAccount.Balance)
 		msg.SendEphemeralResponse(s, i, resp)
 		return
 	}
 
+	log.WithFields(log.Fields{
+		"CurrentTime":     time.Now(),
+		"NextTransferOut": fromAccount.NextTransferOut,
+		"NextTransferIn":  toAccount.NextTransferIn,
+		"Interval":        bank.MinTransferDuration,
+	}).Info("/transfer")
+
 	fromAccount.Balance -= amount
 	toAccount.Balance += amount
+	fromAccount.NextTransferOut = time.Now().Add(bank.MinTransferDuration)
+	toAccount.NextTransferIn = time.Now().Add(bank.MinTransferDuration)
 	SaveBank(bank)
 	resp := p.Sprintf("You transfered %d credits to %s's account.", amount, toAccount.Name)
 	msg.SendResponse(s, i, resp)
