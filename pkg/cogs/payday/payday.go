@@ -133,7 +133,7 @@ func saveServer(server *server) {
 	store.Store.Save(PAYDAY, server.ID, server)
 }
 
-// GetHelp returns help information about the heist bot commands
+// GetMemberHelp returns help information about the heist bot commands
 func GetMemberHelp() []string {
 	help := make([]string, 0, 1)
 
@@ -147,4 +147,9 @@ func GetMemberHelp() []string {
 	help = append([]string{"**Payday**\n"}, help...)
 
 	return help
+}
+
+// GetAdminHelp returns help information about the heist bot commands
+func GetAdminHelp() []string {
+	return nil
 }

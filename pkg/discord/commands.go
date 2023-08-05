@@ -8,12 +8,20 @@ import (
 
 var (
 	helpCommandHandler = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"help": help,
+		"help":      help,
+		"adminhelp": adminHelp,
 	}
 
-	helpCommand = &discordgo.ApplicationCommand{
-		Name:        "help",
-		Description: "Provides a description of commands for this server",
+	helpCommands = []*discordgo.ApplicationCommand{
+		{
+
+			Name:        "help",
+			Description: "Provides a description of commands for this server",
+		},
+		{
+			Name:        "adminhelp",
+			Description: "Provides a description of admin commands for this server",
+		},
 	}
 )
 
@@ -22,4 +30,11 @@ func help(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("<-- help")
 
 	msg.SendResponse(s, i, getMemberHelp())
+}
+
+func adminHelp(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Debug("--> adminHelp")
+	log.Debug("<-- adminHelp")
+
+	msg.SendResponse(s, i, getAdminHelp())
 }

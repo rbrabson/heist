@@ -56,10 +56,10 @@ var (
 		"reset":   resetHeist,
 		"version": version,
 	}
-	commands = []*discordgo.ApplicationCommand{
+	adminCommands = []*discordgo.ApplicationCommand{
 		{
 			Name:        "clear",
-			Description: "Clears the criminal settings for the user",
+			Description: "Clears the criminal settings for the user.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
@@ -172,45 +172,17 @@ var (
 			},
 		},
 		{
-			Name:        "bail",
-			Description: "Bail a player out of jail",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "id",
-					Description: "ID of the player to bail. Defaults to you.",
-					Required:    false,
-				},
-			},
-		},
-		{
-			Name:        "revive",
-			Description: "Resurect player from the dead",
-		},
-		{
-			Name:        "release",
-			Description: "Releases player from jail",
-		},
-		{
-			Name:        "stats",
-			Description: "Shows a user's stats",
-		},
-		{
-			Name:        "start",
-			Description: "Plans a new heist",
-		},
-		{
 			Name:        "target",
 			Description: "Commands that affect heist targets. Restricted to admins.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Name:        "list",
-					Description: "Gets the list of available heist targets",
+					Description: "Gets the list of available heist targets.",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 				},
 				{
 					Name:        "add",
-					Description: "Adds a new target to the list of heist targets",
+					Description: "Adds a new target to the list of heist targets.",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Options: []*discordgo.ApplicationCommandOption{
 						{
@@ -222,75 +194,75 @@ var (
 						{
 							Type:        discordgo.ApplicationCommandOptionInteger,
 							Name:        "crew",
-							Description: "Maximum crew size for the heist",
+							Description: "Maximum crew size for the heist.",
 							Required:    true,
 						},
 						{
 							Type:        discordgo.ApplicationCommandOptionInteger,
 							Name:        "success",
-							Description: "Percentage liklihood of success (0..100)",
+							Description: "Percentage liklihood of success (0..100).",
 							Required:    true,
 						},
 						{
 							Type:        discordgo.ApplicationCommandOptionInteger,
 							Name:        "vault",
-							Description: "Maximum size of the target's vault",
+							Description: "Maximum size of the target's vault.",
 							Required:    true,
 						},
 						{
 							Type:        discordgo.ApplicationCommandOptionInteger,
 							Name:        "current",
-							Description: "Current size of the target's vault; defaults to `vault`",
+							Description: "Current size of the target's vault; defaults to `vault`.",
 							Required:    false,
 						},
 					},
 				},
 				{
 					Name:        "edit",
-					Description: "Edits an existing heist target",
+					Description: "Edits an existing heist target.",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Options: []*discordgo.ApplicationCommandOption{
 						{
 							Type:        discordgo.ApplicationCommandOptionString,
 							Name:        "id",
-							Description: "ID of the heist",
+							Description: "ID of the heist.",
 							Required:    true,
 						},
 						{
 							Type:        discordgo.ApplicationCommandOptionInteger,
 							Name:        "crew",
-							Description: "Maximum crew size for the heist",
+							Description: "Maximum crew size for the heist.",
 							Required:    false,
 						},
 						{
 							Type:        discordgo.ApplicationCommandOptionInteger,
 							Name:        "success",
-							Description: "Percentage liklihood of success (0..100)",
+							Description: "Percentage liklihood of success (0..100).",
 							Required:    false,
 						},
 						{
 							Type:        discordgo.ApplicationCommandOptionInteger,
 							Name:        "vault",
-							Description: "Maximum size of the target's vault",
+							Description: "Maximum size of the target's vault.",
 							Required:    false,
 						},
 						{
 							Type:        discordgo.ApplicationCommandOptionInteger,
 							Name:        "current",
-							Description: "Current size of the target's vault; defaults to `vault`",
+							Description: "Current size of the target's vault; defaults to `vault`.",
 							Required:    false,
 						},
 					},
 				},
 				{
 					Name:        "remove",
-					Description: "Removes a target from the list of heist targets",
+					Description: "Removes a target from the list of heist targets.",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Options: []*discordgo.ApplicationCommandOption{
 						{
 							Type:        discordgo.ApplicationCommandOptionString,
 							Name:        "id",
-							Description: "ID of the heist",
+							Description: "ID of the heist.",
 							Required:    true,
 						},
 					},
@@ -303,17 +275,17 @@ var (
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Name:        "list",
-					Description: "Gets the list of available heist themes",
+					Description: "Gets the list of available heist themes.",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 				},
 				{
 					Name:        "set",
-					Description: "Sets the current heist theme",
+					Description: "Sets the current heist theme.",
 					Options: []*discordgo.ApplicationCommandOption{
 						{
 							Type:        discordgo.ApplicationCommandOptionString,
 							Name:        "name",
-							Description: "Name of the theme to set",
+							Description: "Name of the theme to set.",
 							Required:    true,
 						},
 					},
@@ -328,6 +300,37 @@ var (
 		{
 			Name:        "version",
 			Description: "Returns the version of heist running on the server. Restricted to admins.",
+		},
+	}
+
+	playerCommands = []*discordgo.ApplicationCommand{
+		{
+			Name:        "bail",
+			Description: "Bail a player out of jail",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "id",
+					Description: "ID of the player to bail. Defaults to you.",
+					Required:    false,
+				},
+			},
+		},
+		{
+			Name:        "revive",
+			Description: "Resurect player from the dead.",
+		},
+		{
+			Name:        "release",
+			Description: "Releases player from jail.",
+		},
+		{
+			Name:        "stats",
+			Description: "Shows a user's stats.",
+		},
+		{
+			Name:        "start",
+			Description: "Plans a new heist.",
 		},
 	}
 )
@@ -1527,5 +1530,8 @@ func Start(s *discordgo.Session) {
 
 // GetCommands ret urns the component handlers, command handlers, and commands for the Heist bot.
 func GetCommands() (map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate), map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate), []*discordgo.ApplicationCommand) {
+	commands := make([]*discordgo.ApplicationCommand, 0, len(playerCommands)+len(adminCommands))
+	commands = append(commands, adminCommands...)
+	commands = append(commands, playerCommands...)
 	return componentHandlers, commandHandlers, commands
 }

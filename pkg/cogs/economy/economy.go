@@ -159,3 +159,8 @@ func GetMemberHelp() []string {
 
 	return help
 }
+
+// GetAdminHelp returns help information about the heist bot commands
+func GetAdminHelp() []string {
+	return nil
+}

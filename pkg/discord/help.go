@@ -41,5 +41,23 @@ func getAdminHelp() string {
 	log.Debug("--> getAdminHelp")
 	log.Debug("<-- getAdminHelp")
 
-	return ""
+	var sb strings.Builder
+
+	for _, str := range economy.GetAdminHelp() {
+		sb.WriteString(str)
+	}
+	sb.WriteString("\n")
+	for _, str := range heist.GetAdminHelp() {
+		sb.WriteString(str)
+	}
+	sb.WriteString("\n")
+	for _, str := range payday.GetAdminHelp() {
+		sb.WriteString(str)
+	}
+	sb.WriteString("\n")
+	for _, str := range remind.GetAdminHelp() {
+		sb.WriteString(str)
+	}
+
+	return sb.String()
 }

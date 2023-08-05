@@ -18,7 +18,7 @@ var (
 	commands = []*discordgo.ApplicationCommand{
 		{
 			Name:        "payday",
-			Description: "Deposits your daily check into your bank account",
+			Description: "Deposits your daily check into your bank account.",
 		},
 	}
 )

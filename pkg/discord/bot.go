@@ -69,9 +69,9 @@ func NewBot() *Bot {
 
 	componentHandlers := make(map[string]func(*discordgo.Session, *discordgo.InteractionCreate))
 	commandHandlers := make(map[string]func(*discordgo.Session, *discordgo.InteractionCreate))
-	commands := make([]*discordgo.ApplicationCommand, 0)
+	commands := make([]*discordgo.ApplicationCommand, 0, 2)
 
-	commands = append(commands, helpCommand)
+	commands = append(commands, helpCommands...)
 	for key, value := range helpCommandHandler {
 		commandHandlers[key] = value
 	}

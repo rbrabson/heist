@@ -286,11 +286,27 @@ func vaultUpdater() {
 	}
 }
 
-// GetHelp returns help information about the heist bot commands
+// GetMemberHelp returns help information about the heist bot commands for regular members.
 func GetMemberHelp() []string {
-	help := make([]string, 0, 1)
+	help := make([]string, 0, len(playerCommands))
 
-	for _, command := range commands {
+	for _, command := range playerCommands {
+		commandDescription := fmt.Sprintf("- **/%s**:  %s\n", command.Name, command.Description)
+		help = append(help, commandDescription)
+	}
+	sort.Slice(help, func(i, j int) bool {
+		return help[i] < help[j]
+	})
+	help = append([]string{"**Heist**\n"}, help...)
+
+	return help
+}
+
+// GetAdminHelp returns help information about the heist bot for administrators.
+func GetAdminHelp() []string {
+	help := make([]string, 0, len(adminCommands))
+
+	for _, command := range adminCommands {
 		commandDescription := fmt.Sprintf("- **/%s**:  %s\n", command.Name, command.Description)
 		help = append(help, commandDescription)
 	}

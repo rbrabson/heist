@@ -228,7 +228,7 @@ func saveReminder(server *server) {
 	store.Store.Save(REMINDER, server.ID, server)
 }
 
-// GetHelp returns help information about the heist bot commands
+// GetMemberHelp returns help information about the heist bot commands
 func GetMemberHelp() []string {
 	help := make([]string, 0, 1)
 
@@ -242,4 +242,9 @@ func GetMemberHelp() []string {
 	help = append([]string{"**Reminder**\n"}, help...)
 
 	return help
+}
+
+// GetAdminHelp returns help information about the heist bot commands
+func GetAdminHelp() []string {
+	return nil
 }
