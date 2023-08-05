@@ -71,7 +71,7 @@ var (
 		},
 		{
 			Name:        "config",
-			Description: "Configures the Heist bot. Restricted to admins.",
+			Description: "Configures the Heist bot.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Name:        "info",
@@ -173,7 +173,7 @@ var (
 		},
 		{
 			Name:        "target",
-			Description: "Commands that affect heist targets. Restricted to admins.",
+			Description: "Commands that affect heist targets.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Name:        "list",
@@ -271,7 +271,7 @@ var (
 		},
 		{
 			Name:        "theme",
-			Description: "Commands that interact with the heist themes. Restricted to admins.",
+			Description: "Commands that interact with the heist themes.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Name:        "list",
@@ -295,11 +295,11 @@ var (
 		},
 		{
 			Name:        "reset",
-			Description: "Resets a new heist that is hung. Restricted to admins.",
+			Description: "Resets a new heist that is hung.",
 		},
 		{
 			Name:        "version",
-			Description: "Returns the version of heist running on the server. Restricted to admins.",
+			Description: "Returns the version of heist running on the server.",
 		},
 	}
 
