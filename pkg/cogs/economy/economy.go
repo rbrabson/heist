@@ -1,6 +1,8 @@
 package economy
 
 import (
+	"fmt"
+	"sort"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -140,4 +142,20 @@ func getPrinter(i *discordgo.InteractionCreate) *message.Printer {
 		tag = language.English
 	}
 	return message.NewPrinter(tag)
+}
+
+// GetHelp returns help information about the heist bot commands
+func GetMemberHelp() []string {
+	help := make([]string, 0, 1)
+
+	for _, command := range commands {
+		commandDescription := fmt.Sprintf("- **/%s**:  %s\n", command.Name, command.Description)
+		help = append(help, commandDescription)
+	}
+	sort.Slice(help, func(i, j int) bool {
+		return help[i] < help[j]
+	})
+	help = append([]string{"**Economy**\n"}, help...)
+
+	return help
 }

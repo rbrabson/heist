@@ -3,6 +3,7 @@ package heist
 import (
 	"fmt"
 	"math/rand"
+	"sort"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -283,4 +284,20 @@ func vaultUpdater() {
 		}
 		time.Sleep(timer)
 	}
+}
+
+// GetHelp returns help information about the heist bot commands
+func GetMemberHelp() []string {
+	help := make([]string, 0, 1)
+
+	for _, command := range commands {
+		commandDescription := fmt.Sprintf("- **/%s**:  %s\n", command.Name, command.Description)
+		help = append(help, commandDescription)
+	}
+	sort.Slice(help, func(i, j int) bool {
+		return help[i] < help[j]
+	})
+	help = append([]string{"**Heist**\n"}, help...)
+
+	return help
 }

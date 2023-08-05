@@ -20,7 +20,7 @@ var (
 	commands = []*discordgo.ApplicationCommand{
 		{
 			Name:        "remadd",
-			Description: "Sets a new reminder for you",
+			Description: "Sets a new reminder for you.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
@@ -38,11 +38,11 @@ var (
 		},
 		{
 			Name:        "remdel",
-			Description: "Removes all of your reminders",
+			Description: "Removes all of your reminders.",
 		},
 		{
 			Name:        "remlist",
-			Description: "List all of your reminders",
+			Description: "List all of your reminders.",
 		},
 	}
 )
