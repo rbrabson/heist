@@ -71,7 +71,13 @@ func NewBot() *Bot {
 	commandHandlers := make(map[string]func(*discordgo.Session, *discordgo.InteractionCreate))
 	commands := make([]*discordgo.ApplicationCommand, 0)
 
+	commands = append(commands, helpCommand)
+	for key, value := range helpCommandHandler {
+		commandHandlers[key] = value
+	}
+
 	economy.Start(bot.Session)
+
 	commands = addCommands(componentHandlers, commandHandlers, commands, economy.GetCommands)
 
 	heist.Start(bot.Session)
