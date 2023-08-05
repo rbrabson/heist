@@ -146,9 +146,9 @@ func getPrinter(i *discordgo.InteractionCreate) *message.Printer {
 
 // GetHelp returns help information about the heist bot commands
 func GetMemberHelp() []string {
-	help := make([]string, 0, 1)
+	help := make([]string, 0, len(memberCommands))
 
-	for _, command := range commands {
+	for _, command := range memberCommands {
 		commandDescription := fmt.Sprintf("- **/%s**:  %s\n", command.Name, command.Description)
 		help = append(help, commandDescription)
 	}
@@ -162,5 +162,16 @@ func GetMemberHelp() []string {
 
 // GetAdminHelp returns help information about the heist bot commands
 func GetAdminHelp() []string {
-	return nil
+	help := make([]string, 0, len(adminCommands))
+
+	for _, command := range adminCommands {
+		commandDescription := fmt.Sprintf("- **/%s**:  %s\n", command.Name, command.Description)
+		help = append(help, commandDescription)
+	}
+	sort.Slice(help, func(i, j int) bool {
+		return help[i] < help[j]
+	})
+	help = append([]string{"**Economy**\n"}, help...)
+
+	return help
 }

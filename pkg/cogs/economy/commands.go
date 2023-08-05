@@ -16,10 +16,10 @@ var (
 		"transfer": transferCredits,
 	}
 
-	commands = []*discordgo.ApplicationCommand{
+	adminCommands = []*discordgo.ApplicationCommand{
 		{
 			Name:        "bank",
-			Description: "Commands used to interact with the economy for this server. Restricted to admins.",
+			Description: "Commands used to interact with the economy for this server.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Name:        "set",
@@ -61,6 +61,9 @@ var (
 				},
 			},
 		},
+	}
+
+	memberCommands = []*discordgo.ApplicationCommand{
 		{
 			Name:        "transfer",
 			Description: "Transfers a set amount of credits from your account to another player's account.",
@@ -253,5 +256,8 @@ func Start(session *discordgo.Session) {
 
 // GetCommands returns the component handlers, command handlers, and commands for the payday bot.
 func GetCommands() (map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate), map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate), []*discordgo.ApplicationCommand) {
+	commands := make([]*discordgo.ApplicationCommand, 0, len(memberCommands)+len(adminCommands))
+	commands = append(commands, memberCommands...)
+	commands = append(commands, adminCommands...)
 	return nil, commandHandlers, commands
 }
