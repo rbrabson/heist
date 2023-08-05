@@ -19,7 +19,7 @@ var (
 	commands = []*discordgo.ApplicationCommand{
 		{
 			Name:        "bank",
-			Description: "Commands used to interact with the economy for this server.",
+			Description: "Commands used to interact with the economy for this server. Restricgted to admins.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Name:        "set",
