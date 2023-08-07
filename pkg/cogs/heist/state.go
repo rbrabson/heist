@@ -42,7 +42,6 @@ type Config struct {
 	PoliceAlert  time.Duration `json:"police_alert" bson:"police_alert"`
 	SentenceBase time.Duration `json:"sentence_base" bson:"sentence_base"`
 	Theme        string        `json:"theme" bson:"theme"`
-	Version      string        `json:"version" bson:"version"`
 	WaitTime     time.Duration `json:"wait_time" bson:"wait_time"`
 }
 
@@ -110,7 +109,6 @@ func NewServer(guildID string) *Server {
 			PoliceAlert:  60,
 			SentenceBase: 5,
 			Theme:        defaultTheme,
-			Version:      "1.0.0",
 			WaitTime:     time.Duration(60 * time.Second),
 		},
 		Players: make(map[string]*Player, 1),

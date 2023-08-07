@@ -10,6 +10,7 @@ var (
 	helpCommandHandler = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"help":      help,
 		"adminhelp": adminHelp,
+		"version":   version,
 	}
 
 	helpCommands = []*discordgo.ApplicationCommand{
@@ -21,6 +22,10 @@ var (
 		{
 			Name:        "adminhelp",
 			Description: "Provides a description of admin commands for this server.",
+		},
+		{
+			Name:        "version",
+			Description: "Returns the version of heist running on the server.",
 		},
 	}
 )
@@ -39,4 +44,12 @@ func adminHelp(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("<-- adminHelp")
 
 	msg.SendResponse(s, i, getAdminHelp())
+}
+
+// version shows the version of heist you are running.
+func version(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Debug("--> version")
+	defer log.Debug("<-- version")
+
+	msg.SendEphemeralResponse(s, i, "You are running Heist version "+botVersion+".")
 }

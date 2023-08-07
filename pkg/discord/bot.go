@@ -16,6 +16,7 @@ const (
 	botIntents = discordgo.IntentGuilds |
 		discordgo.IntentGuildMessages |
 		discordgo.IntentDirectMessages
+	botVersion = "1.0.0"
 )
 
 // Bot is a Discord bot which is capable of running multiple sub-bots ("cogs"), which implement various commands.
@@ -103,14 +104,12 @@ func NewBot() *Bot {
 		}
 	})
 
-	/*
-		// Delete any old slash commands, and then add in my current set
-		log.Info("Delete old commands")
-		_, err := s.ApplicationCommandBulkOverwrite(appID, guildID, nil)
-		if err != nil {
-			log.Fatal("Failed to delete all old commands, error:", err)
-		}
-	*/
+	// Delete any old slash commands, and then add in my current set
+	log.Info("Delete old commands")
+	_, err = s.ApplicationCommandBulkOverwrite(appID, guildID, nil)
+	if err != nil {
+		log.Fatal("Failed to delete all old commands, error:", err)
+	}
 
 	log.Debug("Add bot commands")
 	_, err = bot.Session.ApplicationCommandBulkOverwrite(appID, guildID, commands)

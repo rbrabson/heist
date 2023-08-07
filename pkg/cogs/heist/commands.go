@@ -44,293 +44,303 @@ var (
 		"leave_heist":  leaveHeist,
 	}
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"clear":   clearMember,
-		"config":  config,
-		"start":   planHeist,
-		"bail":    bailoutPlayer,
-		"revive":  revivePlayer,
-		"release": releasePlayer,
-		"stats":   playerStats,
-		"target":  target,
-		"theme":   theme,
-		"reset":   resetHeist,
-		"version": version,
-	}
-	adminCommands = []*discordgo.ApplicationCommand{
-		{
-			Name:        "clear",
-			Description: "Clears the criminal settings for the user.",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "id",
-					Description: "ID of the player to clear",
-					Required:    true,
-				},
-			},
-		},
-		{
-			Name:        "config",
-			Description: "Configures the Heist bot.",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Name:        "info",
-					Description: "Returns the configuration information for the server.",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-				},
-				{
-					Name:        "bail",
-					Description: "Sets the base cost of bail.",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Type:        discordgo.ApplicationCommandOptionInteger,
-							Name:        "amount",
-							Description: "The base cost of bail.",
-							Required:    true,
-						},
-					},
-				},
-				{
-					Name:        "cost",
-					Description: "Sets the cost to plan or join a heist.",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Type:        discordgo.ApplicationCommandOptionInteger,
-							Name:        "amount",
-							Description: "The cost to plan or join a heist.",
-							Required:    true,
-						},
-					},
-				},
-				{
-					Name:        "death",
-					Description: "Sets how long players remain dead.",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Type:        discordgo.ApplicationCommandOptionInteger,
-							Name:        "time",
-							Description: "The time the player remains dead, in seconds.",
-							Required:    true,
-						},
-					},
-				},
-				{
-					Name:        "patrol",
-					Description: "Sets the time the authorities will prevent a new heist.",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Type:        discordgo.ApplicationCommandOptionInteger,
-							Name:        "time",
-							Description: "The time the authorities will patrol, in seconds.",
-							Required:    true,
-						},
-					},
-				},
-				{
-					Name:        "payday",
-					Description: "Sets how many credits a player gets for each payday.",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Type:        discordgo.ApplicationCommandOptionInteger,
-							Name:        "amount",
-							Description: "The amount deposited in a players account for each payday.",
-							Required:    true,
-						},
-					},
-				},
-				{
-					Name:        "sentence",
-					Description: "Sets the base apprehension time when caught.",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Type:        discordgo.ApplicationCommandOptionInteger,
-							Name:        "time",
-							Description: "The base time, in seconds.",
-							Required:    true,
-						},
-					},
-				},
-				{
-					Name:        "wait",
-					Description: "Sets how long players can gather others for a heist.",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Type:        discordgo.ApplicationCommandOptionInteger,
-							Name:        "time",
-							Description: "The time to wait for players to join the heist, in seconds.",
-							Required:    true,
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "target",
-			Description: "Commands that affect heist targets.",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Name:        "list",
-					Description: "Gets the list of available heist targets.",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-				},
-				{
-					Name:        "add",
-					Description: "Adds a new target to the list of heist targets.",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Type:        discordgo.ApplicationCommandOptionString,
-							Name:        "id",
-							Description: "ID of the heist",
-							Required:    true,
-						},
-						{
-							Type:        discordgo.ApplicationCommandOptionInteger,
-							Name:        "crew",
-							Description: "Maximum crew size for the heist.",
-							Required:    true,
-						},
-						{
-							Type:        discordgo.ApplicationCommandOptionInteger,
-							Name:        "success",
-							Description: "Percentage liklihood of success (0..100).",
-							Required:    true,
-						},
-						{
-							Type:        discordgo.ApplicationCommandOptionInteger,
-							Name:        "vault",
-							Description: "Maximum size of the target's vault.",
-							Required:    true,
-						},
-						{
-							Type:        discordgo.ApplicationCommandOptionInteger,
-							Name:        "current",
-							Description: "Current size of the target's vault; defaults to `vault`.",
-							Required:    false,
-						},
-					},
-				},
-				{
-					Name:        "edit",
-					Description: "Edits an existing heist target.",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Type:        discordgo.ApplicationCommandOptionString,
-							Name:        "id",
-							Description: "ID of the heist.",
-							Required:    true,
-						},
-						{
-							Type:        discordgo.ApplicationCommandOptionInteger,
-							Name:        "crew",
-							Description: "Maximum crew size for the heist.",
-							Required:    false,
-						},
-						{
-							Type:        discordgo.ApplicationCommandOptionInteger,
-							Name:        "success",
-							Description: "Percentage liklihood of success (0..100).",
-							Required:    false,
-						},
-						{
-							Type:        discordgo.ApplicationCommandOptionInteger,
-							Name:        "vault",
-							Description: "Maximum size of the target's vault.",
-							Required:    false,
-						},
-						{
-							Type:        discordgo.ApplicationCommandOptionInteger,
-							Name:        "current",
-							Description: "Current size of the target's vault; defaults to `vault`.",
-							Required:    false,
-						},
-					},
-				},
-				{
-					Name:        "remove",
-					Description: "Removes a target from the list of heist targets.",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Type:        discordgo.ApplicationCommandOptionString,
-							Name:        "id",
-							Description: "ID of the heist.",
-							Required:    true,
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "theme",
-			Description: "Commands that interact with the heist themes.",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Name:        "list",
-					Description: "Gets the list of available heist themes.",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-				},
-				{
-					Name:        "set",
-					Description: "Sets the current heist theme.",
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Type:        discordgo.ApplicationCommandOptionString,
-							Name:        "name",
-							Description: "Name of the theme to set.",
-							Required:    true,
-						},
-					},
-					Type: discordgo.ApplicationCommandOptionSubCommand,
-				},
-			},
-		},
-		{
-			Name:        "reset",
-			Description: "Resets a new heist that is hung.",
-		},
-		{
-			Name:        "version",
-			Description: "Returns the version of heist running on the server.",
-		},
+		"heist":       heist,
+		"heist-admin": admin,
 	}
 
 	playerCommands = []*discordgo.ApplicationCommand{
 		{
-			Name:        "bail",
-			Description: "Bail a player out of jail.",
+			Name:        "heist",
+			Description: "Heist game commands.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "id",
-					Description: "ID of the player to bail. Defaults to you.",
-					Required:    false,
+					Name:        "bail",
+					Description: "Bail a player out of jail.",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Type:        discordgo.ApplicationCommandOptionString,
+							Name:        "id",
+							Description: "ID of the player to bail. Defaults to you.",
+							Required:    false,
+						},
+					},
+				},
+				{
+					Name:        "revive",
+					Description: "Resurrect player from the dead.",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+				},
+				{
+					Name:        "release",
+					Description: "Releases player from jail.",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+				},
+				{
+					Name:        "stats",
+					Description: "Shows a user's stats.",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+				},
+				{
+					Name:        "start",
+					Description: "Plans a new heist.",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
 				},
 			},
 		},
+	}
+
+	adminCommands = []*discordgo.ApplicationCommand{
 		{
-			Name:        "revive",
-			Description: "Resurect player from the dead.",
-		},
-		{
-			Name:        "release",
-			Description: "Releases player from jail.",
-		},
-		{
-			Name:        "stats",
-			Description: "Shows a user's stats.",
-		},
-		{
-			Name:        "start",
-			Description: "Plans a new heist.",
+			Name:        "heist-admin",
+			Description: "Heist admin commands.",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Name:        "clear",
+					Description: "Clears the criminal settings for the user.",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Type:        discordgo.ApplicationCommandOptionString,
+							Name:        "id",
+							Description: "ID of the player to clear",
+							Required:    true,
+						},
+					},
+				},
+				{
+					Name:        "config",
+					Description: "Configures the Heist bot.",
+					Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Name:        "info",
+							Description: "Returns the configuration information for the server.",
+							Type:        discordgo.ApplicationCommandOptionSubCommand,
+						},
+						{
+							Name:        "bail",
+							Description: "Sets the base cost of bail.",
+							Type:        discordgo.ApplicationCommandOptionSubCommand,
+							Options: []*discordgo.ApplicationCommandOption{
+								{
+									Type:        discordgo.ApplicationCommandOptionInteger,
+									Name:        "amount",
+									Description: "The base cost of bail.",
+									Required:    true,
+								},
+							},
+						},
+						{
+							Name:        "cost",
+							Description: "Sets the cost to plan or join a heist.",
+							Type:        discordgo.ApplicationCommandOptionSubCommand,
+							Options: []*discordgo.ApplicationCommandOption{
+								{
+									Type:        discordgo.ApplicationCommandOptionInteger,
+									Name:        "amount",
+									Description: "The cost to plan or join a heist.",
+									Required:    true,
+								},
+							},
+						},
+						{
+							Name:        "death",
+							Description: "Sets how long players remain dead.",
+							Type:        discordgo.ApplicationCommandOptionSubCommand,
+							Options: []*discordgo.ApplicationCommandOption{
+								{
+									Type:        discordgo.ApplicationCommandOptionInteger,
+									Name:        "time",
+									Description: "The time the player remains dead, in seconds.",
+									Required:    true,
+								},
+							},
+						},
+						{
+							Name:        "patrol",
+							Description: "Sets the time the authorities will prevent a new heist.",
+							Type:        discordgo.ApplicationCommandOptionSubCommand,
+							Options: []*discordgo.ApplicationCommandOption{
+								{
+									Type:        discordgo.ApplicationCommandOptionInteger,
+									Name:        "time",
+									Description: "The time the authorities will patrol, in seconds.",
+									Required:    true,
+								},
+							},
+						},
+						{
+							Name:        "payday",
+							Description: "Sets how many credits a player gets for each payday.",
+							Type:        discordgo.ApplicationCommandOptionSubCommand,
+							Options: []*discordgo.ApplicationCommandOption{
+								{
+									Type:        discordgo.ApplicationCommandOptionInteger,
+									Name:        "amount",
+									Description: "The amount deposited in a players account for each payday.",
+									Required:    true,
+								},
+							},
+						},
+						{
+							Name:        "sentence",
+							Description: "Sets the base apprehension time when caught.",
+							Type:        discordgo.ApplicationCommandOptionSubCommand,
+							Options: []*discordgo.ApplicationCommandOption{
+								{
+									Type:        discordgo.ApplicationCommandOptionInteger,
+									Name:        "time",
+									Description: "The base time, in seconds.",
+									Required:    true,
+								},
+							},
+						},
+						{
+							Name:        "wait",
+							Description: "Sets how long players can gather others for a heist.",
+							Type:        discordgo.ApplicationCommandOptionSubCommand,
+							Options: []*discordgo.ApplicationCommandOption{
+								{
+									Type:        discordgo.ApplicationCommandOptionInteger,
+									Name:        "time",
+									Description: "The time to wait for players to join the heist, in seconds.",
+									Required:    true,
+								},
+							},
+						},
+					},
+				},
+				{
+					Name:        "target",
+					Description: "Commands that affect heist targets.",
+					Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Name:        "list",
+							Description: "Gets the list of available heist targets.",
+							Type:        discordgo.ApplicationCommandOptionSubCommand,
+						},
+						{
+							Name:        "add",
+							Description: "Adds a new target to the list of heist targets.",
+							Type:        discordgo.ApplicationCommandOptionSubCommand,
+							Options: []*discordgo.ApplicationCommandOption{
+								{
+									Type:        discordgo.ApplicationCommandOptionString,
+									Name:        "id",
+									Description: "ID of the heist",
+									Required:    true,
+								},
+								{
+									Type:        discordgo.ApplicationCommandOptionInteger,
+									Name:        "crew",
+									Description: "Maximum crew size for the heist.",
+									Required:    true,
+								},
+								{
+									Type:        discordgo.ApplicationCommandOptionInteger,
+									Name:        "success",
+									Description: "Percentage liklihood of success (0..100).",
+									Required:    true,
+								},
+								{
+									Type:        discordgo.ApplicationCommandOptionInteger,
+									Name:        "vault",
+									Description: "Maximum size of the target's vault.",
+									Required:    true,
+								},
+								{
+									Type:        discordgo.ApplicationCommandOptionInteger,
+									Name:        "current",
+									Description: "Current size of the target's vault; defaults to `vault`.",
+									Required:    false,
+								},
+							},
+						},
+						{
+							Name:        "edit",
+							Description: "Edits an existing heist target.",
+							Type:        discordgo.ApplicationCommandOptionSubCommand,
+							Options: []*discordgo.ApplicationCommandOption{
+								{
+									Type:        discordgo.ApplicationCommandOptionString,
+									Name:        "id",
+									Description: "ID of the heist.",
+									Required:    true,
+								},
+								{
+									Type:        discordgo.ApplicationCommandOptionInteger,
+									Name:        "crew",
+									Description: "Maximum crew size for the heist.",
+									Required:    false,
+								},
+								{
+									Type:        discordgo.ApplicationCommandOptionInteger,
+									Name:        "success",
+									Description: "Percentage liklihood of success (0..100).",
+									Required:    false,
+								},
+								{
+									Type:        discordgo.ApplicationCommandOptionInteger,
+									Name:        "vault",
+									Description: "Maximum size of the target's vault.",
+									Required:    false,
+								},
+								{
+									Type:        discordgo.ApplicationCommandOptionInteger,
+									Name:        "current",
+									Description: "Current size of the target's vault; defaults to `vault`.",
+									Required:    false,
+								},
+							},
+						},
+						{
+							Name:        "remove",
+							Description: "Removes a target from the list of heist targets.",
+							Type:        discordgo.ApplicationCommandOptionSubCommand,
+							Options: []*discordgo.ApplicationCommandOption{
+								{
+									Type:        discordgo.ApplicationCommandOptionString,
+									Name:        "id",
+									Description: "ID of the heist.",
+									Required:    true,
+								},
+							},
+						},
+					},
+				},
+				{
+					Name:        "theme",
+					Description: "Commands that interact with the heist themes.",
+					Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Name:        "list",
+							Description: "Gets the list of available heist themes.",
+							Type:        discordgo.ApplicationCommandOptionSubCommand,
+						},
+						{
+							Name:        "set",
+							Description: "Sets the current heist theme.",
+							Options: []*discordgo.ApplicationCommandOption{
+								{
+									Type:        discordgo.ApplicationCommandOptionString,
+									Name:        "name",
+									Description: "Name of the theme to set.",
+									Required:    true,
+								},
+							},
+							Type: discordgo.ApplicationCommandOptionSubCommand,
+						},
+					},
+				},
+				{
+					Name:        "reset",
+					Description: "Resets a new heist that is hung.",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+				},
+			},
 		},
 	}
 )
@@ -342,7 +352,7 @@ func config(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> config")
 	defer log.Debug("<-- config")
 
-	options := i.ApplicationCommandData().Options
+	options := i.ApplicationCommandData().Options[0].Options
 	switch options[0].Name {
 	case "cost":
 		configCost(s, i)
@@ -368,7 +378,7 @@ func target(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> target")
 	defer log.Debug("<-- target")
 
-	options := i.ApplicationCommandData().Options
+	options := i.ApplicationCommandData().Options[0].Options
 	switch options[0].Name {
 	case "add":
 		addTarget(s, i)
@@ -386,7 +396,7 @@ func theme(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> theme")
 	defer log.Debug("<-- theme")
 
-	options := i.ApplicationCommandData().Options
+	options := i.ApplicationCommandData().Options[0].Options
 	switch options[0].Name {
 	case "list":
 		listThemes(s, i)
@@ -529,6 +539,48 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 	}
 
 	return nil
+}
+
+/******** COMMAND ROUTERS ********/
+
+// admin routes the commands to the subcommand and subcommandgroup handlers
+func admin(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Debug("--> admin")
+	defer log.Debug("<-- admin")
+
+	options := i.ApplicationCommandData().Options
+	switch options[0].Name {
+	case "clear":
+		clearMember(s, i)
+	case "config":
+		config(s, i)
+	case "reset":
+		resetHeist(s, i)
+	case "target":
+		target(s, i)
+	case "theme":
+		theme(s, i)
+	}
+}
+
+// heist routes the commands to the subcommand and subcommandgroup handlers
+func heist(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Debug("--> heist")
+	defer log.Debug("<-- heist")
+
+	options := i.ApplicationCommandData().Options
+	switch options[0].Name {
+	case "bail":
+		bailoutPlayer(s, i)
+	case "release":
+		releasePlayer(s, i)
+	case "revive":
+		revivePlayer(s, i)
+	case "start":
+		planHeist(s, i)
+	case "stats":
+		playerStats(s, i)
+	}
 }
 
 /******** PLAYER COMMANDS ********/
@@ -888,7 +940,7 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	p := getPrinter(i)
 
 	var playerID string
-	options := i.ApplicationCommandData().Options
+	options := i.ApplicationCommandData().Options[0].Options
 	for _, option := range options {
 		if option.Name == "id" {
 			playerID = strings.TrimSpace(option.StringValue())
@@ -923,7 +975,7 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	if player.Status == APPREHENDED && player.JailTimer.Before(time.Now()) {
-		discmsg.SendEphemeralResponse(s, i, "You have already served your sentence. Use `/release` to be released from jail.")
+		discmsg.SendEphemeralResponse(s, i, "You have already served your sentence. Use `/heist release` to be released from jail.")
 		return
 	}
 	if account.Balance < int(player.BailCost) {
@@ -1020,10 +1072,6 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> resetHeist")
 	defer log.Debug("<-- resetHeist")
 
-	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
-		discmsg.SendEphemeralResponse(s, i, "You are not allowed to use this command.")
-		return
-	}
 	server := GetServer(servers, i.GuildID)
 	theme := themes[server.Config.Theme]
 	if server.Heist == nil || !server.Heist.Planned {
@@ -1049,17 +1097,12 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> addTarget")
 	defer log.Debug("<-- addTarget")
 
-	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
-		discmsg.SendEphemeralResponse(s, i, "You are not allowed to use this command.")
-		return
-	}
-
 	server := GetServer(servers, i.GuildID)
 
 	var id string
 	var crewSize, vaultMax, vaultCurrent int64
 	var success float64
-	options := i.ApplicationCommandData().Options[0].Options
+	options := i.ApplicationCommandData().Options[0].Options[0].Options
 	for _, option := range options {
 		switch option.Name {
 		case "id":
@@ -1107,7 +1150,8 @@ func editTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	var id string
 	var crew, vault, current int64
 	var success float64
-	for _, option := range i.ApplicationCommandData().Options[0].Options[0].Options {
+	options := i.ApplicationCommandData().Options[0].Options[0].Options[0].Options
+	for _, option := range options {
 		switch option.Name {
 		case "id":
 			id = option.StringValue()
@@ -1158,11 +1202,6 @@ func removeTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> deleteTarget")
 	defer log.Debug("<-- deleteTarget")
 
-	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
-		discmsg.SendEphemeralResponse(s, i, "You are not allowed to use this command.")
-		return
-	}
-
 	targetID := i.ApplicationCommandData().Options[0].Options[0].Options[0].StringValue()
 
 	server := GetServer(servers, i.GuildID)
@@ -1175,7 +1214,7 @@ func removeTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	discmsg.SendResponse(s, i, "Target \""+targetID+"\" removed.")
 
-	// Save the state
+	store.Store.Save(HEIST, server.ID, server)
 }
 
 // listTargets displays a list of available heist targets.
@@ -1184,11 +1223,6 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Debug("<-- listTargets")
 
 	p := getPrinter(i)
-
-	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
-		discmsg.SendEphemeralResponse(s, i, "You are not allowed to use this command.")
-		return
-	}
 
 	server := GetServer(servers, i.GuildID)
 	theme := themes[server.Config.Theme]
@@ -1297,7 +1331,7 @@ func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	server := GetServer(servers, i.GuildID)
 	var themeName string
-	options := i.ApplicationCommandData().Options[0].Options
+	options := i.ApplicationCommandData().Options[0].Options[0].Options
 	for _, option := range options {
 		if option.Name == "name" {
 			themeName = strings.TrimSpace(option.StringValue())
@@ -1332,7 +1366,8 @@ func configCost(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	p := getPrinter(i)
 
 	server := GetServer(servers, i.GuildID)
-	cost := i.ApplicationCommandData().Options[0].Options[0].IntValue()
+	options := i.ApplicationCommandData().Options[0].Options[0].Options
+	cost := options[0].IntValue()
 	server.Config.HeistCost = cost
 
 	discmsg.SendResponse(s, i, p.Sprintf("Cost set to %d", cost))
@@ -1364,7 +1399,8 @@ func configPatrol(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	p := getPrinter(i)
 
 	server := GetServer(servers, i.GuildID)
-	patrol := i.ApplicationCommandData().Options[0].Options[0].IntValue()
+	options := i.ApplicationCommandData().Options[0].Options[0].Options
+	patrol := options[0].IntValue()
 	server.Config.PoliceAlert = time.Duration(patrol * int64(time.Second))
 
 	discmsg.SendResponse(s, i, p.Sprintf("Patrol set to %d", patrol))
@@ -1380,7 +1416,8 @@ func configBail(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	p := getPrinter(i)
 
 	server := GetServer(servers, i.GuildID)
-	bail := i.ApplicationCommandData().Options[0].Options[0].IntValue()
+	options := i.ApplicationCommandData().Options[0].Options[0].Options
+	bail := options[0].IntValue()
 	server.Config.BailBase = bail
 
 	discmsg.SendResponse(s, i, p.Sprintf("Bail set to %d", bail))
@@ -1396,7 +1433,8 @@ func configDeath(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	p := getPrinter(i)
 
 	server := GetServer(servers, i.GuildID)
-	death := i.ApplicationCommandData().Options[0].Options[0].IntValue()
+	options := i.ApplicationCommandData().Options[0].Options[0].Options
+	death := options[0].IntValue()
 	server.Config.PoliceAlert = time.Duration(death * int64(time.Second))
 
 	discmsg.SendResponse(s, i, p.Sprintf("Death set to %d", death))
@@ -1412,7 +1450,8 @@ func configWait(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	p := getPrinter(i)
 
 	server := GetServer(servers, i.GuildID)
-	wait := i.ApplicationCommandData().Options[0].Options[0].IntValue()
+	options := i.ApplicationCommandData().Options[0].Options[0].Options
+	wait := options[0].IntValue()
 	server.Config.WaitTime = time.Duration(wait * int64(time.Second))
 
 	discmsg.SendResponse(s, i, p.Sprintf("Wait set to %d", wait))
@@ -1429,7 +1468,8 @@ func configPayday(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	p := getPrinter(i)
 
 	server := GetServer(servers, i.GuildID)
-	amount := i.ApplicationCommandData().Options[0].Options[0].IntValue()
+	options := i.ApplicationCommandData().Options[0].Options[0].Options
+	amount := options[0].IntValue()
 	payday.SetPaydayAmount(server.ID, amount)
 
 	discmsg.SendResponse(s, i, p.Sprintf("Payday is set to %d", amount))
@@ -1506,20 +1546,6 @@ func configInfo(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 }
 
-// version shows the version of heist you are running.
-func version(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> version")
-	defer log.Debug("<-- version")
-
-	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
-		discmsg.SendResponse(s, i, "You are not allowed to use this command.")
-		return
-	}
-	server := GetServer(servers, i.GuildID)
-
-	discmsg.SendEphemeralResponse(s, i, "You are running Heist version "+server.Config.Version+".")
-}
-
 // Start initializes anything needed by the heist bot.
 func Start(s *discordgo.Session) {
 	servers = LoadServers()
@@ -1530,7 +1556,7 @@ func Start(s *discordgo.Session) {
 
 // GetCommands ret urns the component handlers, command handlers, and commands for the Heist bot.
 func GetCommands() (map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate), map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate), []*discordgo.ApplicationCommand) {
-	commands := make([]*discordgo.ApplicationCommand, 0, len(playerCommands)+len(adminCommands))
+	commands := make([]*discordgo.ApplicationCommand, 0, len(adminCommands)+len(playerCommands))
 	commands = append(commands, adminCommands...)
 	commands = append(commands, playerCommands...)
 	return componentHandlers, commandHandlers, commands

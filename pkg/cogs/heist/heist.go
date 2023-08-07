@@ -58,7 +58,7 @@ func heistChecks(server *Server, i *discordgo.InteractionCreate, player *Player,
 			return msg, false
 		}
 
-		msg := p.Sprintf("Looks like your %s is over, but you're still in %s! Get released released by typing `/release`.", theme.Sentence, theme.Jail)
+		msg := p.Sprintf("Looks like your %s is over, but you're still in %s! Get released released by typing `/heist release`.", theme.Sentence, theme.Jail)
 		return msg, false
 	}
 	if player.Status == DEAD {
@@ -67,7 +67,7 @@ func heistChecks(server *Server, i *discordgo.InteractionCreate, player *Player,
 			msg := p.Sprintf("You are dead. You will revive in %s", format.Duration(remainingTime))
 			return msg, false
 		}
-		msg := "Looks like you are still dead, but you can revive at anytime by using the command `/revive`."
+		msg := "Looks like you are still dead, but you can revive at anytime by using the command `/heist revive`."
 		return msg, false
 	}
 	account := bank.GetAccount(player.ID, player.Name)
@@ -288,10 +288,10 @@ func vaultUpdater() {
 
 // GetMemberHelp returns help information about the heist bot commands for regular members.
 func GetMemberHelp() []string {
-	help := make([]string, 0, len(playerCommands))
+	help := make([]string, 0, len(playerCommands[0].Options))
 
-	for _, command := range playerCommands {
-		commandDescription := fmt.Sprintf("- **/%s**:  %s\n", command.Name, command.Description)
+	for _, subcommand := range playerCommands[0].Options {
+		commandDescription := fmt.Sprintf("- **/heist %s**:  %s\n", subcommand.Name, subcommand.Description)
 		help = append(help, commandDescription)
 	}
 	sort.Slice(help, func(i, j int) bool {
@@ -304,10 +304,10 @@ func GetMemberHelp() []string {
 
 // GetAdminHelp returns help information about the heist bot for administrators.
 func GetAdminHelp() []string {
-	help := make([]string, 0, len(adminCommands))
+	help := make([]string, 0, len(adminCommands[0].Options))
 
-	for _, command := range adminCommands {
-		commandDescription := fmt.Sprintf("- **/%s**:  %s\n", command.Name, command.Description)
+	for _, command := range adminCommands[0].Options {
+		commandDescription := fmt.Sprintf("- **/heist-admin %s**:  %s\n", command.Name, command.Description)
 		help = append(help, commandDescription)
 	}
 	sort.Slice(help, func(i, j int) bool {
