@@ -16,22 +16,24 @@ var (
 		{
 
 			Name:        "help",
-			Description: "Provides a description of commands for this server",
+			Description: "Provides a description of commands for this server.",
 		},
 		{
 			Name:        "adminhelp",
-			Description: "Provides a description of admin commands for this server",
+			Description: "Provides a description of admin commands for this server.",
 		},
 	}
 )
 
+// help sends a help message for player commands.
 func help(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> help")
 	log.Debug("<-- help")
 
-	msg.SendResponse(s, i, getMemberHelp())
+	msg.SendEphemeralResponse(s, i, getMemberHelp())
 }
 
+// adminHelp sends a help message for administrative commands.
 func adminHelp(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Debug("--> adminHelp")
 	log.Debug("<-- adminHelp")

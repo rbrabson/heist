@@ -306,7 +306,7 @@ var (
 	playerCommands = []*discordgo.ApplicationCommand{
 		{
 			Name:        "bail",
-			Description: "Bail a player out of jail",
+			Description: "Bail a player out of jail.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
