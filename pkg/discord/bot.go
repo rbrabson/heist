@@ -104,12 +104,14 @@ func NewBot() *Bot {
 		}
 	})
 
-	// Delete any old slash commands, and then add in my current set
-	log.Info("Delete old commands")
-	_, err = s.ApplicationCommandBulkOverwrite(appID, guildID, nil)
-	if err != nil {
-		log.Fatal("Failed to delete all old commands, error:", err)
-	}
+	/*
+		// Delete any old slash commands, and then add in my current set
+		log.Info("Delete old commands")
+		_, err = s.ApplicationCommandBulkOverwrite(appID, guildID, nil)
+		if err != nil {
+			log.Fatal("Failed to delete all old commands, error:", err)
+		}
+	*/
 
 	log.Debug("Add bot commands")
 	_, err = bot.Session.ApplicationCommandBulkOverwrite(appID, guildID, commands)
