@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/rbrabson/heist/pkg/format"
 	"github.com/rbrabson/heist/pkg/store"
 	log "github.com/sirupsen/logrus"
@@ -37,6 +38,7 @@ type reminder struct {
 	Duration time.Duration `json:"duration" bson:"duration"`
 	When     time.Time     `json:"when" bson:"when"`
 	Message  *string       `json:"message,omitempty" bson:"message,omitempty"`
+	Channel  string        `json:"channel" bson:"channel"`
 }
 
 // init initializes the set of reminders
@@ -44,6 +46,7 @@ func init() {
 	servers = make(map[string]*server)
 }
 
+// getServer returns the given server. If necessary, a new one is created.
 func getServer(serverID string) *server {
 	s, ok := servers[serverID]
 	if !ok {
@@ -59,7 +62,7 @@ func getServer(serverID string) *server {
 }
 
 // newReminder creates a new reminder and adds it to the set of reminders for a given member.
-func (s *server) newReminder(memberID string, wait time.Duration, message ...string) {
+func (s *server) newReminder(channelID string, memberID string, wait time.Duration, message ...string) {
 	rl, ok := s.Members[memberID]
 	if !ok {
 		reminders := make([]*reminder, 0, 1)
@@ -75,10 +78,12 @@ func (s *server) newReminder(memberID string, wait time.Duration, message ...str
 	if len(message) != 0 {
 		msg = &message[0]
 	}
+	channel := fmt.Sprintf("https://discord.com/channels/%s/%s", s.ID, channelID)
 	r := &reminder{
 		Duration: wait,
 		When:     time.Now().Add(wait),
 		Message:  msg,
+		Channel:  channel,
 	}
 	rl.Reminders = append(rl.Reminders, r)
 
@@ -89,7 +94,7 @@ func (s *server) newReminder(memberID string, wait time.Duration, message ...str
 
 // createReminder sets a reminder for a person that will be sent via a Direct Message once the
 // timer expires.
-func createReminder(serverID string, memberID string, when string, message ...string) (string, error) {
+func (s *server) createReminder(channelID string, memberID string, when string, message ...string) (string, error) {
 	log.Debug("--> createReminder")
 	defer log.Debug("<-- createReminder")
 
@@ -105,8 +110,7 @@ func createReminder(serverID string, memberID string, when string, message ...st
 		return msg, ErrInvalidDuration
 	}
 
-	s := getServer(serverID)
-	s.newReminder(memberID, wait, message...)
+	s.newReminder(channelID, memberID, wait, message...)
 	saveReminder(s)
 
 	msg := fmt.Sprintf("I will remind you of that in %s", format.Duration(wait))
@@ -174,19 +178,32 @@ func sendReminders() {
 						log.Errorf("Error creating private channel to %s, error=%s", member.MemberID, err.Error())
 						break
 					}
-
-					var message string
+					var embed *discordgo.MessageEmbed
+					desc := fmt.Sprintf("From %s ago:\n\n%s", format.Duration(reminder.Duration), reminder.Channel)
 					if reminder.Message == nil {
-						message = fmt.Sprintf(":bell: Reminder! :bell:\nFrom %s ago", format.Duration(reminder.Duration))
+						embed = &discordgo.MessageEmbed{
+							Type:        discordgo.EmbedTypeRich,
+							Title:       ":bell: Reminder! :bell:",
+							Description: desc,
+						}
 					} else {
-						message = fmt.Sprintf(":bell: Reminder! :bell:\nFrom %s ago\n\n%s", format.Duration(reminder.Duration), *reminder.Message)
+						embed = &discordgo.MessageEmbed{
+							Type:        discordgo.EmbedTypeRich,
+							Title:       ":bell: Reminder! :bell:",
+							Description: desc,
+							Fields: []*discordgo.MessageEmbedField{
+								{
+									Name:   "Message",
+									Value:  *reminder.Message,
+									Inline: true,
+								},
+							},
+						}
 					}
-					_, err = session.ChannelMessageSend(c.ID, message)
+					_, err = session.ChannelMessageSendEmbed(c.ID, embed)
 					if err != nil {
 						log.Errorf("Failed to send DM, message=%s", err.Error())
 						break
-					} else {
-						log.Debugf("Sent DM to %s\nmessage=%s", member.MemberID, message)
 					}
 
 					member.Reminders = member.Reminders[1:]
