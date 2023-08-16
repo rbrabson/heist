@@ -41,7 +41,7 @@ func newServer(serverID string) *server {
 		ID:              serverID,
 		Members:         members,
 		PaydayAmount:    5000,
-		PaydayFrequency: time.Duration(24 * time.Hour),
+		PaydayFrequency: time.Duration(23 * time.Hour),
 	}
 	servers[server.ID] = server
 	saveServer(server)
