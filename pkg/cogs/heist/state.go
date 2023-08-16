@@ -75,15 +75,6 @@ type Player struct {
 	TotalJail     int64         `json:"total_jail" bson:"total_jail"`
 }
 
-// Target is a target of a heist.
-type Target struct {
-	ID       string  `json:"_id" bson:"_id"`
-	CrewSize int64   `json:"crew" bson:"crew"`
-	Success  float64 `json:"success" bson:"success"`
-	Vault    int64   `json:"vault" bson:"vault"`
-	VaultMax int64   `json:"vault_max" bson:"vault_max"`
-}
-
 // NewServer creates a new server with the specified ID. It is typically called when
 // the first call from a server is made to the heist bot.
 func NewServer(guildID string) *Server {
@@ -112,7 +103,7 @@ func NewServer(guildID string) *Server {
 			WaitTime:     time.Duration(60 * time.Second),
 		},
 		Players: make(map[string]*Player, 1),
-		Targets: make(map[string]*Target, 1),
+		Targets: defaultTargets,
 	}
 	return &server
 }
@@ -143,19 +134,6 @@ func NewHeist(server *Server, planner *Player) *Heist {
 	heist.Crew = append(heist.Crew, heist.Planner)
 
 	return &heist
-}
-
-// NewTarget creates a new target for a heist
-func NewTarget(id string, maxCrewSize int64, success float64, vaultCurrent int64, maxVault int64) *Target {
-	target := Target{
-		ID:       id,
-		CrewSize: maxCrewSize,
-		Success:  success,
-		Vault:    vaultCurrent,
-		VaultMax: maxVault,
-	}
-	return &target
-
 }
 
 // GetServer returns the server for the guild. If the server does not already exist, one is created.
@@ -275,11 +253,5 @@ func (c *Config) String() string {
 // String returns a string representation of the player.
 func (p *Player) String() string {
 	out, _ := json.Marshal(p)
-	return string(out)
-}
-
-// String returns a string representation of the target.
-func (t *Target) String() string {
-	out, _ := json.Marshal(t)
 	return string(out)
 }

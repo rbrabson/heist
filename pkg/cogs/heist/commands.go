@@ -4,6 +4,7 @@ commands contains the list of commands and messages sent to Discord, or commands
 package heist
 
 import (
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -1240,6 +1241,8 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	sort.SliceStable(targets, func(i, j int) bool {
 		return targets[i].CrewSize < targets[j].CrewSize
 	})
+
+	fmt.Println(targets)
 
 	// Lets return the data in an Ascii table. Ideally, it would be using a Discord embed, but unfortunately
 	// Discord only puts three columns per row, which isn't enough for our purposes.
