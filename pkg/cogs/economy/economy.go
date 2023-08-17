@@ -49,6 +49,9 @@ type Account struct {
 
 // NewBank creates a new bank for the given server/guild.
 func NewBank(serverID string) *Bank {
+	log.Debug("--> NewBank")
+	defer log.Debug("<-- NewBank")
+
 	bank := Bank{
 		ID:                  serverID,
 		DefaultBalance:      0,
@@ -63,6 +66,9 @@ func NewBank(serverID string) *Bank {
 
 // GetBank returns the bank for the server/guild.
 func GetBank(serverID string) *Bank {
+	log.Debug("--> GetBank")
+	defer log.Debug("<-- GetBank")
+
 	bank, ok := banks[serverID]
 	if !ok {
 		bank = NewBank(serverID)
@@ -74,6 +80,9 @@ func GetBank(serverID string) *Bank {
 
 // NewAccount creates a new bank account for the player.
 func NewAccount(b *Bank, playerID string, playerName string) *Account {
+	log.Debug("--> NewAccount")
+	defer log.Debug("<-- NewAccount")
+
 	account := Account{
 		ID:        playerID,
 		Balance:   b.DefaultBalance,
@@ -85,6 +94,9 @@ func NewAccount(b *Bank, playerID string, playerName string) *Account {
 
 // GetAccount returns the bank account for the player.
 func (b *Bank) GetAccount(playerID string, playerName string) *Account {
+	log.Debug("--> GetAccount")
+	defer log.Debug("<-- GetAccount")
+
 	account, ok := b.Accounts[playerID]
 	if !ok {
 		account = NewAccount(b, playerID, playerName)
@@ -102,6 +114,9 @@ func DepositCredits(bank *Bank, account *Account, amount int) {
 
 // WithDrawCredits deducts the amount of credits from the account at the given bank
 func WithdrawCredits(bank *Bank, account *Account, amount int) error {
+	log.Debug("--> WithdrawCredits")
+	defer log.Debug("<-- WithdrawCredits")
+
 	if account.Balance < amount {
 		return ErrInsufficintBalance
 	}
@@ -111,6 +126,9 @@ func WithdrawCredits(bank *Bank, account *Account, amount int) error {
 
 // LoadBanks returns all the banks for the given guilds.
 func LoadBanks() {
+	log.Debug("--> LoadBanks")
+	defer log.Debug("<-- LoadBanks")
+
 	banks = make(map[string]*Bank)
 	bankIDs := store.Store.ListDocuments(ECONOMY)
 	for _, bankID := range bankIDs {
@@ -122,6 +140,9 @@ func LoadBanks() {
 
 // SaveBank saves the bank.
 func SaveBank(bank *Bank) {
+	log.Debug("--> SaveBank")
+	defer log.Debug("<-- SaveBank")
+
 	store.Store.Save(ECONOMY, bank.ID, bank)
 }
 

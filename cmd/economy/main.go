@@ -2,9 +2,32 @@
 
 package main
 
+import (
+	"fmt"
+	"time"
+
+	"github.com/rbrabson/heist/pkg/cogs/economy"
+)
+
 type OldEconomy interface{}
 
 func main() {
+	economy.Start(nil)
+	fmt.Println("Getting accounts")
+	start := time.Now()
+	accounts := economy.GetLeaderboard("1133473421532086342", 10)
+	elapsed := time.Since(start)
+	fmt.Printf("Elapsed time sorting accounts: %s\n", elapsed)
+	for _, account := range accounts {
+		fmt.Printf("Name: %s, Balance: %d\n", account.Name, account.Balance)
+	}
+
+	start = time.Now()
+	ranking := economy.GetRanking("1133473421532086342", "149670432331661312")
+	elapsed = time.Since(start)
+	fmt.Printf("Elapsed time getting ranking: %s\n", elapsed)
+	fmt.Printf("Ranking: %d\n", ranking)
+
 	/*
 		godotenv.Load()
 		economy.LoadBanks()
