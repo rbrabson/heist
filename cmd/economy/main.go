@@ -15,7 +15,7 @@ func main() {
 	economy.Start(nil)
 	fmt.Println("Getting accounts")
 	start := time.Now()
-	accounts := economy.GetLeaderboard("1133473421532086342", 10)
+	accounts := economy.GetLeaderboard("1141342869383282759", 10)
 	elapsed := time.Since(start)
 	fmt.Printf("Elapsed time sorting accounts: %s\n", elapsed)
 	for _, account := range accounts {

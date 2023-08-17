@@ -729,9 +729,11 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	if len(results.survivingCrew) == 0 {
-		msg = "No one made it out safe."
+		msg = "\nNo one made it out safe."
 		s.ChannelMessageSend(i.ChannelID, msg)
 	} else {
+		msg = "\nThe raid is now over. Distributing player spoils."
+		s.ChannelMessageSend(i.ChannelID, msg)
 		// Render the results into a table and returnt he results.
 		var tableBuffer strings.Builder
 		table := tablewriter.NewWriter(&tableBuffer)
