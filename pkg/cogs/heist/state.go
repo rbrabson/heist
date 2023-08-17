@@ -3,6 +3,7 @@ package heist
 import (
 	"encoding/json"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -47,15 +48,15 @@ type Config struct {
 
 // Heist is the data for a heist that is either planned or being executed.
 type Heist struct {
-	Planner       string                       `json:"planner" bson:"planner"`
-	Crew          []string                     `json:"crew" bson:"crew"`
-	SurvivingCrew []string                     `json:"surviving_crew" bson:"surviving_crew"`
-	Planned       bool                         `json:"planned" bson:"planned"`
-	Started       bool                         `json:"started" bson:"started"`
-	MessageID     string                       `json:"message_id" bson:"message_id"`
-	StartTime     time.Time                    `json:"start_time" bson:"start_time"`
-	Interaction   *discordgo.InteractionCreate `json:"-" bson:"-"`
-	Timer         *waitTimer                   `json:"-" bson:"-"`
+	Planner     string                       `json:"planner" bson:"planner"`
+	Crew        []string                     `json:"crew" bson:"crew"`
+	Planned     bool                         `json:"planned" bson:"planned"`
+	Started     bool                         `json:"started" bson:"started"`
+	MessageID   string                       `json:"message_id" bson:"message_id"`
+	StartTime   time.Time                    `json:"start_time" bson:"start_time"`
+	Interaction *discordgo.InteractionCreate `json:"-" bson:"-"`
+	Timer       *waitTimer                   `json:"-" bson:"-"`
+	Mutex       sync.Mutex                   `json:"-" bson:"-"`
 }
 
 // Player is a specific player of the heist game on a given server.
@@ -126,10 +127,9 @@ func NewPlayer(id string, username string, nickname string) *Player {
 // NewHeist creates a new default heist.
 func NewHeist(server *Server, planner *Player) *Heist {
 	heist := Heist{
-		Planner:       planner.ID,
-		Crew:          make([]string, 0, 5),
-		SurvivingCrew: make([]string, 0, 5),
-		StartTime:     time.Now().Add(server.Config.WaitTime),
+		Planner:   planner.ID,
+		Crew:      make([]string, 0, 5),
+		StartTime: time.Now().Add(server.Config.WaitTime),
 	}
 	heist.Crew = append(heist.Crew, heist.Planner)
 

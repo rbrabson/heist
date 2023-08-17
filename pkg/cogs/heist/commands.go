@@ -475,9 +475,13 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 		buttonDisabled = true
 	}
 
+	server.Heist.Mutex.Lock()
+	numMembers := len(server.Heist.Crew)
+	server.Heist.Mutex.Unlock()
+
 	theme := themes[server.Config.Theme]
 	caser := cases.Caser(cases.Title(language.Und, cases.NoLower))
-	msg := p.Sprintf("A new %s is being planned by %s. You can join the %s for a cost of %d credits at any time to the %s startting.", theme.Heist, player.Name, theme.Heist, server.Config.HeistCost, theme.Heist)
+	msg := p.Sprintf("A new %s is being planned by %s. You can join the %s for a cost of %d credits at any time to the %s starting.", theme.Heist, player.Name, theme.Heist, server.Config.HeistCost, theme.Heist)
 	embeds := []*discordgo.MessageEmbed{
 		{
 			Type:        discordgo.EmbedTypeRich,
@@ -491,7 +495,7 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 				},
 				{
 					Name:   "Number of " + caser.String(theme.Crew) + "  Members",
-					Value:  p.Sprintf("%d", len(server.Heist.Crew)),
+					Value:  p.Sprintf("%d", numMembers),
 					Inline: true,
 				},
 			},
@@ -643,7 +647,10 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
-	if contains(server.Heist.Crew, player.ID) {
+	server.Heist.Mutex.Lock()
+	isMember := contains(server.Heist.Crew, player.ID)
+	server.Heist.Mutex.Unlock()
+	if isMember {
 		discmsg.SendEphemeralResponse(s, i, "You are already a member of the "+theme.Heist+".")
 		return
 	}
@@ -656,7 +663,9 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
+	server.Heist.Mutex.Lock()
 	server.Heist.Crew = append(server.Heist.Crew, player.ID)
+	server.Heist.Mutex.Unlock()
 	err := heistMessage(s, server.Heist.Interaction, "join")
 	if err != nil {
 		log.Error("Unable to update the heist message, error:", err)
@@ -694,13 +703,18 @@ func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		discmsg.SendEphemeralResponse(s, i, "You can't leave the "+theme.Heist+", as you are the planner.")
 		return
 	}
-	if !contains(server.Heist.Crew, player.ID) {
+	server.Heist.Mutex.Lock()
+	isMember := contains(server.Heist.Crew, player.ID)
+	server.Heist.Mutex.Unlock()
+	if !isMember {
 		discmsg.SendEphemeralResponse(s, i, "You aren't a member of the "+theme.Heist+".")
 		return
 	}
 
 	discmsg.SendEphemeralResponse(s, i, "You have left the "+theme.Heist+".")
+	server.Heist.Mutex.Lock()
 	server.Heist.Crew = remove(server.Heist.Crew, player.ID)
+	server.Heist.Mutex.Unlock()
 
 	err := heistMessage(s, server.Heist.Interaction, "leave")
 

@@ -46,7 +46,14 @@ func heistChecks(server *Server, i *discordgo.InteractionCreate, player *Player,
 		msg := "Oh no! There are no targets!"
 		return msg, false
 	}
-	if server.Heist != nil && contains(server.Heist.Crew, player.ID) {
+	fmt.Println("Heist:", server.Heist)
+	var isMember bool
+	if server.Heist != nil {
+		server.Heist.Mutex.Lock()
+		isMember = contains(server.Heist.Crew, player.ID)
+		server.Heist.Mutex.Unlock()
+	}
+	if server.Heist != nil && isMember {
 		msg := fmt.Sprintf("You are already in the %s.", theme.Crew)
 		return msg, false
 	}
@@ -219,7 +226,7 @@ func getHeistResults(server *Server, target *Target) *HeistResult {
 			result := &HeistMemberResult{
 				player:       player,
 				status:       FREE,
-				message:      goodResult.Message,
+				message:      goodResult.Message + ":moneybag:",
 				bonusCredits: goodResult.Amount,
 			}
 			results.memberResults = append(results.memberResults, result)
@@ -234,10 +241,17 @@ func getHeistResults(server *Server, target *Target) *HeistResult {
 				badResults = theme.Bad
 			}
 
+			var emoji string
+			if badResult.Result == APPREHENDED {
+				emoji = ":police_officer:"
+			} else {
+				emoji = ":skull:"
+			}
+
 			result := &HeistMemberResult{
 				player:       player,
 				status:       badResult.Result,
-				message:      fmt.Sprintf("%s %s.", badResult.Message, badResult.Result),
+				message:      fmt.Sprintf("%s %s. %s", badResult.Message, badResult.Result, emoji),
 				bonusCredits: 0,
 			}
 			results.memberResults = append(results.memberResults, result)
