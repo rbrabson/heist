@@ -1,6 +1,7 @@
 package economy
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -14,6 +15,7 @@ var (
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"bank":     bank,
 		"transfer": transferCredits,
+		"account":  accountInfo,
 	}
 
 	adminCommands = []*discordgo.ApplicationCommand{
@@ -41,6 +43,19 @@ var (
 					},
 				},
 				{
+					Name:        "account",
+					Description: "Gets the bank account information for the given member.",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Type:        discordgo.ApplicationCommandOptionString,
+							Name:        "id",
+							Description: "The member ID.",
+							Required:    true,
+						},
+					},
+				},
+				{
 					Name:        "transfer",
 					Description: "Transfers the account balance from one account to another.",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
@@ -58,6 +73,10 @@ var (
 							Required:    true,
 						},
 					},
+				},
+				{
+					Name:        "account",
+					Description: "Information about your bank account.",
 				},
 			},
 		},
@@ -96,6 +115,8 @@ func bank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		setAccount(s, i)
 	case "transfer":
 		transferAccount(s, i)
+	case "account":
+		bankAccount(s, i)
 	}
 }
 
@@ -166,6 +187,16 @@ func transferCredits(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	SaveBank(bank)
 	resp := p.Sprintf("You transfered %d credits to %s's account.", amount, toAccount.Name)
 	msg.SendResponse(s, i, resp)
+}
+
+// accountInfo returns information about a member's bank account to that member.
+func accountInfo(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Debug("--> accountInfo")
+	defer log.Debug("<-- accountInfo")
+
+	// balance & global ranking
+
+	log.Println("Getting account information")
 }
 
 // setAccount sets the account to the specified number of credits.
@@ -247,6 +278,24 @@ func transferAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	resp := p.Sprintf("Transferred balance of %d from %s to %s.", toAccount.Balance, fromAccount.Name, toAccount.Name)
 	msg.SendResponse(s, i, resp)
 
+}
+
+// bankAccount returns information about a bank account for the specified member.
+func bankAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Debug("--> bankAccount")
+	defer log.Debug("<-- bankAccount")
+
+	bank := GetBank(i.GuildID)
+	accountID := i.ApplicationCommandData().Options[0].Options[0].StringValue()
+	account, ok := bank.Accounts[accountID]
+	if !ok {
+		resp := fmt.Sprintf("The bank account for member %s could not be found.", accountID)
+		msg.SendEphemeralResponse(s, i, resp)
+		return
+	}
+
+	resp := fmt.Sprintf("ID: %s\n, Name: %s\n, Balance: %d\n, Created: %s\n, NextTransferIn: %s\n, NextTransferOut: %s", account.ID, account.Name, account.Balance, account.CreatedAt, account.NextTransferIn, account.NextTransferOut)
+	msg.SendEphemeralResponse(s, i, resp)
 }
 
 // Start intializes the economy.
