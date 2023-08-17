@@ -1,363 +1,327 @@
 {
     "_id": "clash",
-    "good": [
-      {
-        "message": "%s distracted a mini P.E.K.K.A with a butterfly. +500 credits.",
-        "amount": 500
-      },
-      {
-        "message": "%s brought a cannon cart for everyone to ride. +75 credits.",
-        "amount": 75
-      },
-      {
-        "message": "%s threw a goblin barrel inside the bank. +500 credits.",
-        "amount": 500
-      },
-      {
-        "message": "%s cut through the security like a P.E.K.K.A. +750 credits.",
-        "amount": 750
-      },
-      {
-        "message": "%s pulled down the wizard's hood and distracted everyone. +500 credits.",
-        "amount": 500
-      },
-      {
-        "message": "%s stopped the princess from firing at their comrades. +75 credits",
-        "amount": 75
-      },
-      {
-        "message": "%s sent goblins to loot. +500 credits.",
-        "amount": 500
-      },
-      {
-        "message": "%s was distracting the archer by showing their archery skills. +75 credits.",
-        "amount": 75
-      },
-      {
-        "message": "%s used a skeleton barrel to distract the archers. +75 credits.",
-        "amount": 75
-      },
-      {
-        "message": "%s stole a hog. +500 credits.",
-        "amount": 500
-      },
-      {
-        "message": "%s got the guards to deliver everyone pizza. +25 credits.",
-        "amount": 25
-      },
-      {
-        "message": "%s saved the crew with a heal spell. +25 credits.",
-        "amount": 25
-      },
-      {
-        "message": "%s stole a balloon and got away. +75 credits.",
-        "amount": 75
-      },
-      {
-        "message": "%s befriended a doot. +500 credits.",
-        "amount": 500
-      },
-      {
-        "message": "%s reprogrammed the flying machine to attack the guards. +1000 credits.",
-        "amount": 1000
-      },
-      {
-        "message": "The baby dragon's fumes hid %s while they were stealing the gold. +750 credits.",
-        "amount": 750
-      },
-      {
-        "message": "%s brought sleeping gas for the guards. +500 credits.",
-        "amount": 500
-      },
-      {
-        "message": "%s found a miner's tunnel! +2000 credits.",
-        "amount": 2000
-      },
-      {
-        "message": "%s released the Royal Hogs to distract the guards +500 credits.",
-        "amount": 500
-      },
-      {
-        "message": "%s cloned the crew to confuse the guardsmen +250 credits.",
-        "amount": 250
-      },
-      {
-        "message": "%s used a Rage spell to run past everyone and escaped +20 credits.",
-        "amount": 20
-      },
-      {
-        "message": "%s rode the Goblin Giant to escape +100 credits.",
-        "amount": 100
-      }
-    ],
-    "Bad": [
-      {
-        "message": "A butterfly brought P.E.K.K.A. to %s.",
-        "result": "Dead"
-      },
-      {
-        "message": "The Magic Archer took out %s from far away. Where did he come from?",
-        "result": "Dead"
-      },
-      {
-        "message": "%s made a big mistake and got caught by the 3 musketeers.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "The baby dragon found something new for their barbeque, grilled %s.",
-        "result": "Dead"
-      },
-      {
-        "message": "The Dark Prince charged at %s and got them with his mace.",
-        "result": "Dead"
-      },
-      {
-        "message": "The witch used her destructo beams on %s.",
-        "result": "Dead"
-      },
-      {
-        "message": "The baby dragon found something new for their barbeque, grilled %s.",
-        "result": "Dead"
-      },
-      {
-        "message": "The Dark Prince charged at %s and got them with his mace.",
-        "result": "Dead"
-      },
-      {
-        "message": "The witch used her destructo beams on %s.",
-        "result": "Dead"
-      },
-      {
-        "message": "What's that in the sky? A skeleton barrel fell on %s and they got surrounded!",
-        "result": "Apprehended"
-      },
-      {
-        "message": "A princess caught %s on fire!",
-        "result": "Apprehended"
-      },
-      {
-        "message": "The Barbarian Barrel crushed and sliced %s.",
-        "result": "Dead"
-      },
-      {
-        "message": "The Royal Ghost snuck up on %s.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "A goblin barrel landed right on %s.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "The Zappies made %s unable to move and they got captured.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "The Executioner did its job with %s.",
-        "result": "Dead"
-      },
-      {
-        "message": "A Valkyrie spun into %s.",
-        "result": "Dead"
-      },
-      {
-        "message": "%s forgot about the lava hound's pups",
-        "result": "Apprehended"
-      },
-      {
-        "message": "%s probably shouldn't have brought arrows to a rocket fight.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "The tornado brings %s straight to the dungeon.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "The lumberjack decided to chop something other than wood and chopped %s into pieces.",
-        "result": "Dead"
-      },
-      {
-        "message": "%s found a mini P.E.K.K.A.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "%s got blown up by a bomber.",
-        "result": "Dead"
-      },
-      {
-        "message": "%s got pounded by a mega knight.",
-        "result": "Dead"
-      },
-      {
-        "message": "%s got surrounded by a skeleton army.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "%s fell into a tombstone and got trapped.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "%s was burned by a wizard and got thrown into jail.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "An archer was doing trick shots and hit %s.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "Hog rider ran over %s.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "The guards found %s.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "A balloon dropped a bomb on %s.",
-        "result": "Dead"
-      },
-      {
-        "message": "A dart goblin shot %s with a paralysis dart.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "The bats heard %s while they tried to escape through a cave.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "The bowler bowled %s straight to the dungeon.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "The miner caught %s in his tunnels.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "%s got injured from the prince's lance.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "%s was surrounded by the witch's skeletons and was captured.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "%s was surrounded by the enemy and captured.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "The barbarians found %s.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "%s was frozen by an Ice Spirit and was captured.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "%s got shot by a musketeer while trying to escape, but survived!",
-        "result": "Apprehended"
-      },
-      {
-        "message": "%s was sniped by a princess. Gotcha!",
-        "result": "Dead"
-      },
-      {
-        "message": "%s exploded from a Giant Skeleton's bomb.",
-        "result": "Dead"
-      },
-      {
-        "message": "%s triggered a tesla.",
-        "result": "Dead"
-      },
-      {
-        "message": "Lightning struck %s and was electrocuted.",
-        "result": "Dead"
-      },
-      {
-        "message": "The last thing %s saw was Sparky's shot charged up.",
-        "result": "Dead"
-      },
-      {
-        "message": "%s tried to sneak behind a giant but failed.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "%s tripped on a log.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "%s got distracted by an ice golem and didn't realize they were captured until it was too late.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "%s got zapped by an electro wizard and got arrested.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "The inferno tower cooked %s. How did they survive?",
-        "result": "Apprehended"
-      },
-      {
-        "message": "%s was caught by a bandit at the last minute.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "The Mega Knight smushed %s.",
-        "result": "Dead"
-      },
-      {
-        "message": "A swarm of goblins stabbed %s to death.",
-        "result": "Dead"
-      },
-      {
-        "message": "The Magic Archer's arrow pierced through %s.",
-        "result": "Dead"
-      },
-      {
-        "message": "Zappies stunned %s and captured them.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "The Hunter hunted down %s.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "The Royal Ghost jump-scared %s.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "%s was buried in a Giant Snowball.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "%s was trampled by the Royal Hogs.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "Rascals trapped %s in bubble gum.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "Battle Ram smashed %s out of the way.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "The Cannon shot %s.",
-        "result": "Dead"
-      },
-      {
-        "message": "Fire Spirits gave a warm hug to %s.",
-        "result": "Apprehended"
-      },
-      {
-        "message": "%s was poisoned.",
-        "result": "Dead"
-      }
-    ],
-    "bail": "heal",
-    "crew": "clan",
-    "heist": "raid",
     "jail": "resting",
     "oob": "running on gems",
-    "police": "enemy CC troops",
+    "police": "Enemy CC Troops",
+    "bail": "heal",
+    "crew": "clan",
     "sentence": "nap",
-    "vault": "village"
-  }
+    "heist": "raid",
+    "vault": "village",
+    "good": [
+        {
+            "message": "%s brought a few healers to keep themself alive <:healer:>. +25 <:gold:>",
+            "amount": 25
+        },
+        {
+            "message": "%s brought a rage spell to the raid <:ragespell:>. +25 <:gold:>",
+            "amount": 25
+        },
+        {
+            "message": "%s remembered to request CC troops before attacking. +25 <:gold:>",
+            "amount": 25
+        },
+        {
+            "message": "%s used Royal Cloak <:archerqueen:>. +25 <:gold:>",
+            "amount": 25
+        },
+        {
+            "message": "%s used Iron Fist <:barbarianking:>. +25 <:gold:>",
+            "amount": 25
+        },
+        {
+            "message": "%s took out a corner builder hut <:builderhut:>. +50 <:gold:>.",
+            "amount": 50
+        },
+        {
+            "message": "%s boosted the training barracks <:gems:>. +50 <:gold:>",
+            "amount": 50
+        },
+        {
+            "message": "%s lured defending CC troops. +50 <:gold:>",
+            "amount": 50
+        },
+        {
+            "message": "%s built a funnel correctly. +100 <:gold:>",
+            "amount": 100
+        },
+        {
+            "message": "%s used a power potion on the clan. +100 <:gold:>",
+            "amount": 100
+        },
+        {
+            "message": "%s dropped a heal on a known Giant Bomb location <:healingspell:>. +100 <:gold:>",
+            "amount": 100
+        },
+        {
+            "message": "%s successfully scouted the top base. +100 <:gold:>",
+            "amount": 100
+        },
+        {
+            "message": "%s managed to take out the Town Hall. +150 <:gold:>",
+            "amount": 150
+        },
+        {
+            "message": "%s got every last drop of Dark Elixir <:darkelixir:>. +250 <:gold:>",
+            "amount": 250
+        },
+        {
+            "message": "%s three starred a base with barch <:barbarian:> <:archer:>. +250 <:gold:>",
+            "amount": 250
+        },
+        {
+            "message": "%s cast Eternal Tome <:grandwarden:>. +250 <:gold:>",
+            "amount": 250
+        },
+        {
+            "message": "%s HOG RIIIIIIIIDDEEEER <:hogrider:>. +500 <:gold:>",
+            "amount": 500
+        },
+        {
+            "message": "%s scored a six pack <:sharkhi:301544708063100930>. +1,000 <:gold:>",
+            "amount": 1000
+        },
+        {
+            "message": "%s 3 starred the top base in War without use of Heroes. +1,500 <:gold:>",
+            "amount": 1500
+        },
+        {
+            "message": "%s found a gem box <:gems:316692795035484163>. +2,500 <:gold:>",
+            "amount": 2500
+        }
+    ],
+    "bad": [
+        {
+            "message": "%s stepped onto a spring trap. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s forgot to bring heals to their GoHo attack <:golem:><:hogrider:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s used their builder potions while not upgrading anything. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s dropped rage on healers too late <:ragespell:> <:healer:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s forgot to bring heroes to the raid. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s forgot to bring CC troops to the raid. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s lost connection! (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s brought jump spells to a LaLo attack. <:jumpspell:> <:lavahound:> <:ballooncoc:> (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s fell out of a balloon <:ballooncoc:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s tried using a cold air balloon <:ballooncoc:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s got stuck in the clouds. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s stayed behind to finish taking out a wall. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s was paralyzed by a Hidden Tesla. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s dropped a freeze spell on themself <:freezespell:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s attempted to teach the Hog Rider to ride Sheep instead <:hogrider:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s forgot to attack <::sk_star_empty::>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s managed to get 0 stars. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s decided to upgrade all their barracks at the same time. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s decided to upgrade all their spell factories at the same time. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s decided to heal the grass <:healingspell:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s dropped their spells instead of troops and rage quit. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s decided to chase around a butterfly <:pekka:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s got lost in a Miner tunnel <:miner:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s left Grand Warden in air mode <:grandwarden:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s left Grand Warden in ground mode <:grandwarden:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s spent all their gold on an empty Wall Wrecker <:wallwrecker:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s spent all their gold on a Battle Blimp with a hole in it <:battleblimp:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s was taken out by a Sneaky Archer <:sneakyarcher:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s was knocked into next week by a Boxer Giant <:boxergiant:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s was blown off the map by an Air Sweeper. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s use GoWiPe it was super ineffective <:golem:><:wizard:><:pekka:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s attempted to clone the Dark Elixir Storage <:clonespell:> <:darkelixir:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s brought their farming army to the war <:barbarian:> <:archer:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s fell asleep under a builder hut <a:sleep_zzz:>  <:builderhut:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s got paralyzed by an Electro Dragon <:electrodragon:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s donated wallbreakers for defending CC <:wallbreaker:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s's dragons took a stroll around the perimeter of the base <:dragoncoc:> <:electrodragon:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s forgot to use the King's ability <:barbarianking:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s forgot to use the Queen's ability <:archerqueen:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s forgot to the use the Warden's ability <:grandwarden:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s's wallbreakers went to the wrong wall <:wallbreaker:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s's night witches ran into a mega mine <:nightwitch:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s used a Book of Building to save the ten seconds needed to finish a level one gold mine. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s used a Book of Heroes to finish the level two Barbarian King upgrade <:barbarianking:>. (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s spent gems on wall rings to get level two walls! (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s got a 49% 0 Star. <:sk_star_empty:><:sk_star_empty:><:sk_star_empty:> (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s got a 99% 1 Star in the deciding attack. <:star_new:><:sk_star_empty:><:sk_star_empty:> (arrested) <:police_officer:>",
+            "result": "Apprehended"
+        },
+        {
+            "message": "%s forgot funnel and was singled out by an archer tower. (death) <:tombstone:>",
+            "result": "Dead"
+        },
+        {
+            "message": "%s walked into double giant bombs. (death) <:tombstone:>",
+            "result": "Dead"
+        },
+        {
+            "message": "%s was burnt to a crisp by a single target Inferno Tower. (death) <:tombstone:>",
+            "result": "Dead"
+        },
+        {
+            "message": "%s got killed by the CC troops. (death) <:tombstone:>",
+            "result": "Dead"
+        },
+        {
+            "message": "%s accidentally drank a poison spell <:poisonspell:>. (death) <:tombstone:>",
+            "result": "Dead"
+        },
+        {
+            "message": "%s tried to take out the Giga Tesla alone. (death) <:tombstone:>",
+            "result": "Dead"
+        },
+        {
+            "message": "%s was eaten by a dragon <:dragoncoc:>. (death) <:tombstone:>",
+            "result": "Dead"
+        },
+        {
+            "message": "%s wasn't healed by the healers <:healer:>. (death) <:tombstone:>",
+            "result": "Dead"
+        },
+        {
+            "message": "%s pinged the discord mods for help with their attack. (death) <:tombstone:>",
+            "result": "Dead"
+        },
+        {
+            "message": "%s was tripled by an engineer. (death) <:tombstone:>",
+            "result": "Dead"
+        },
+        {
+            "message": "%s was banned by spAnser. (death) <:tombstone:>",
+            "result": "Dead"
+        }
+    ]
+}

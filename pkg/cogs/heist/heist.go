@@ -226,7 +226,7 @@ func getHeistResults(server *Server, target *Target) *HeistResult {
 			result := &HeistMemberResult{
 				player:       player,
 				status:       FREE,
-				message:      goodResult.Message + " :moneybag:",
+				message:      goodResult.Message,
 				bonusCredits: goodResult.Amount,
 			}
 			results.memberResults = append(results.memberResults, result)
@@ -241,17 +241,10 @@ func getHeistResults(server *Server, target *Target) *HeistResult {
 				badResults = theme.Bad
 			}
 
-			var emoji string
-			if badResult.Result == APPREHENDED {
-				emoji = ":police_officer:"
-			} else {
-				emoji = ":skull:"
-			}
-
 			result := &HeistMemberResult{
 				player:       player,
 				status:       badResult.Result,
-				message:      fmt.Sprintf("%s %s. %s", badResult.Message, badResult.Result, emoji),
+				message:      badResult.Message,
 				bonusCredits: 0,
 			}
 			results.memberResults = append(results.memberResults, result)
