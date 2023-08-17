@@ -40,9 +40,7 @@ var (
 // componentHandlers are the buttons that appear on messages sent by this bot.
 var (
 	componentHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"cancel_heist": cancelHeist,
-		"join_heist":   joinHeist,
-		"leave_heist":  leaveHeist,
+		"join_heist": joinHeist,
 	}
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"heist":       heist,
@@ -509,16 +507,6 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 				Disabled: buttonDisabled,
 				CustomID: "join_heist",
 			},
-			discordgo.Button{
-				Label:    "Leave",
-				Style:    discordgo.PrimaryButton,
-				Disabled: buttonDisabled,
-				CustomID: "leave_heist"},
-			discordgo.Button{
-				Label:    "Cancel",
-				Style:    discordgo.DangerButton,
-				Disabled: buttonDisabled,
-				CustomID: "cancel_heist"},
 		}},
 	}
 
@@ -680,79 +668,6 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	msg := p.Sprintf("You have joined the %s at a cost of %d credits.", theme.Heist, server.Config.HeistCost)
 	discmsg.SendEphemeralResponse(s, i, msg)
-
-	store.Store.Save(HEIST, server.ID, server)
-}
-
-// leaveHeist attempts to leave a heist previously joined
-func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> leaveHeist")
-	defer log.Debug("<-- leaveHeist")
-
-	server := GetServer(servers, i.GuildID)
-	theme := themes[server.Config.Theme]
-	if server.Heist == nil {
-		log.Error("There should be a heist, server:", server.ID, ", heist:", server.Heist)
-		discmsg.SendEphemeralResponse(s, i, "No "+theme.Heist+" is planned.")
-		return
-	}
-
-	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
-
-	if server.Heist.Planner == player.ID {
-		discmsg.SendEphemeralResponse(s, i, "You can't leave the "+theme.Heist+", as you are the planner.")
-		return
-	}
-	server.Heist.Mutex.Lock()
-	isMember := contains(server.Heist.Crew, player.ID)
-	server.Heist.Mutex.Unlock()
-	if !isMember {
-		discmsg.SendEphemeralResponse(s, i, "You aren't a member of the "+theme.Heist+".")
-		return
-	}
-
-	discmsg.SendEphemeralResponse(s, i, "You have left the "+theme.Heist+".")
-	server.Heist.Mutex.Lock()
-	server.Heist.Crew = remove(server.Heist.Crew, player.ID)
-	server.Heist.Mutex.Unlock()
-
-	err := heistMessage(s, server.Heist.Interaction, "leave")
-
-	if err != nil {
-		log.Error("Unable to update the heist message, error:", err)
-	}
-
-	store.Store.Save(HEIST, server.ID, server)
-}
-
-// cancelHeist cancels a heist that is being planned but has not yet started
-func cancelHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> cancelHeist")
-	defer log.Debug("<-- cancelHeist")
-
-	server := GetServer(servers, i.GuildID)
-	theme := themes[server.Config.Theme]
-	if server.Heist == nil {
-		discmsg.SendEphemeralResponse(s, i, "No "+theme.Heist+" is planned.")
-		return
-	}
-	if i.Member.User.ID != server.Heist.Planner {
-		discmsg.SendEphemeralResponse(s, i, "You cannot cancel the "+theme.Heist+" as you are not the planner.")
-		return
-	}
-	if server.Heist.Started {
-		discmsg.SendEphemeralResponse(s, i, "The "+theme.Heist+" has already started and can't be cancelled.")
-		return
-	}
-
-	err := heistMessage(s, server.Heist.Interaction, "cancel")
-	if err != nil {
-		log.Error("Unable to mark the heist message as cancelled, error:", err)
-	}
-	server.Heist.Timer.cancel()
-	server.Heist = nil
-
-	discmsg.SendEphemeralResponse(s, i, "The "+theme.Heist+" has been cancelled.")
 
 	store.Store.Save(HEIST, server.ID, server)
 }

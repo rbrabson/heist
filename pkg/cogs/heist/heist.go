@@ -226,7 +226,7 @@ func getHeistResults(server *Server, target *Target) *HeistResult {
 			result := &HeistMemberResult{
 				player:       player,
 				status:       FREE,
-				message:      goodResult.Message + ":moneybag:",
+				message:      goodResult.Message + " :moneybag:",
 				bonusCredits: goodResult.Amount,
 			}
 			results.memberResults = append(results.memberResults, result)
