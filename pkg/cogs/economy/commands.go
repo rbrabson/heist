@@ -157,7 +157,7 @@ func transferCredits(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		"NextTransferOut": fromAccount.NextTransferOut,
 		"NextTransferIn":  toAccount.NextTransferIn,
 		"Interval":        bank.MinTransferDuration,
-	}).Info("/transfer")
+	}).Debug("/transfer")
 
 	fromAccount.Balance -= amount
 	toAccount.Balance += amount
