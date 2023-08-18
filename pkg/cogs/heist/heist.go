@@ -312,6 +312,7 @@ func vaultUpdater() {
 		for _, server := range servers {
 			for _, target := range server.Targets {
 				vault := min(target.Vault+(target.VaultMax*4/100), target.VaultMax)
+				log.WithFields(log.Fields{"Target": target.ID, "Old": target.Vault, "New": vault}).Debug("Updating Vault")
 				target.Vault = vault
 			}
 		}
