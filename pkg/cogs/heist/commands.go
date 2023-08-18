@@ -766,6 +766,7 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			account := bank.GetAccount(player.ID, player.Name)
 			economy.DepositCredits(bank, account, result.stolenCredits+result.bonusCredits)
 			target.Vault -= int64(result.stolenCredits)
+			log.WithFields(log.Fields{"Member": account.Name, "Stolen": result.stolenCredits, "Bonus": result.bonusCredits}).Debug("Heist Loot")
 		}
 	}
 	economy.SaveBank(bank)
