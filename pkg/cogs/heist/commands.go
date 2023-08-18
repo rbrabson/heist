@@ -724,14 +724,14 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// Process the results
 	for _, result := range results.memberResults {
 		msg = p.Sprintf(result.message+"\n", "**"+result.player.Name+"**")
-		if result.status == APPREHENDED {
+		if result.status != FREE {
 			msg += p.Sprintf("`%s dropped out of the game.`", result.player.Name)
 		}
 		s.ChannelMessageSend(i.ChannelID, msg)
 		time.Sleep(3 * time.Second)
 	}
 
-	if len(results.survivingCrew) == 0 {
+	if results.escaped == 0 {
 		msg = "\nNo one made it out safe."
 		s.ChannelMessageSend(i.ChannelID, msg)
 	} else {

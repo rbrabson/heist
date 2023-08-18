@@ -20,6 +20,9 @@ const (
 
 // HeistResult is the result of a heist.
 type HeistResult struct {
+	escaped       int
+	apprehended   int
+	dead          int
 	memberResults []*HeistMemberResult
 	survivingCrew []*HeistMemberResult
 	target        *Target
@@ -93,9 +96,15 @@ func heistChecks(server *Server, i *discordgo.InteractionCreate, player *Player,
 
 // calculateCredits determines the number of credits stolen by each surviving crew member.
 func calculateCredits(results *HeistResult) {
-	creditsStolenPerSurvivor := int(float64(results.target.Vault) * 0.75 / float64((len(results.memberResults) + len(results.survivingCrew))))
+	log.Debug("--> calculateCredits")
+	defer log.Debug("<-- calculateCredits")
+
+	// members in the crew are only those who make it out alive
+	creditsStolenPerSurvivor := int(float64(results.target.Vault) * 0.75 / float64((results.escaped + len(results.survivingCrew))))
+	log.WithFields(log.Fields{"Per Survivor": creditsStolenPerSurvivor}).Debug("Credits Stolen")
 	for _, player := range results.survivingCrew {
 		player.stolenCredits = creditsStolenPerSurvivor
+		player.bonusCredits *= len(results.survivingCrew)
 	}
 }
 
@@ -107,7 +116,7 @@ func calculateBonusRate(heist *Heist, target *Target) int {
 	defer log.Debug("<-- calculateBonus")
 
 	percent := 100 * int64(len(heist.Crew)) / target.CrewSize
-	log.WithField("percent", percent).Debug("Bonus Percentage")
+	log.WithField("Percent", percent).Debug("Bonus Percentage")
 	if percent <= 20 {
 		return 0
 	}
@@ -130,8 +139,9 @@ func calculateSuccessRate(heist *Heist, target *Target) int {
 	defer log.Debug("<-- calculateSuccessRate")
 
 	bonus := calculateBonusRate(heist, target)
+	log.WithField("Bonus", bonus).Debug("Bonus Rate")
 	successChance := int(target.Success) + bonus
-	log.WithField("successRate", successChance).Debug("Success Rate")
+	log.WithFields(log.Fields{"Bonus": bonus, "TargetSuccess": int(target.Success), "SuccessChance": successChance}).Debug("Success Rate")
 	return successChance
 }
 
@@ -231,6 +241,7 @@ func getHeistResults(server *Server, target *Target) *HeistResult {
 			}
 			results.memberResults = append(results.memberResults, result)
 			results.survivingCrew = append(results.survivingCrew, result)
+			results.escaped++
 		} else {
 			index := rand.Intn(len(badResults))
 			badResult := badResults[index]
@@ -248,32 +259,51 @@ func getHeistResults(server *Server, target *Target) *HeistResult {
 				bonusCredits: 0,
 			}
 			results.memberResults = append(results.memberResults, result)
-			if result.status != DEAD {
+			if result.status == DEAD {
+				results.dead++
+			} else {
 				results.survivingCrew = append(results.survivingCrew, result)
+				results.apprehended++
 			}
 		}
 	}
 
-	calculateCredits(results)
+	// If at least one member escaped, then calculate the credits to distributed.
+	// Also, if no one member escaped, then set the surviving crew to nil so the
+	// "No one made it out alive" message is sent.
+	if results.escaped > 0 {
+		calculateCredits(results)
+	} else {
+		results.survivingCrew = nil
+	}
 
 	return results
 }
 
 // getTarget returns the target with the smallest maximum crew size that exceeds the number of
-// crew members.
+// crew members. If no target matches the criteria, then the target with the maximum crew size
+// is used.
 func getTarget(heist *Heist, targets map[string]*Target) *Target {
 	log.Debug("--> getTarget")
 	defer log.Debug("<-- getTarget")
 
 	crewSize := int64(len(heist.Crew))
 	var target *Target
+	var maxTarget *Target
 	for _, possible := range targets {
+		if maxTarget == nil || possible.CrewSize > maxTarget.CrewSize {
+			maxTarget = possible
+		}
 		if possible.CrewSize >= crewSize {
-			if target == nil || target.CrewSize > possible.CrewSize {
+			if target.CrewSize > possible.CrewSize {
 				target = possible
 			}
 		}
 	}
+	if target == nil {
+		target = maxTarget
+	}
+	log.WithField("Target", target).Debug("Heist Target")
 	return target
 }
 
