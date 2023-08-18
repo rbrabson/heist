@@ -49,8 +49,8 @@ var (
 
 // addReminder adds a new reminder for the member.
 func addReminder(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> addReminder")
-	defer log.Debug("<-- addReminder")
+	log.Trace("--> addReminder")
+	defer log.Trace("<-- addReminder")
 
 	var when, message string
 	for _, option := range i.ApplicationCommandData().Options {
@@ -86,8 +86,8 @@ func addReminder(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // listReminders returns a list of all reminders for the member.
 func listReminders(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> listReminders")
-	defer log.Debug("<-- listReminders")
+	log.Trace("--> listReminders")
+	defer log.Trace("<-- listReminders")
 
 	response, _ := getReminders(i.GuildID, i.Member.User.ID)
 	msg.SendEphemeralResponse(s, i, response)
@@ -95,8 +95,8 @@ func listReminders(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // removeReminders deletes all reminders for the member.
 func removeReminders(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> removeReminders")
-	defer log.Debug("<-- removeReminders")
+	log.Trace("--> removeReminders")
+	defer log.Trace("<-- removeReminders")
 
 	response, _ := deleteReminders(i.GuildID, i.Member.User.ID)
 	msg.SendEphemeralResponse(s, i, response)

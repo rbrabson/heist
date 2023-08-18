@@ -29,8 +29,8 @@ var (
 
 // payday gives some credits to the player every 24 hours.
 func payday(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> payday")
-	defer log.Debug("<-- payday")
+	log.Trace("--> payday")
+	defer log.Trace("<-- payday")
 
 	p := getPrinter(i)
 	server := getServer(i.GuildID)

@@ -49,8 +49,8 @@ type Account struct {
 
 // NewBank creates a new bank for the given server/guild.
 func NewBank(serverID string) *Bank {
-	log.Debug("--> NewBank")
-	defer log.Debug("<-- NewBank")
+	log.Trace("--> NewBank")
+	defer log.Trace("<-- NewBank")
 
 	bank := Bank{
 		ID:                  serverID,
@@ -66,8 +66,8 @@ func NewBank(serverID string) *Bank {
 
 // GetBank returns the bank for the server/guild.
 func GetBank(serverID string) *Bank {
-	log.Debug("--> GetBank")
-	defer log.Debug("<-- GetBank")
+	log.Trace("--> GetBank")
+	defer log.Trace("<-- GetBank")
 
 	bank, ok := banks[serverID]
 	if !ok {
@@ -80,8 +80,8 @@ func GetBank(serverID string) *Bank {
 
 // NewAccount creates a new bank account for the player.
 func NewAccount(b *Bank, playerID string, playerName string) *Account {
-	log.Debug("--> NewAccount")
-	defer log.Debug("<-- NewAccount")
+	log.Trace("--> NewAccount")
+	defer log.Trace("<-- NewAccount")
 
 	account := Account{
 		ID:        playerID,
@@ -94,8 +94,8 @@ func NewAccount(b *Bank, playerID string, playerName string) *Account {
 
 // GetAccount returns the bank account for the player.
 func (b *Bank) GetAccount(playerID string, playerName string) *Account {
-	log.Debug("--> GetAccount")
-	defer log.Debug("<-- GetAccount")
+	log.Trace("--> GetAccount")
+	defer log.Trace("<-- GetAccount")
 
 	account, ok := b.Accounts[playerID]
 	if !ok {
@@ -114,8 +114,8 @@ func DepositCredits(bank *Bank, account *Account, amount int) {
 
 // WithDrawCredits deducts the amount of credits from the account at the given bank
 func WithdrawCredits(bank *Bank, account *Account, amount int) error {
-	log.Debug("--> WithdrawCredits")
-	defer log.Debug("<-- WithdrawCredits")
+	log.Trace("--> WithdrawCredits")
+	defer log.Trace("<-- WithdrawCredits")
 
 	if account.Balance < amount {
 		return ErrInsufficintBalance
@@ -126,8 +126,8 @@ func WithdrawCredits(bank *Bank, account *Account, amount int) error {
 
 // LoadBanks returns all the banks for the given guilds.
 func LoadBanks() {
-	log.Debug("--> LoadBanks")
-	defer log.Debug("<-- LoadBanks")
+	log.Trace("--> LoadBanks")
+	defer log.Trace("<-- LoadBanks")
 
 	banks = make(map[string]*Bank)
 	bankIDs := store.Store.ListDocuments(ECONOMY)
@@ -140,8 +140,8 @@ func LoadBanks() {
 
 // SaveBank saves the bank.
 func SaveBank(bank *Bank) {
-	log.Debug("--> SaveBank")
-	defer log.Debug("<-- SaveBank")
+	log.Trace("--> SaveBank")
+	defer log.Trace("<-- SaveBank")
 
 	store.Store.Save(ECONOMY, bank.ID, bank)
 }

@@ -83,8 +83,8 @@ func newMongoStore() StoreInterface {
 
 // ListDocuments returns the ID of each document in a collection in the collection.
 func (m *mongodb) ListDocuments(collectionName string) []string {
-	log.Debug("--> ListDocuments")
-	defer log.Debug("<-- ListDocuments")
+	log.Trace("--> ListDocuments")
+	defer log.Trace("<-- ListDocuments")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -135,8 +135,8 @@ func (m *mongodb) ListDocuments(collectionName string) []string {
 
 // Load loads a document identified by documentID from the collection into data.
 func (m *mongodb) Load(collectionName string, documentID string, data interface{}) {
-	log.Debug("--> Load")
-	defer log.Debug("<-- Load")
+	log.Trace("--> Load")
+	defer log.Trace("<-- Load")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -175,8 +175,8 @@ func (m *mongodb) Load(collectionName string, documentID string, data interface{
 
 // Save stores data into a documeent within the specified collection.
 func (m *mongodb) Save(collectionName string, documentID string, data interface{}) {
-	log.Debug("--> Save")
-	defer log.Debug("<-- Save")
+	log.Trace("--> Save")
+	defer log.Trace("<-- Save")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

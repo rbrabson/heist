@@ -106,8 +106,8 @@ var (
 
 // bank routes the bank commands to the proper handers.
 func bank(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> bank")
-	defer log.Debug("<-- bank")
+	log.Trace("--> bank")
+	defer log.Trace("<-- bank")
 
 	options := i.ApplicationCommandData().Options
 	switch options[0].Name {
@@ -122,8 +122,8 @@ func bank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // transferCredits removes a specified amount of credits from initiators account and deposits them in the target's account.
 func transferCredits(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> bank")
-	defer log.Debug("<-- bank")
+	log.Trace("--> bank")
+	defer log.Trace("<-- bank")
 
 	var toID string
 	var amount int
@@ -174,10 +174,11 @@ func transferCredits(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	log.WithFields(log.Fields{
-		"CurrentTime":     time.Now(),
-		"NextTransferOut": fromAccount.NextTransferOut,
-		"NextTransferIn":  toAccount.NextTransferIn,
-		"Interval":        bank.MinTransferDuration,
+		"From":         fromAccount.Name,
+		"To":           toAccount.Name,
+		"Amount":       amount,
+		"From Balance": fromAccount.Balance,
+		"To Balance":   toAccount.Balance,
 	}).Debug("/transfer")
 
 	fromAccount.Balance -= amount
@@ -191,8 +192,8 @@ func transferCredits(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // bankAccount returns information about a bank account for the specified member.
 func bankAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> bankAccount")
-	defer log.Debug("<-- bankAccount")
+	log.Trace("--> bankAccount")
+	defer log.Trace("<-- bankAccount")
 
 	p := getPrinter(i)
 
@@ -211,8 +212,8 @@ func bankAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // accountInfo returns information about a member's bank account to that member.
 func accountInfo(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> accountInfo")
-	defer log.Debug("<-- accountInfo")
+	log.Trace("--> accountInfo")
+	defer log.Trace("<-- accountInfo")
 
 	p := getPrinter(i)
 
@@ -224,8 +225,8 @@ func accountInfo(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // setAccount sets the account to the specified number of credits.
 func setAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> setAccount")
-	defer log.Debug("<-- setAccount")
+	log.Trace("--> setAccount")
+	defer log.Trace("<-- setAccount")
 
 	var id string
 	var amount int
@@ -251,6 +252,12 @@ func setAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	bank := GetBank(i.GuildID)
 	account := bank.GetAccount(id, getMemberName(member.User.ID, member.Nick))
 	account.Balance = amount
+
+	log.WithFields(log.Fields{
+		"Account": account.Name,
+		"Amount":  amount,
+	}).Debug("/bank set")
+
 	SaveBank(bank)
 
 	resp := p.Sprintf("Account for %s was set to %d credits.", account.Name, account.Balance)
@@ -260,8 +267,8 @@ func setAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
 // transferAccount sets the target account to the amount of credits in the source
 // account, and clears the account balance of the source.
 func transferAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> transferAccount")
-	defer log.Debug("<-- transferAccount")
+	log.Trace("--> transferAccount")
+	defer log.Trace("<-- transferAccount")
 
 	var fromID, toID string
 	options := i.ApplicationCommandData().Options[0].Options
@@ -295,6 +302,12 @@ func transferAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	toAccount.Balance = fromAccount.Balance
 	fromAccount.Balance = 0
+
+	log.WithFields(log.Fields{
+		"From":    fromAccount.Name,
+		"To":      toAccount.Name,
+		"Balance": toAccount.Balance,
+	}).Debug("/bank transfer")
 
 	SaveBank(bank)
 

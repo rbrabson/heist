@@ -95,8 +95,8 @@ func (s *server) newReminder(channelID string, memberID string, wait time.Durati
 // createReminder sets a reminder for a person that will be sent via a Direct Message once the
 // timer expires.
 func (s *server) createReminder(channelID string, memberID string, when string, message ...string) (string, error) {
-	log.Debug("--> createReminder")
-	defer log.Debug("<-- createReminder")
+	log.Trace("--> createReminder")
+	defer log.Trace("<-- createReminder")
 
 	// If the time is just a number, default to hours
 	_, err := strconv.Atoi(when)
@@ -119,8 +119,8 @@ func (s *server) createReminder(channelID string, memberID string, when string, 
 
 // getReminders returns the list of upcoming reminders for the user.
 func getReminders(serverID string, memberID string) (string, error) {
-	log.Debug("--> getReminders")
-	defer log.Debug("<-- getReminders")
+	log.Trace("--> getReminders")
+	defer log.Trace("<-- getReminders")
 
 	s := getServer(serverID)
 	reminders, ok := s.Members[memberID]
@@ -145,8 +145,8 @@ func getReminders(serverID string, memberID string) (string, error) {
 
 // deleteReminders deletes all reminders for the member.
 func deleteReminders(serverID string, memberID string) (string, error) {
-	log.Debug("--> deleteReminders")
-	defer log.Debug("<-- deleteReminders")
+	log.Trace("--> deleteReminders")
+	defer log.Trace("<-- deleteReminders")
 
 	s := getServer(serverID)
 	if _, ok := s.Members[memberID]; !ok {
@@ -225,8 +225,8 @@ func sendReminders() {
 
 // loadReminders loads reminders for all members.
 func loadReminders() {
-	log.Debug("--> LoadReminders")
-	defer log.Debug("<-- LoadReminders")
+	log.Trace("--> LoadReminders")
+	defer log.Trace("<-- LoadReminders")
 
 	servers := make(map[string]*server)
 	serverIDs := store.Store.ListDocuments(REMINDER)
@@ -239,8 +239,8 @@ func loadReminders() {
 
 // saveReminder saves the reminders for a member.
 func saveReminder(server *server) {
-	log.Debug("--> SaveReminder")
-	defer log.Debug("<-- SaveReminder")
+	log.Trace("--> SaveReminder")
+	defer log.Trace("<-- SaveReminder")
 
 	store.Store.Save(REMINDER, server.ID, server)
 }

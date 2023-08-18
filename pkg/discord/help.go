@@ -12,8 +12,8 @@ import (
 
 // getHelp gets help about player commands from all bots.
 func getMemberHelp() string {
-	log.Debug("--> getMemberHelp")
-	log.Debug("<-- getMemberHelp")
+	log.Trace("--> getMemberHelp")
+	log.Trace("<-- getMemberHelp")
 
 	var sb strings.Builder
 
@@ -38,8 +38,8 @@ func getMemberHelp() string {
 
 // getAdminHelp returns help about administrative commands for all bots.
 func getAdminHelp() string {
-	log.Debug("--> getAdminHelp")
-	log.Debug("<-- getAdminHelp")
+	log.Trace("--> getAdminHelp")
+	log.Trace("<-- getAdminHelp")
 
 	var sb strings.Builder
 
