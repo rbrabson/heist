@@ -741,6 +741,7 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		var tableBuffer strings.Builder
 		table := tablewriter.NewWriter(&tableBuffer)
 		table.SetBorder(false)
+		table.SetColumnSeparator("")
 		table.SetHeader([]string{"Player", "Credits Obtained", "Bonuses", "Total"})
 		for _, result := range results.survivingCrew {
 			data := []string{result.player.Name, p.Sprintf("%d", result.stolenCredits), p.Sprintf("%d", result.bonusCredits), p.Sprintf("%d", result.stolenCredits+result.bonusCredits)}
