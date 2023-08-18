@@ -223,6 +223,7 @@ func getHeistResults(server *Server, target *Target) *HeistResult {
 	for _, playerID := range server.Heist.Crew {
 		player := server.Players[playerID]
 		chance := rand.Intn(100) + 1
+		log.WithFields(log.Fields{"Player": player.Name, "Chance": chance, "SuccessRate": successRate}).Debug("Heist Results")
 		if chance <= successRate {
 			index := rand.Intn(len(goodResults))
 			goodResult := goodResults[index]
