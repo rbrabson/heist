@@ -272,8 +272,10 @@ func getHeistResults(server *Server, target *Target) *HeistResult {
 	// Also, if no one member escaped, then set the surviving crew to nil so the
 	// "No one made it out alive" message is sent.
 	if results.escaped > 0 {
+		log.Debug("Calculating results of the heist")
 		calculateCredits(results)
 	} else {
+		log.Debug("No one made it out alive")
 		results.survivingCrew = nil
 	}
 

@@ -711,12 +711,14 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		server.Heist = nil
 		return
 	}
+	log.Debug("Heist is starting")
 	msg := p.Sprintf("Get ready! The %s is starting.", theme.Heist)
 	s.ChannelMessageSend(i.ChannelID, msg)
 	time.Sleep(3 * time.Second)
 	heistMessage(s, i, "start")
 	target := getTarget(server.Heist, server.Targets)
 	results := getHeistResults(server, target)
+	log.Debug("Hitting " + target.ID)
 	msg = p.Sprintf("The %s has decided to hit **%s**.", theme.Crew, target.ID)
 	s.ChannelMessageSend(i.ChannelID, msg)
 	time.Sleep(3 * time.Second)
