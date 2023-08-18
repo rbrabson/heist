@@ -740,6 +740,7 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		// Render the results into a table and returnt he results.
 		var tableBuffer strings.Builder
 		table := tablewriter.NewWriter(&tableBuffer)
+		table.SetBorder(false)
 		table.SetHeader([]string{"Player", "Credits Obtained", "Bonuses", "Total"})
 		for _, result := range results.survivingCrew {
 			data := []string{result.player.Name, p.Sprintf("%d", result.stolenCredits), p.Sprintf("%d", result.bonusCredits), p.Sprintf("%d", result.stolenCredits+result.bonusCredits)}
@@ -1182,6 +1183,7 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// Discord only puts three columns per row, which isn't enough for our purposes.
 	var tableBuffer strings.Builder
 	table := tablewriter.NewWriter(&tableBuffer)
+	table.SetBorder(false)
 	table.SetHeader([]string{"ID", "Max Crew", theme.Vault, "Max " + theme.Vault, "Success Rate"})
 	for _, target := range targets {
 
