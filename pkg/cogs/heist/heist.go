@@ -291,19 +291,12 @@ func getTarget(heist *Heist, targets map[string]*Target) *Target {
 
 	crewSize := int64(len(heist.Crew))
 	var target *Target
-	var maxTarget *Target
 	for _, possible := range targets {
-		if maxTarget == nil || possible.CrewSize > maxTarget.CrewSize {
-			maxTarget = possible
-		}
 		if possible.CrewSize >= crewSize {
-			if target.CrewSize > possible.CrewSize {
+			if target == nil || target.CrewSize > possible.CrewSize {
 				target = possible
 			}
 		}
-	}
-	if target == nil {
-		target = maxTarget
 	}
 	log.WithField("Target", target).Debug("Heist Target")
 	return target
