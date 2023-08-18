@@ -2,6 +2,7 @@ package heist
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"sort"
 	"time"
@@ -99,9 +100,9 @@ func calculateCredits(results *HeistResult) {
 	log.Trace("--> calculateCredits")
 	defer log.Trace("<-- calculateCredits")
 
-	// members in the crew are only those who make it out alive
-	creditsStolenPerSurvivor := int(float64(results.target.Vault) * 0.75 / float64((results.escaped + len(results.survivingCrew))))
-	log.WithFields(log.Fields{"Per Survivor": creditsStolenPerSurvivor}).Debug("Credits Stolen")
+	// Take 3/4 of the amount of the vault, and distribute it among those who survived.
+	creditsStolenPerSurvivor := int(math.Round(float64(results.target.Vault) * 0.75 / float64(len(results.survivingCrew))))
+	log.WithFields(log.Fields{"Vault": results.target.Vault, "Survivors": len(results.survivingCrew), "Credits Per Survivor": creditsStolenPerSurvivor}).Debug("Looted")
 	for _, player := range results.survivingCrew {
 		player.stolenCredits = creditsStolenPerSurvivor
 		player.bonusCredits *= len(results.survivingCrew)
@@ -139,9 +140,8 @@ func calculateSuccessRate(heist *Heist, target *Target) int {
 	defer log.Trace("<-- calculateSuccessRate")
 
 	bonus := calculateBonusRate(heist, target)
-	log.WithField("Bonus", bonus).Debug("Bonus Rate")
-	successChance := int(target.Success) + bonus
-	log.WithFields(log.Fields{"Bonus": bonus, "TargetSuccess": int(target.Success), "SuccessChance": successChance}).Debug("Success Rate")
+	successChance := int(math.Round(target.Success)) + bonus
+	log.WithFields(log.Fields{"BonusRate": bonus, "TargetSuccess": math.Round(target.Success), "SuccessChance": successChance}).Debug("Success Rate")
 	return successChance
 }
 
@@ -167,6 +167,7 @@ func handleHeistFailure(server *Server, player *Player, result *HeistMemberResul
 		player.TotalJail += 1
 
 		log.WithFields(log.Fields{
+			"player":        player.Name,
 			"bail":          player.BailCost,
 			"criminalLevel": player.CriminalLevel,
 			"jailCounter":   player.JailCounter,
@@ -192,6 +193,7 @@ func handleHeistFailure(server *Server, player *Player, result *HeistMemberResul
 	player.Status = DEAD
 
 	log.WithFields(log.Fields{
+		"player":        player.Name,
 		"bail":          player.BailCost,
 		"criminalLevel": player.CriminalLevel,
 		"deathTimer":    player.DeathTimer,
@@ -272,11 +274,10 @@ func getHeistResults(server *Server, target *Target) *HeistResult {
 	// If at least one member escaped, then calculate the credits to distributed.
 	// Also, if no one member escaped, then set the surviving crew to nil so the
 	// "No one made it out alive" message is sent.
+	log.WithFields(log.Fields{"Escaped": results.escaped, "Apprehended": results.apprehended, "Dead": results.dead}).Debug("Heist Results")
 	if results.escaped > 0 {
-		log.Debug("Calculating results of the heist")
 		calculateCredits(results)
 	} else {
-		log.Debug("No one made it out alive")
 		results.survivingCrew = nil
 	}
 
@@ -299,7 +300,7 @@ func getTarget(heist *Heist, targets map[string]*Target) *Target {
 			}
 		}
 	}
-	log.WithField("Target", target).Debug("Heist Target")
+	log.WithField("Target", target.ID).Debug("Heist Target")
 	return target
 }
 
