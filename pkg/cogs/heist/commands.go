@@ -1185,6 +1185,7 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	var tableBuffer strings.Builder
 	table := tablewriter.NewWriter(&tableBuffer)
 	table.SetBorder(false)
+	table.SetColumnSeparator("")
 	table.SetHeader([]string{"ID", "Max Crew", theme.Vault, "Max " + theme.Vault, "Success Rate"})
 	for _, target := range targets {
 
