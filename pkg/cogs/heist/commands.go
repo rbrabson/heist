@@ -726,7 +726,7 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// Process the results
 	for _, result := range results.memberResults {
 		msg = p.Sprintf(result.message+"\n", "**"+result.player.Name+"**")
-		if result.status != FREE {
+		if result.status == APPREHENDED {
 			msg += p.Sprintf("`%s dropped out of the game.`", result.player.Name)
 		}
 		s.ChannelMessageSend(i.ChannelID, msg)
