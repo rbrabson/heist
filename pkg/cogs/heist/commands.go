@@ -762,9 +762,10 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		} else {
 			player.Spree++
 		}
-		if result.stolenCredits != 0 {
+		if results.escaped > 0 && result.stolenCredits != 0 {
 			account := bank.GetAccount(player.ID, player.Name)
 			economy.DepositCredits(bank, account, result.stolenCredits+result.bonusCredits)
+			target.Vault -= int64(result.stolenCredits)
 		}
 	}
 	economy.SaveBank(bank)
