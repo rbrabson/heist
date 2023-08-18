@@ -272,47 +272,47 @@
             "result": "Apprehended"
         },
         {
-            "message": "%s forgot funnel and was singled out by an archer tower. (death) <:tombstone: 1141847472055005205>",
+            "message": "%s forgot funnel and was singled out by an archer tower. (death) <:tombstone:1141847472055005205>",
             "result": "Dead"
         },
         {
-            "message": "%s walked into double giant bombs. (death) <:tombstone: 1141847472055005205>",
+            "message": "%s walked into double giant bombs. (death) <:tombstone:1141847472055005205>",
             "result": "Dead"
         },
         {
-            "message": "%s was burnt to a crisp by a single target Inferno Tower. (death) <:tombstone: 1141847472055005205>",
+            "message": "%s was burnt to a crisp by a single target Inferno Tower. (death) <:tombstone:1141847472055005205>",
             "result": "Dead"
         },
         {
-            "message": "%s got killed by the CC troops. (death) <:tombstone: 1141847472055005205>",
+            "message": "%s got killed by the CC troops. (death) <:tombstone:1141847472055005205>",
             "result": "Dead"
         },
         {
-            "message": "%s accidentally drank a poison spell <:poisonspell:1141856766762688633>. (death) <:tombstone: 1141847472055005205>",
+            "message": "%s accidentally drank a poison spell <:poisonspell:1141856766762688633>. (death) <:tombstone:1141847472055005205>",
             "result": "Dead"
         },
         {
-            "message": "%s tried to take out the Giga Tesla alone. (death) <:tombstone: 1141847472055005205>",
+            "message": "%s tried to take out the Giga Tesla alone. (death) <:tombstone:1141847472055005205>",
             "result": "Dead"
         },
         {
-            "message": "%s was eaten by a dragon <:dragoncoc:1141847960896946328>. (death) <:tombstone: 1141847472055005205>",
+            "message": "%s was eaten by a dragon <:dragoncoc:1141847960896946328>. (death) <:tombstone:1141847472055005205>",
             "result": "Dead"
         },
         {
-            "message": "%s wasn't healed by the healers <:healer:1141855624334942382>. (death) <:tombstone: 1141847472055005205>",
+            "message": "%s wasn't healed by the healers <:healer:1141855624334942382>. (death) <:tombstone:1141847472055005205>",
             "result": "Dead"
         },
         {
-            "message": "%s pinged the discord mods for help with their attack. (death) <:tombstone: 1141847472055005205>",
+            "message": "%s pinged the discord mods for help with their attack. (death) <:tombstone:1141847472055005205>",
             "result": "Dead"
         },
         {
-            "message": "%s was tripled by an engineer. (death) <:tombstone: 1141847472055005205>",
+            "message": "%s was tripled by an engineer. (death) <:tombstone:1141847472055005205>",
             "result": "Dead"
         },
         {
-            "message": "%s was banned by spAnser. (death) <:tombstone: 1141847472055005205>",
+            "message": "%s was banned by spAnser. (death) <:tombstone:1141847472055005205>",
             "result": "Dead"
         }
     ],
