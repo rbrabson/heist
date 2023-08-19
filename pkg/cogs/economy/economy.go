@@ -102,6 +102,8 @@ func (b *Bank) GetAccount(playerID string, playerName string) *Account {
 		account = NewAccount(b, playerID, playerName)
 		b.Accounts[account.ID] = account
 		log.Error("Account for " + playerName + " was not found")
+	} else {
+		account.Name = playerName
 	}
 
 	return account
