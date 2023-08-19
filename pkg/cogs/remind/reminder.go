@@ -111,7 +111,7 @@ func (s *server) createReminder(channelID string, memberID string, when string, 
 	}
 
 	s.newReminder(channelID, memberID, wait, message...)
-	saveReminder(s)
+	saveReminders(s)
 
 	msg := fmt.Sprintf("I will remind you of that in %s", format.Duration(wait))
 	return msg, nil
@@ -153,7 +153,7 @@ func deleteReminders(serverID string, memberID string) (string, error) {
 		return "You don't have any upcoming notifications.", ErrNoReminders
 	}
 	delete(s.Members, memberID)
-	saveReminder(s)
+	saveReminders(s)
 	return "All your notifications have been removed.", nil
 
 }
@@ -217,7 +217,7 @@ func sendReminders() {
 				delete(s.Members, delID)
 			}
 			if saveServer {
-				saveReminder(s)
+				saveReminders(s)
 			}
 		}
 	}
@@ -237,8 +237,8 @@ func loadReminders() {
 	}
 }
 
-// saveReminder saves the reminders for a member.
-func saveReminder(server *server) {
+// saveReminders saves the reminders for a member.
+func saveReminders(server *server) {
 	log.Trace("--> SaveReminder")
 	defer log.Trace("<-- SaveReminder")
 
