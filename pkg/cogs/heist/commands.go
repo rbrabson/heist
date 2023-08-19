@@ -474,7 +474,10 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 	}
 
 	server.Heist.Mutex.Lock()
-	numMembers := len(server.Heist.Crew)
+	crew := make([]string, 0, len(server.Heist.Crew))
+	for _, id := range server.Heist.Crew {
+		crew = append(crew, server.Players[id].Name)
+	}
 	server.Heist.Mutex.Unlock()
 
 	theme := themes[server.Config.Theme]
@@ -492,8 +495,8 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 					Inline: true,
 				},
 				{
-					Name:   "Number of " + caser.String(theme.Crew) + "  Members",
-					Value:  p.Sprintf("%d", numMembers),
+					Name:   caser.String(theme.Crew),
+					Value:  strings.Join(crew, ", "),
 					Inline: true,
 				},
 			},
