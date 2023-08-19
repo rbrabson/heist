@@ -117,7 +117,7 @@ func calculateBonusRate(heist *Heist, target *Target) int {
 	defer log.Trace("<-- calculateBonus")
 
 	percent := 100 * int64(len(heist.Crew)) / target.CrewSize
-	log.WithField("Percent", percent).Debug("Bonus Percentage")
+	log.WithField("Percent", percent).Debug("Percentage for calculating success bonus")
 	if percent <= 20 {
 		return 0
 	}
