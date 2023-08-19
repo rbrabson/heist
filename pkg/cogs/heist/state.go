@@ -28,8 +28,8 @@ type Server struct {
 	ID      string             `json:"_id" bson:"_id"`
 	Config  Config             `json:"config" bson:"config"`
 	Players map[string]*Player `json:"players" bson:"players"`
-	Targets map[string]*Target `json:"targets" bson:"targets"`
 	Heist   *Heist             `json:"-" bson:"-"`
+	Targets map[string]*Target `json:"targets" bson:"targets"`
 }
 
 // Config is the configuration data for a given server.
@@ -43,6 +43,7 @@ type Config struct {
 	PoliceAlert  time.Duration `json:"police_alert" bson:"police_alert"`
 	SentenceBase time.Duration `json:"sentence_base" bson:"sentence_base"`
 	Theme        string        `json:"theme" bson:"theme"`
+	Targets      string        `json:"targets" bson:"targets"`
 	WaitTime     time.Duration `json:"wait_time" bson:"wait_time"`
 }
 
@@ -83,11 +84,14 @@ func NewServer(guildID string) *Server {
 	if defaultTheme == "" {
 		log.Fatal("Default theme not set in environment variable `HEIST_DEFAULT_THEME`")
 	}
-	theme, err := GetTheme(defaultTheme)
+	_, err := GetTheme(defaultTheme)
 	if err != nil {
 		log.Fatal("Unable to load the default theme, error:", err)
 	}
-	log.Debug(theme)
+	_, err = GetTargets(defaultTheme)
+	if err != nil {
+		log.Fatal("Unable to load the default target, error:", err)
+	}
 
 	server := Server{
 		ID: guildID,
@@ -101,11 +105,19 @@ func NewServer(guildID string) *Server {
 			PoliceAlert:  60,
 			SentenceBase: 5,
 			Theme:        defaultTheme,
+			Targets:      defaultTheme,
 			WaitTime:     time.Duration(60 * time.Second),
 		},
 		Players: make(map[string]*Player, 1),
-		Targets: defaultTargets,
+		Targets: make(map[string]*Target),
 	}
+
+	targets, _ := GetTargets(server.Config.Targets)
+	for _, target := range targets.Targets {
+		server.Targets[target.ID] = NewTarget(target.ID, target.CrewSize, target.Success, target.Vault, target.VaultMax)
+	}
+	log.Debugf("Now have %d targets", len(server.Targets))
+
 	return &server
 }
 
@@ -143,19 +155,39 @@ func GetServer(servers map[string]*Server, guildID string) *Server {
 		server = NewServer(guildID)
 		servers[server.ID] = server
 	}
+
 	return server
 }
 
 // LoadServers loads all the heist servers from the store.
 func LoadServers() map[string]*Server {
+	defaultTheme := os.Getenv("HEIST_DEFAULT_THEME")
+
 	servers := make(map[string]*Server)
 	serverIDs := store.Store.ListDocuments(HEIST)
 	for _, serverID := range serverIDs {
 		var server Server
 		store.Store.Load(HEIST, serverID, &server)
+		if server.Config.Targets == "" {
+			server.Config.Targets = defaultTheme
+		}
+
+		// Update the targets to match the configuration, but keep the old vault information
+		// which is being increased to the vault maximum.
+		newTargets := make(map[string]*Target)
+		targets, _ := GetTargets(server.Config.Targets)
+		for _, target := range targets.Targets {
+			oldTarget, ok := server.Targets[target.ID]
+			t := NewTarget(target.ID, target.CrewSize, target.Success, target.Vault, target.VaultMax)
+			if ok {
+				t.Vault = min(oldTarget.Vault, target.VaultMax)
+			}
+			newTargets[t.ID] = t
+			log.WithFields(log.Fields{"Target": t.ID, "Server": server.ID}).Debug("Adding target for server")
+		}
+		server.Targets = newTargets
 		servers[server.ID] = &server
 	}
-
 	return servers
 }
 

@@ -4,7 +4,6 @@ commands contains the list of commands and messages sent to Discord, or commands
 package heist
 
 import (
-	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -33,8 +32,9 @@ const (
 )
 
 var (
-	servers map[string]*Server
-	themes  map[string]*Theme
+	servers   map[string]*Server
+	themes    map[string]*Theme
+	targetSet map[string]*Targets
 )
 
 // componentHandlers are the buttons that appear on messages sent by this bot.
@@ -1183,8 +1183,6 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return targets[i].CrewSize < targets[j].CrewSize
 	})
 
-	fmt.Println(targets)
-
 	// Lets return the data in an Ascii table. Ideally, it would be using a Discord embed, but unfortunately
 	// Discord only puts three columns per row, which isn't enough for our purposes.
 	var tableBuffer strings.Builder
@@ -1298,7 +1296,7 @@ func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	server.Config.Theme = theme.ID
-	log.Debug("Now using theme", server.Config.Theme)
+	log.Debug("Now using theme ", server.Config.Theme)
 
 	discmsg.SendResponse(s, i, "Theme "+themeName+" is now being used.")
 
@@ -1495,6 +1493,7 @@ func configInfo(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // Start initializes anything needed by the heist bot.
 func Start(s *discordgo.Session) {
+	targetSet = LoadTargets()
 	servers = LoadServers()
 	themes = LoadThemes()
 
