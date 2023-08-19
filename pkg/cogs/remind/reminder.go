@@ -1,6 +1,7 @@
 package remind
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
@@ -233,6 +234,7 @@ func loadReminders() {
 	for _, serverID := range serverIDs {
 		var server server
 		store.Store.Load(REMINDER, serverID, &server)
+		log.Debug("Server:", server)
 		servers[server.ID] = &server
 	}
 }
@@ -264,4 +266,22 @@ func GetMemberHelp() []string {
 // GetAdminHelp returns help information about the heist bot commands
 func GetAdminHelp() []string {
 	return nil
+}
+
+// String returns a string repesentation for all reminders on the given server.
+func (s *server) String() string {
+	out, _ := json.Marshal(s)
+	return string(out)
+}
+
+// String returns a string representation for all reminders for a given member.
+func (r *reminderList) String() string {
+	out, _ := json.Marshal(r)
+	return string(out)
+}
+
+// String returns a string representation of the reminder
+func (r *reminder) String() string {
+	out, _ := json.Marshal(r)
+	return string(out)
 }
