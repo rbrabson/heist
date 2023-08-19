@@ -133,6 +133,14 @@ func saveServer(server *server) {
 	store.Store.Save(PAYDAY, server.ID, server)
 }
 
+// getMemberName returns the member's nickname, if there is one, or the username otherwise.
+func getMemberName(username string, nickname string) string {
+	if nickname != "" {
+		return nickname
+	}
+	return username
+}
+
 // GetMemberHelp returns help information about the heist bot commands
 func GetMemberHelp() []string {
 	help := make([]string, 0, 1)
