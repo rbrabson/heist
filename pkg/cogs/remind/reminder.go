@@ -229,7 +229,7 @@ func loadReminders() {
 	log.Trace("--> LoadReminders")
 	defer log.Trace("<-- LoadReminders")
 
-	servers := make(map[string]*server)
+	servers = make(map[string]*server)
 	serverIDs := store.Store.ListDocuments(REMINDER)
 	for _, serverID := range serverIDs {
 		var server server
