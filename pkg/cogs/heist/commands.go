@@ -32,16 +32,15 @@ const (
 )
 
 var (
-	servers map[string]*Server
-	themes  map[string]*Theme
+	servers   map[string]*Server
+	themes    map[string]*Theme
+	targetSet map[string]*Targets
 )
 
 // componentHandlers are the buttons that appear on messages sent by this bot.
 var (
 	componentHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"cancel_heist": cancelHeist,
-		"join_heist":   joinHeist,
-		"leave_heist":  leaveHeist,
+		"join_heist": joinHeist,
 	}
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"heist":       heist,
@@ -474,9 +473,16 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 		buttonDisabled = true
 	}
 
+	server.Heist.Mutex.Lock()
+	crew := make([]string, 0, len(server.Heist.Crew))
+	for _, id := range server.Heist.Crew {
+		crew = append(crew, server.Players[id].Name)
+	}
+	server.Heist.Mutex.Unlock()
+
 	theme := themes[server.Config.Theme]
 	caser := cases.Caser(cases.Title(language.Und, cases.NoLower))
-	msg := p.Sprintf("A new %s is being planned by %s. You can join the %s for a cost of %d credits at any time to the %s startting.", theme.Heist, player.Name, theme.Heist, server.Config.HeistCost, theme.Heist)
+	msg := p.Sprintf("A new %s is being planned by %s. You can join the %s for a cost of %d credits at any time to the %s starting.", theme.Heist, player.Name, theme.Heist, server.Config.HeistCost, theme.Heist)
 	embeds := []*discordgo.MessageEmbed{
 		{
 			Type:        discordgo.EmbedTypeRich,
@@ -489,8 +495,8 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 					Inline: true,
 				},
 				{
-					Name:   "Number of " + caser.String(theme.Crew) + "  Members",
-					Value:  p.Sprintf("%d", len(server.Heist.Crew)),
+					Name:   caser.String(theme.Crew),
+					Value:  strings.Join(crew, ", "),
 					Inline: true,
 				},
 			},
@@ -504,16 +510,6 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 				Disabled: buttonDisabled,
 				CustomID: "join_heist",
 			},
-			discordgo.Button{
-				Label:    "Leave",
-				Style:    discordgo.PrimaryButton,
-				Disabled: buttonDisabled,
-				CustomID: "leave_heist"},
-			discordgo.Button{
-				Label:    "Cancel",
-				Style:    discordgo.DangerButton,
-				Disabled: buttonDisabled,
-				CustomID: "cancel_heist"},
 		}},
 	}
 
@@ -642,7 +638,10 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
-	if contains(server.Heist.Crew, player.ID) {
+	server.Heist.Mutex.Lock()
+	isMember := contains(server.Heist.Crew, player.ID)
+	server.Heist.Mutex.Unlock()
+	if isMember {
 		discmsg.SendEphemeralResponse(s, i, "You are already a member of the "+theme.Heist+".")
 		return
 	}
@@ -655,7 +654,9 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
+	server.Heist.Mutex.Lock()
 	server.Heist.Crew = append(server.Heist.Crew, player.ID)
+	server.Heist.Mutex.Unlock()
 	err := heistMessage(s, server.Heist.Interaction, "join")
 	if err != nil {
 		log.Error("Unable to update the heist message, error:", err)
@@ -670,74 +671,6 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	msg := p.Sprintf("You have joined the %s at a cost of %d credits.", theme.Heist, server.Config.HeistCost)
 	discmsg.SendEphemeralResponse(s, i, msg)
-
-	store.Store.Save(HEIST, server.ID, server)
-}
-
-// leaveHeist attempts to leave a heist previously joined
-func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Trace("--> leaveHeist")
-	defer log.Trace("<-- leaveHeist")
-
-	server := GetServer(servers, i.GuildID)
-	theme := themes[server.Config.Theme]
-	if server.Heist == nil {
-		log.Error("There should be a heist, server:", server.ID, ", heist:", server.Heist)
-		discmsg.SendEphemeralResponse(s, i, "No "+theme.Heist+" is planned.")
-		return
-	}
-
-	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
-
-	if server.Heist.Planner == player.ID {
-		discmsg.SendEphemeralResponse(s, i, "You can't leave the "+theme.Heist+", as you are the planner.")
-		return
-	}
-	if !contains(server.Heist.Crew, player.ID) {
-		discmsg.SendEphemeralResponse(s, i, "You aren't a member of the "+theme.Heist+".")
-		return
-	}
-
-	discmsg.SendEphemeralResponse(s, i, "You have left the "+theme.Heist+".")
-	server.Heist.Crew = remove(server.Heist.Crew, player.ID)
-
-	err := heistMessage(s, server.Heist.Interaction, "leave")
-
-	if err != nil {
-		log.Error("Unable to update the heist message, error:", err)
-	}
-
-	store.Store.Save(HEIST, server.ID, server)
-}
-
-// cancelHeist cancels a heist that is being planned but has not yet started
-func cancelHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Trace("--> cancelHeist")
-	defer log.Trace("<-- cancelHeist")
-
-	server := GetServer(servers, i.GuildID)
-	theme := themes[server.Config.Theme]
-	if server.Heist == nil {
-		discmsg.SendEphemeralResponse(s, i, "No "+theme.Heist+" is planned.")
-		return
-	}
-	if i.Member.User.ID != server.Heist.Planner {
-		discmsg.SendEphemeralResponse(s, i, "You cannot cancel the "+theme.Heist+" as you are not the planner.")
-		return
-	}
-	if server.Heist.Started {
-		discmsg.SendEphemeralResponse(s, i, "The "+theme.Heist+" has already started and can't be cancelled.")
-		return
-	}
-
-	err := heistMessage(s, server.Heist.Interaction, "cancel")
-	if err != nil {
-		log.Error("Unable to mark the heist message as cancelled, error:", err)
-	}
-	server.Heist.Timer.cancel()
-	server.Heist = nil
-
-	discmsg.SendEphemeralResponse(s, i, "The "+theme.Heist+" has been cancelled.")
 
 	store.Store.Save(HEIST, server.ID, server)
 }
@@ -781,36 +714,43 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		server.Heist = nil
 		return
 	}
+	log.Debug("Heist is starting")
 	msg := p.Sprintf("Get ready! The %s is starting.", theme.Heist)
 	s.ChannelMessageSend(i.ChannelID, msg)
 	time.Sleep(3 * time.Second)
 	heistMessage(s, i, "start")
 	target := getTarget(server.Heist, server.Targets)
 	results := getHeistResults(server, target)
+	log.Debug("Hitting " + target.ID)
 	msg = p.Sprintf("The %s has decided to hit **%s**.", theme.Crew, target.ID)
 	s.ChannelMessageSend(i.ChannelID, msg)
 	time.Sleep(3 * time.Second)
 
 	// Process the results
 	for _, result := range results.memberResults {
-		msg = p.Sprintf(result.message+"\n", result.player.Name)
+		msg = p.Sprintf(result.message+"\n", "**"+result.player.Name+"**")
+		if result.status == APPREHENDED {
+			msg += p.Sprintf("`%s dropped out of the game.`", result.player.Name)
+		}
 		s.ChannelMessageSend(i.ChannelID, msg)
 		time.Sleep(3 * time.Second)
 	}
 
-	if len(results.survivingCrew) == 0 {
-		msg = "No one made it out safe."
+	if results.escaped == 0 {
+		msg = "\nNo one made it out safe."
 		s.ChannelMessageSend(i.ChannelID, msg)
 	} else {
+		msg = "\nThe raid is now over. Distributing player spoils."
+		s.ChannelMessageSend(i.ChannelID, msg)
 		// Render the results into a table and returnt he results.
 		var tableBuffer strings.Builder
 		table := tablewriter.NewWriter(&tableBuffer)
 		table.SetBorder(false)
 		table.SetColumnSeparator(" ")
 		table.SetCenterSeparator(" ")
-		table.SetHeader([]string{"Player", "Credits"})
+		table.SetHeader([]string{"Player", "Loot", "Bonus", "Total"})
 		for _, result := range results.survivingCrew {
-			data := []string{result.player.Name, p.Sprintf("%d", result.stolenCredits+result.bonusCredits)}
+			data := []string{result.player.Name, p.Sprintf("%d", result.stolenCredits), p.Sprintf("%d", result.bonusCredits), p.Sprintf("%d", result.stolenCredits+result.bonusCredits)}
 			table.Append(data)
 		}
 		table.Render()
@@ -825,9 +765,11 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		} else {
 			player.Spree++
 		}
-		if result.stolenCredits != 0 {
+		if results.escaped > 0 && result.stolenCredits != 0 {
 			account := bank.GetAccount(player.ID, player.Name)
 			economy.DepositCredits(bank, account, result.stolenCredits+result.bonusCredits)
+			target.Vault -= int64(result.stolenCredits)
+			log.WithFields(log.Fields{"Member": account.Name, "Stolen": result.stolenCredits, "Bonus": result.bonusCredits}).Debug("Heist Loot")
 		}
 	}
 	economy.SaveBank(bank)
@@ -1356,7 +1298,7 @@ func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	server.Config.Theme = theme.ID
-	log.Debug("Now using theme", server.Config.Theme)
+	log.Debug("Now using theme ", server.Config.Theme)
 
 	discmsg.SendResponse(s, i, "Theme "+themeName+" is now being used.")
 
@@ -1553,6 +1495,7 @@ func configInfo(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // Start initializes anything needed by the heist bot.
 func Start(s *discordgo.Session) {
+	targetSet = LoadTargets()
 	servers = LoadServers()
 	themes = LoadThemes()
 

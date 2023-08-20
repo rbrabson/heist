@@ -44,7 +44,7 @@ func payday(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	bank := economy.GetBank(i.GuildID)
-	account := bank.GetAccount(i.Member.User.ID, i.Member.User.Username) // TODO: handle the nickname
+	account := bank.GetAccount(i.Member.User.ID, getMemberName(i.Member.User.Username, i.Member.Nick))
 	economy.DepositCredits(bank, account, int(server.PaydayAmount))
 	economy.SaveBank(bank)
 	member.NextPayday = time.Now().Add(server.PaydayFrequency)

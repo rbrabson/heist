@@ -1,6 +1,7 @@
 package remind
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
@@ -111,7 +112,7 @@ func (s *server) createReminder(channelID string, memberID string, when string, 
 	}
 
 	s.newReminder(channelID, memberID, wait, message...)
-	saveReminder(s)
+	saveReminders(s)
 
 	msg := fmt.Sprintf("I will remind you of that in %s", format.Duration(wait))
 	return msg, nil
@@ -153,7 +154,7 @@ func deleteReminders(serverID string, memberID string) (string, error) {
 		return "You don't have any upcoming notifications.", ErrNoReminders
 	}
 	delete(s.Members, memberID)
-	saveReminder(s)
+	saveReminders(s)
 	return "All your notifications have been removed.", nil
 
 }
@@ -217,7 +218,7 @@ func sendReminders() {
 				delete(s.Members, delID)
 			}
 			if saveServer {
-				saveReminder(s)
+				saveReminders(s)
 			}
 		}
 	}
@@ -228,17 +229,18 @@ func loadReminders() {
 	log.Trace("--> LoadReminders")
 	defer log.Trace("<-- LoadReminders")
 
-	servers := make(map[string]*server)
+	servers = make(map[string]*server)
 	serverIDs := store.Store.ListDocuments(REMINDER)
 	for _, serverID := range serverIDs {
 		var server server
 		store.Store.Load(REMINDER, serverID, &server)
+		log.Debug("Server:", server)
 		servers[server.ID] = &server
 	}
 }
 
-// saveReminder saves the reminders for a member.
-func saveReminder(server *server) {
+// saveReminders saves the reminders for a member.
+func saveReminders(server *server) {
 	log.Trace("--> SaveReminder")
 	defer log.Trace("<-- SaveReminder")
 
@@ -264,4 +266,22 @@ func GetMemberHelp() []string {
 // GetAdminHelp returns help information about the heist bot commands
 func GetAdminHelp() []string {
 	return nil
+}
+
+// String returns a string repesentation for all reminders on the given server.
+func (s *server) String() string {
+	out, _ := json.Marshal(s)
+	return string(out)
+}
+
+// String returns a string representation for all reminders for a given member.
+func (r *reminderList) String() string {
+	out, _ := json.Marshal(r)
+	return string(out)
+}
+
+// String returns a string representation of the reminder
+func (r *reminder) String() string {
+	out, _ := json.Marshal(r)
+	return string(out)
 }

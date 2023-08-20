@@ -41,7 +41,7 @@ func newServer(serverID string) *server {
 		ID:              serverID,
 		Members:         members,
 		PaydayAmount:    5000,
-		PaydayFrequency: time.Duration(24 * time.Hour),
+		PaydayFrequency: time.Duration(23 * time.Hour),
 	}
 	servers[server.ID] = server
 	saveServer(server)
@@ -131,6 +131,14 @@ func saveServer(server *server) {
 	defer log.Trace("<-- saveServer")
 
 	store.Store.Save(PAYDAY, server.ID, server)
+}
+
+// getMemberName returns the member's nickname, if there is one, or the username otherwise.
+func getMemberName(username string, nickname string) string {
+	if nickname != "" {
+		return nickname
+	}
+	return username
 }
 
 // GetMemberHelp returns help information about the heist bot commands

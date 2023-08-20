@@ -63,6 +63,7 @@ func addReminder(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	server := getServer(i.GuildID)
+
 	var response string
 	if message == "" {
 		log.WithFields(log.Fields{
@@ -81,6 +82,7 @@ func addReminder(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		response, _ = server.createReminder(i.ChannelID, i.Member.User.ID, when, message)
 	}
 
+	saveReminders(server)
 	msg.SendEphemeralResponse(s, i, response)
 }
 
@@ -99,6 +101,8 @@ func removeReminders(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Trace("<-- removeReminders")
 
 	response, _ := deleteReminders(i.GuildID, i.Member.User.ID)
+	server := getServer(i.GuildID)
+	saveReminders(server)
 	msg.SendEphemeralResponse(s, i, response)
 
 }

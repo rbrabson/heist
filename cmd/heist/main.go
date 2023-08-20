@@ -12,6 +12,7 @@ import (
 
 func main() {
 	godotenv.Load()
+	log.SetLevel(log.DebugLevel)
 
 	bot := discord.NewBot()
 	err := bot.Session.Open()

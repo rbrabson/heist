@@ -3,6 +3,7 @@ package heist
 import (
 	"encoding/json"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -27,8 +28,8 @@ type Server struct {
 	ID      string             `json:"_id" bson:"_id"`
 	Config  Config             `json:"config" bson:"config"`
 	Players map[string]*Player `json:"players" bson:"players"`
-	Targets map[string]*Target `json:"targets" bson:"targets"`
 	Heist   *Heist             `json:"-" bson:"-"`
+	Targets map[string]*Target `json:"targets" bson:"targets"`
 }
 
 // Config is the configuration data for a given server.
@@ -42,20 +43,21 @@ type Config struct {
 	PoliceAlert  time.Duration `json:"police_alert" bson:"police_alert"`
 	SentenceBase time.Duration `json:"sentence_base" bson:"sentence_base"`
 	Theme        string        `json:"theme" bson:"theme"`
+	Targets      string        `json:"targets" bson:"targets"`
 	WaitTime     time.Duration `json:"wait_time" bson:"wait_time"`
 }
 
 // Heist is the data for a heist that is either planned or being executed.
 type Heist struct {
-	Planner       string                       `json:"planner" bson:"planner"`
-	Crew          []string                     `json:"crew" bson:"crew"`
-	SurvivingCrew []string                     `json:"surviving_crew" bson:"surviving_crew"`
-	Planned       bool                         `json:"planned" bson:"planned"`
-	Started       bool                         `json:"started" bson:"started"`
-	MessageID     string                       `json:"message_id" bson:"message_id"`
-	StartTime     time.Time                    `json:"start_time" bson:"start_time"`
-	Interaction   *discordgo.InteractionCreate `json:"-" bson:"-"`
-	Timer         *waitTimer                   `json:"-" bson:"-"`
+	Planner     string                       `json:"planner" bson:"planner"`
+	Crew        []string                     `json:"crew" bson:"crew"`
+	Planned     bool                         `json:"planned" bson:"planned"`
+	Started     bool                         `json:"started" bson:"started"`
+	MessageID   string                       `json:"message_id" bson:"message_id"`
+	StartTime   time.Time                    `json:"start_time" bson:"start_time"`
+	Interaction *discordgo.InteractionCreate `json:"-" bson:"-"`
+	Timer       *waitTimer                   `json:"-" bson:"-"`
+	Mutex       sync.Mutex                   `json:"-" bson:"-"`
 }
 
 // Player is a specific player of the heist game on a given server.
@@ -75,15 +77,6 @@ type Player struct {
 	TotalJail     int64         `json:"total_jail" bson:"total_jail"`
 }
 
-// Target is a target of a heist.
-type Target struct {
-	ID       string  `json:"_id" bson:"_id"`
-	CrewSize int64   `json:"crew" bson:"crew"`
-	Success  float64 `json:"success" bson:"success"`
-	Vault    int64   `json:"vault" bson:"vault"`
-	VaultMax int64   `json:"vault_max" bson:"vault_max"`
-}
-
 // NewServer creates a new server with the specified ID. It is typically called when
 // the first call from a server is made to the heist bot.
 func NewServer(guildID string) *Server {
@@ -91,11 +84,14 @@ func NewServer(guildID string) *Server {
 	if defaultTheme == "" {
 		log.Fatal("Default theme not set in environment variable `HEIST_DEFAULT_THEME`")
 	}
-	theme, err := GetTheme(defaultTheme)
+	_, err := GetTheme(defaultTheme)
 	if err != nil {
 		log.Fatal("Unable to load the default theme, error:", err)
 	}
-	log.Debug(theme)
+	_, err = GetTargets(defaultTheme)
+	if err != nil {
+		log.Fatal("Unable to load the default target, error:", err)
+	}
 
 	server := Server{
 		ID: guildID,
@@ -109,11 +105,19 @@ func NewServer(guildID string) *Server {
 			PoliceAlert:  60,
 			SentenceBase: 5,
 			Theme:        defaultTheme,
+			Targets:      defaultTheme,
 			WaitTime:     time.Duration(60 * time.Second),
 		},
 		Players: make(map[string]*Player, 1),
-		Targets: make(map[string]*Target, 1),
+		Targets: make(map[string]*Target),
 	}
+
+	targets, _ := GetTargets(server.Config.Targets)
+	for _, target := range targets.Targets {
+		server.Targets[target.ID] = NewTarget(target.ID, target.CrewSize, target.Success, target.Vault, target.VaultMax)
+	}
+	log.Debugf("Now have %d targets", len(server.Targets))
+
 	return &server
 }
 
@@ -135,27 +139,13 @@ func NewPlayer(id string, username string, nickname string) *Player {
 // NewHeist creates a new default heist.
 func NewHeist(server *Server, planner *Player) *Heist {
 	heist := Heist{
-		Planner:       planner.ID,
-		Crew:          make([]string, 0, 5),
-		SurvivingCrew: make([]string, 0, 5),
-		StartTime:     time.Now().Add(server.Config.WaitTime),
+		Planner:   planner.ID,
+		Crew:      make([]string, 0, 5),
+		StartTime: time.Now().Add(server.Config.WaitTime),
 	}
 	heist.Crew = append(heist.Crew, heist.Planner)
 
 	return &heist
-}
-
-// NewTarget creates a new target for a heist
-func NewTarget(id string, maxCrewSize int64, success float64, vaultCurrent int64, maxVault int64) *Target {
-	target := Target{
-		ID:       id,
-		CrewSize: maxCrewSize,
-		Success:  success,
-		Vault:    vaultCurrent,
-		VaultMax: maxVault,
-	}
-	return &target
-
 }
 
 // GetServer returns the server for the guild. If the server does not already exist, one is created.
@@ -165,19 +155,39 @@ func GetServer(servers map[string]*Server, guildID string) *Server {
 		server = NewServer(guildID)
 		servers[server.ID] = server
 	}
+
 	return server
 }
 
 // LoadServers loads all the heist servers from the store.
 func LoadServers() map[string]*Server {
+	defaultTheme := os.Getenv("HEIST_DEFAULT_THEME")
+
 	servers := make(map[string]*Server)
 	serverIDs := store.Store.ListDocuments(HEIST)
 	for _, serverID := range serverIDs {
 		var server Server
 		store.Store.Load(HEIST, serverID, &server)
+		if server.Config.Targets == "" {
+			server.Config.Targets = defaultTheme
+		}
+
+		// Update the targets to match the configuration, but keep the old vault information
+		// which is being increased to the vault maximum.
+		newTargets := make(map[string]*Target)
+		targets, _ := GetTargets(server.Config.Targets)
+		for _, target := range targets.Targets {
+			oldTarget, ok := server.Targets[target.ID]
+			t := NewTarget(target.ID, target.CrewSize, target.Success, target.Vault, target.VaultMax)
+			if ok {
+				t.Vault = min(oldTarget.Vault, target.VaultMax)
+			}
+			newTargets[t.ID] = t
+			log.WithFields(log.Fields{"Target": t.ID, "Server": server.ID}).Debug("Adding target for server")
+		}
+		server.Targets = newTargets
 		servers[server.ID] = &server
 	}
-
 	return servers
 }
 
@@ -275,11 +285,5 @@ func (c *Config) String() string {
 // String returns a string representation of the player.
 func (p *Player) String() string {
 	out, _ := json.Marshal(p)
-	return string(out)
-}
-
-// String returns a string representation of the target.
-func (t *Target) String() string {
-	out, _ := json.Marshal(t)
 	return string(out)
 }
