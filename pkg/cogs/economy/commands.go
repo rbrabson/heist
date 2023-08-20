@@ -345,6 +345,7 @@ func leaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		data := []string{account.Name, p.Sprintf("%d", account.Balance)}
 		table.Append(data)
 	}
+	table.Render()
 	msg.SendEphemeralResponse(s, i, "```\n"+tableBuffer.String()+"\n```")
 }
 
