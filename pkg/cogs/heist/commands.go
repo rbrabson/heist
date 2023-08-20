@@ -213,7 +213,7 @@ var (
 				{
 					Name:        "targets",
 					Description: "Gets the list of available heist targets.",
-					Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
 				},
 				{
 					Name:        "theme",
