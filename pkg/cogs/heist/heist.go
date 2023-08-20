@@ -169,14 +169,14 @@ func handleHeistFailure(server *Server, player *Player, result *HeistMemberResul
 			bail *= 3
 		}
 		player.BailCost = bail
-		player.CriminalLevel += 1
-		player.JailCounter += 1
+		player.CriminalLevel++
+		player.JailCounter++
+		player.TotalJail++
 		player.OOB = false
 		player.Sentence = time.Duration(sentence)
 		player.JailTimer = time.Now().Add(player.Sentence)
 		player.Spree = 0
 		player.Status = APPREHENDED
-		player.TotalJail += 1
 
 		log.WithFields(log.Fields{
 			"player":        player.Name,
@@ -203,6 +203,7 @@ func handleHeistFailure(server *Server, player *Player, result *HeistMemberResul
 	player.Sentence = 0
 	player.Spree = 0
 	player.Status = DEAD
+	player.Deaths++
 
 	log.WithFields(log.Fields{
 		"player":        player.Name,
