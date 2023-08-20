@@ -2,19 +2,9 @@ package economy
 
 import (
 	"sort"
-	"time"
+
+	"github.com/rbrabson/heist/pkg/math"
 )
-
-type number interface {
-	int | int32 | int64 | float32 | float64 | time.Duration
-}
-
-func min[N number](v1 N, v2 N) N {
-	if v1 < v2 {
-		return v1
-	}
-	return v2
-}
 
 // convertToList converts a map of elements into a sorted list of those same elements.
 func convertToList(serverID string) []*Account {
@@ -45,6 +35,6 @@ func GetRanking(serverID string, memberID string) int {
 // GetLeaderboard returns the top `limit` accounts for the server.
 func GetLeaderboard(serverID string, limit int) []*Account {
 	accounts := convertToList(serverID)
-	num := min(limit, len(accounts))
+	num := math.Min(limit, len(accounts))
 	return accounts[:num]
 }

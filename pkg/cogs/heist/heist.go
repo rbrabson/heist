@@ -10,6 +10,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/rbrabson/heist/pkg/cogs/economy"
 	"github.com/rbrabson/heist/pkg/format"
+	"github.com/rbrabson/heist/pkg/math"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -312,7 +313,7 @@ func vaultUpdater() {
 	for {
 		for _, server := range servers {
 			for _, target := range server.Targets {
-				vault := min(target.Vault+(target.VaultMax*4/100), target.VaultMax)
+				vault := math.Min(target.Vault+(target.VaultMax*4/100), target.VaultMax)
 				if vault != target.Vault {
 					log.WithFields(log.Fields{"Target": target.ID, "Old": target.Vault, "New": vault, "Max": target.VaultMax}).Debug("Updating Vault")
 					target.Vault = vault

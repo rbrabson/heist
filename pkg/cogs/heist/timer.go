@@ -3,6 +3,8 @@ package heist
 import (
 	"time"
 
+	"github.com/rbrabson/heist/pkg/math"
+
 	"github.com/bwmarrin/discordgo"
 	log "github.com/sirupsen/logrus"
 )
@@ -31,17 +33,6 @@ func newWaitTimer(s *discordgo.Session, i *discordgo.InteractionCreate, waitTime
 	return &t
 }
 
-type number interface {
-	int | int32 | int64 | float32 | float64 | time.Duration
-}
-
-func min[N number](v1 N, v2 N) N {
-	if v1 < v2 {
-		return v1
-	}
-	return v2
-}
-
 // start starts the wait timer. Once it expires, `methodToCall` is called. The timer
 // can be cancelled by calling `canel()`.
 func (t *waitTimer) start() {
@@ -49,7 +40,7 @@ func (t *waitTimer) start() {
 	// time has expired.
 	for !time.Now().After(t.expiration) {
 		maximumWait := time.Until(t.expiration)
-		timeToWait := min(maximumWait, 5*time.Second)
+		timeToWait := math.Min(maximumWait, 5*time.Second)
 		if timeToWait < 0 {
 			break
 		}
