@@ -8,8 +8,8 @@ import (
 // SendResponse sends a response to a user interaction. The message can ephemeral or non-ephemeral,
 // depending on whether the ephemeral boolean is set to `true`.
 func SendResponse(s *discordgo.Session, i *discordgo.InteractionCreate, msg string, ephemeral ...bool) {
-	log.Debug("--> SendResponse")
-	defer log.Debug("<-- SendResponse")
+	log.Trace("--> SendResponse")
+	defer log.Trace("<-- SendResponse")
 
 	var err error
 	if len(ephemeral) == 0 || !ephemeral[0] {
@@ -36,8 +36,8 @@ func SendResponse(s *discordgo.Session, i *discordgo.InteractionCreate, msg stri
 // SendEphemeralResponse is a utility routine used to send an ephemeral response to a user's message or button press.
 // It is shorthand for SendMessage(s, i, msg, true).
 func SendEphemeralResponse(s *discordgo.Session, i *discordgo.InteractionCreate, msg string) {
-	log.Debug("--> SendEphemeralResponse")
-	defer log.Debug("<-- SendEphemeralResponse")
+	log.Trace("--> SendEphemeralResponse")
+	defer log.Trace("<-- SendEphemeralResponse")
 
 	SendResponse(s, i, msg, true)
 }

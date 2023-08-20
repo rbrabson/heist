@@ -41,8 +41,8 @@ func (f *fileStore) ListDocuments(collection string) []string {
 
 // Load loads a file identified by documentID from the subdirectory (collection) into data.
 func (f *fileStore) Load(collection string, documentID string, data interface{}) {
-	log.Debug("--> Load")
-	defer log.Debug("<-- Load")
+	log.Trace("--> Load")
+	defer log.Trace("<-- Load")
 
 	filename := fmt.Sprintf("%s%s/%s.json", f.dir, collection, documentID)
 	b, err := os.ReadFile(filename)
@@ -59,8 +59,8 @@ func (f *fileStore) Load(collection string, documentID string, data interface{})
 
 // Save stores data into a subdirectory (collection) with the file name documentID.
 func (f *fileStore) Save(collection string, documentID string, data interface{}) {
-	log.Debug("--> Save")
-	defer log.Debug("<-- Save")
+	log.Trace("--> Save")
+	defer log.Trace("<-- Save")
 
 	b, err := json.Marshal(data)
 	if err != nil {

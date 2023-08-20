@@ -9,6 +9,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/rbrabson/heist/pkg/cogs/economy"
 	"github.com/rbrabson/heist/pkg/format"
+	"github.com/rbrabson/heist/pkg/math"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -96,8 +97,8 @@ func calculateCredits(results *HeistResult) {
 // for a heist. The closer you are to the maximum crew size, the larger
 // the bonus amount.
 func calculateBonusRate(heist *Heist, target *Target) int {
-	log.Debug("--> calculateBonus")
-	defer log.Debug("<-- calculateBonus")
+	log.Trace("--> calculateBonus")
+	defer log.Trace("<-- calculateBonus")
 
 	percent := 100 * int64(len(heist.Crew)) / target.CrewSize
 	log.WithField("percent", percent).Debug("Bonus Percentage")
@@ -119,8 +120,8 @@ func calculateBonusRate(heist *Heist, target *Target) int {
 // calculateSuccessRate returns the liklihood of a successful raid for each
 // member of the heist crew.
 func calculateSuccessRate(heist *Heist, target *Target) int {
-	log.Debug("--> calculateSuccessRate")
-	defer log.Debug("<-- calculateSuccessRate")
+	log.Trace("--> calculateSuccessRate")
+	defer log.Trace("<-- calculateSuccessRate")
 
 	bonus := calculateBonusRate(heist, target)
 	successChance := int(target.Success) + bonus
@@ -130,8 +131,8 @@ func calculateSuccessRate(heist *Heist, target *Target) int {
 
 // handleHeistFailure updates the status of a player who is apprehended or killed during a heist.
 func handleHeistFailure(server *Server, player *Player, result *HeistMemberResult) {
-	log.Debug("--> handleHeistFailure")
-	defer log.Debug("<-- handleHeistFailure")
+	log.Trace("--> handleHeistFailure")
+	defer log.Trace("<-- handleHeistFailure")
 
 	if result.status == APPREHENDED {
 		sentence := int64(server.Config.SentenceBase) * (player.JailCounter + 1)
@@ -189,8 +190,8 @@ func handleHeistFailure(server *Server, player *Player, result *HeistMemberResul
 // getHeistResults returns the results of the heist, which contains the outcome
 // for each member of the heist crew.
 func getHeistResults(server *Server, target *Target) *HeistResult {
-	log.Debug("--> getHeistResults")
-	defer log.Debug("<-- getHeistResults")
+	log.Trace("--> getHeistResults")
+	defer log.Trace("<-- getHeistResults")
 
 	results := &HeistResult{
 		target: target,
@@ -255,8 +256,8 @@ func getHeistResults(server *Server, target *Target) *HeistResult {
 // getTarget returns the target with the smallest maximum crew size that exceeds the number of
 // crew members.
 func getTarget(heist *Heist, targets map[string]*Target) *Target {
-	log.Debug("--> getTarget")
-	defer log.Debug("<-- getTarget")
+	log.Trace("--> getTarget")
+	defer log.Trace("<-- getTarget")
 
 	crewSize := int64(len(heist.Crew))
 	var target *Target
@@ -278,7 +279,7 @@ func vaultUpdater() {
 	for {
 		for _, server := range servers {
 			for _, target := range server.Targets {
-				vault := min(target.Vault+(target.VaultMax*4/100), target.VaultMax)
+				vault := math.Min(target.Vault+(target.VaultMax*4/100), target.VaultMax)
 				target.Vault = vault
 			}
 		}

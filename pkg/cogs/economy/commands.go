@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/olekukonko/tablewriter"
 	"github.com/rbrabson/heist/pkg/format"
 	"github.com/rbrabson/heist/pkg/msg"
 	log "github.com/sirupsen/logrus"
@@ -12,8 +13,10 @@ import (
 
 var (
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"bank":     bank,
-		"transfer": transferCredits,
+		"bank":        bank,
+		"transfer":    transferCredits,
+		"leaderboard": leaderboard,
+		"rank":        rank,
 	}
 
 	adminCommands = []*discordgo.ApplicationCommand{
@@ -65,6 +68,14 @@ var (
 
 	memberCommands = []*discordgo.ApplicationCommand{
 		{
+			Name:        "leaderboard",
+			Description: "Gets the global economy leaderboard.",
+		},
+		{
+			Name:        "rank",
+			Description: "Gets the player's ranking in the global leaderboard.",
+		},
+		{
 			Name:        "transfer",
 			Description: "Transfers a set amount of credits from your account to another player's account.",
 			Options: []*discordgo.ApplicationCommandOption{
@@ -87,8 +98,8 @@ var (
 
 // bank routes the bank commands to the proper handers.
 func bank(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> bank")
-	defer log.Debug("<-- bank")
+	log.Trace("--> bank")
+	defer log.Trace("<-- bank")
 
 	options := i.ApplicationCommandData().Options
 	switch options[0].Name {
@@ -101,8 +112,8 @@ func bank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // transferCredits removes a specified amount of credits from initiators account and deposits them in the target's account.
 func transferCredits(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> bank")
-	defer log.Debug("<-- bank")
+	log.Trace("--> bank")
+	defer log.Trace("<-- bank")
 
 	var toID string
 	var amount int
@@ -170,8 +181,8 @@ func transferCredits(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // setAccount sets the account to the specified number of credits.
 func setAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> setAccount")
-	defer log.Debug("<-- setAccount")
+	log.Trace("--> setAccount")
+	defer log.Trace("<-- setAccount")
 
 	var id string
 	var amount int
@@ -206,8 +217,8 @@ func setAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
 // transferAccount sets the target account to the amount of credits in the source
 // account, and clears the account balance of the source.
 func transferAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> transferAccount")
-	defer log.Debug("<-- transferAccount")
+	log.Trace("--> transferAccount")
+	defer log.Trace("<-- transferAccount")
 
 	var fromID, toID string
 	options := i.ApplicationCommandData().Options[0].Options
@@ -247,6 +258,38 @@ func transferAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	resp := p.Sprintf("Transferred balance of %d from %s to %s.", toAccount.Balance, fromAccount.Name, toAccount.Name)
 	msg.SendResponse(s, i, resp)
 
+}
+
+// leaderboard returns the top 10 players in the server's economy.
+func leaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Trace("--> leaderboard")
+	defer log.Trace("<-- leaderboard")
+
+	p := getPrinter(i)
+
+	accounts := GetLeaderboard(i.GuildID, 10)
+
+	var tableBuffer strings.Builder
+	table := tablewriter.NewWriter(&tableBuffer)
+	table.SetColumnSeparator(" ")
+	table.SetCenterSeparator(" ")
+	table.SetHeader([]string{"Name", "Balance"})
+	for _, account := range accounts {
+		data := []string{account.Name, p.Sprintf("%d", account.Balance)}
+		table.Append(data)
+	}
+	msg.SendEphemeralResponse(s, i, "```\n"+tableBuffer.String()+"\n```")
+}
+
+// rank returns the player's ranking in the server's economy.
+func rank(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Trace("--> rank")
+	defer log.Trace("<-- rank")
+
+	p := getPrinter(i)
+
+	rank := GetRanking(i.GuildID, i.Member.User.ID)
+	msg.SendEphemeralResponse(s, i, p.Sprintf("Ranking: %d", rank))
 }
 
 // Start intializes the economy.

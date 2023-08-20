@@ -349,8 +349,8 @@ var (
 
 // config routes the configuration commands to the proper handlers.
 func config(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> config")
-	defer log.Debug("<-- config")
+	log.Trace("--> config")
+	defer log.Trace("<-- config")
 
 	options := i.ApplicationCommandData().Options[0].Options
 	switch options[0].Name {
@@ -375,8 +375,8 @@ func config(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // target routes the target commands to the proper handlers.
 func target(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> target")
-	defer log.Debug("<-- target")
+	log.Trace("--> target")
+	defer log.Trace("<-- target")
 
 	options := i.ApplicationCommandData().Options[0].Options
 	switch options[0].Name {
@@ -393,8 +393,8 @@ func target(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // theme routes the theme commands to the proper handlers.
 func theme(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> theme")
-	defer log.Debug("<-- theme")
+	log.Trace("--> theme")
+	defer log.Trace("<-- theme")
 
 	options := i.ApplicationCommandData().Options[0].Options
 	switch options[0].Name {
@@ -446,8 +446,8 @@ func getPrinter(i *discordgo.InteractionCreate) *message.Printer {
 // heistMessage sends the main command used to plan, join and leave a heist. It also handles the case where
 // the heist starts, disabling the buttons to join/leave/cancel the heist.
 func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action string) error {
-	log.Debug("--> heistMessage")
-	defer log.Debug("<-- heistMessage")
+	log.Trace("--> heistMessage")
+	defer log.Trace("<-- heistMessage")
 
 	p := getPrinter(i)
 
@@ -545,8 +545,8 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 
 // admin routes the commands to the subcommand and subcommandgroup handlers
 func admin(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> admin")
-	defer log.Debug("<-- admin")
+	log.Trace("--> admin")
+	defer log.Trace("<-- admin")
 
 	options := i.ApplicationCommandData().Options
 	switch options[0].Name {
@@ -565,8 +565,8 @@ func admin(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // heist routes the commands to the subcommand and subcommandgroup handlers
 func heist(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> heist")
-	defer log.Debug("<-- heist")
+	log.Trace("--> heist")
+	defer log.Trace("<-- heist")
 
 	options := i.ApplicationCommandData().Options
 	switch options[0].Name {
@@ -587,8 +587,8 @@ func heist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // planHeist plans a new heist“
 func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> planHeist")
-	defer log.Debug("<-- planHeist")
+	log.Trace("--> planHeist")
+	defer log.Trace("<-- planHeist")
 
 	server := GetServer(servers, i.GuildID)
 	theme := themes[server.Config.Theme]
@@ -630,8 +630,8 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // joinHeist attempts to join a heist that is being planned
 func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> joinHeist")
-	defer log.Debug("<-- joinHeist")
+	log.Trace("--> joinHeist")
+	defer log.Trace("<-- joinHeist")
 
 	p := getPrinter(i)
 
@@ -676,8 +676,8 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // leaveHeist attempts to leave a heist previously joined
 func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> leaveHeist")
-	defer log.Debug("<-- leaveHeist")
+	log.Trace("--> leaveHeist")
+	defer log.Trace("<-- leaveHeist")
 
 	server := GetServer(servers, i.GuildID)
 	theme := themes[server.Config.Theme]
@@ -712,8 +712,8 @@ func leaveHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // cancelHeist cancels a heist that is being planned but has not yet started
 func cancelHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> cancelHeist")
-	defer log.Debug("<-- cancelHeist")
+	log.Trace("--> cancelHeist")
+	defer log.Trace("<-- cancelHeist")
 
 	server := GetServer(servers, i.GuildID)
 	theme := themes[server.Config.Theme]
@@ -744,8 +744,8 @@ func cancelHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // startHeist is called once the wait time for planning the heist completes
 func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> startHeist")
-	defer log.Debug("<-- startHeist")
+	log.Trace("--> startHeist")
+	defer log.Trace("<-- startHeist")
 
 	p := getPrinter(i)
 
@@ -805,6 +805,9 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		// Render the results into a table and returnt he results.
 		var tableBuffer strings.Builder
 		table := tablewriter.NewWriter(&tableBuffer)
+		table.SetBorder(false)
+		table.SetColumnSeparator(" ")
+		table.SetCenterSeparator(" ")
 		table.SetHeader([]string{"Player", "Credits"})
 		for _, result := range results.survivingCrew {
 			data := []string{result.player.Name, p.Sprintf("%d", result.stolenCredits+result.bonusCredits)}
@@ -839,8 +842,8 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // playerStats shows a player's heist stats
 func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> playerStats")
-	defer log.Debug("<-- playerStats")
+	log.Trace("--> playerStats")
+	defer log.Trace("<-- playerStats")
 
 	server := GetServer(servers, i.GuildID)
 	theme := themes[server.Config.Theme]
@@ -934,8 +937,8 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 // bailoutPlayer bails a player player out from jail. This defaults to the player initiating the command, but can
 // be another player as well.
 func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> bailoutPlayer")
-	log.Debug("<-- bailoutPlayer")
+	log.Trace("--> bailoutPlayer")
+	log.Trace("<-- bailoutPlayer")
 
 	p := getPrinter(i)
 
@@ -1001,8 +1004,8 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // releasePlayer releases a player from jail if their sentence has been served.
 func releasePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> releasePlayer")
-	defer log.Debug("<-- releasePlayer")
+	log.Trace("--> releasePlayer")
+	defer log.Trace("<-- releasePlayer")
 
 	p := getPrinter(i)
 
@@ -1040,8 +1043,8 @@ func releasePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // revivePlayer raises a player from the dead if their death timer has expired.
 func revivePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> revivePlayer")
-	defer log.Debug("<-- revivePlayer")
+	log.Trace("--> revivePlayer")
+	defer log.Trace("<-- revivePlayer")
 
 	p := getPrinter(i)
 
@@ -1069,8 +1072,8 @@ func revivePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // Reset resets the heist in case it hangs
 func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> resetHeist")
-	defer log.Debug("<-- resetHeist")
+	log.Trace("--> resetHeist")
+	defer log.Trace("<-- resetHeist")
 
 	server := GetServer(servers, i.GuildID)
 	theme := themes[server.Config.Theme]
@@ -1094,8 +1097,8 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // addTarget adds a target for heists
 func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> addTarget")
-	defer log.Debug("<-- addTarget")
+	log.Trace("--> addTarget")
+	defer log.Trace("<-- addTarget")
 
 	server := GetServer(servers, i.GuildID)
 
@@ -1144,8 +1147,8 @@ func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // editTarget edits the target information.
 func editTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> editTarget")
-	defer log.Debug("<-- editTarget")
+	log.Trace("--> editTarget")
+	defer log.Trace("<-- editTarget")
 
 	var id string
 	var crew, vault, current int64
@@ -1199,8 +1202,8 @@ func editTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // removeTarget deletes a target.
 func removeTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> deleteTarget")
-	defer log.Debug("<-- deleteTarget")
+	log.Trace("--> deleteTarget")
+	defer log.Trace("<-- deleteTarget")
 
 	targetID := i.ApplicationCommandData().Options[0].Options[0].Options[0].StringValue()
 
@@ -1219,8 +1222,8 @@ func removeTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // listTargets displays a list of available heist targets.
 func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> listTargets")
-	defer log.Debug("<-- listTargets")
+	log.Trace("--> listTargets")
+	defer log.Trace("<-- listTargets")
 
 	p := getPrinter(i)
 
@@ -1245,9 +1248,11 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// Discord only puts three columns per row, which isn't enough for our purposes.
 	var tableBuffer strings.Builder
 	table := tablewriter.NewWriter(&tableBuffer)
+	table.SetBorder(false)
+	table.SetColumnSeparator(" ")
+	table.SetCenterSeparator(" ")
 	table.SetHeader([]string{"ID", "Max Crew", theme.Vault, "Max " + theme.Vault, "Success Rate"})
 	for _, target := range targets {
-
 		data := []string{target.ID, p.Sprintf("%d", target.CrewSize), p.Sprintf("%d", target.Vault), p.Sprintf("%d", target.VaultMax), p.Sprintf("%.2f", target.Success)}
 		table.Append(data)
 	}
@@ -1258,8 +1263,8 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // clearMember clears the criminal state of the player.
 func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> clearMember")
-	log.Debug("<-- clearMember")
+	log.Trace("--> clearMember")
+	log.Trace("<-- clearMember")
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		discmsg.SendEphemeralResponse(s, i, "You are not allowed to use this command.")
@@ -1281,8 +1286,8 @@ func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // listThemes returns the list of available themes that may be used for heists
 func listThemes(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> listThemes")
-	defer log.Debug("<-- listThemes")
+	log.Trace("--> listThemes")
+	defer log.Trace("<-- listThemes")
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		discmsg.SendEphemeralResponse(s, i, "You are not allowed to use this command.")
 		return
@@ -1321,8 +1326,8 @@ func listThemes(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // setTheme sets the heist theme to the one specified in the command
 func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> setTheme")
-	defer log.Debug("<-- setTheme")
+	log.Trace("--> setTheme")
+	defer log.Trace("<-- setTheme")
 
 	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
 		discmsg.SendEphemeralResponse(s, i, "You are not allowed to use this command.")
@@ -1360,8 +1365,8 @@ func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // configCost sets the cost to plan or join a heist
 func configCost(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> configCost")
-	defer log.Debug("<-- configCost")
+	log.Trace("--> configCost")
+	defer log.Trace("<-- configCost")
 
 	p := getPrinter(i)
 
@@ -1377,8 +1382,8 @@ func configCost(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // configSentence sets the base aprehension time when a player is apprehended.
 func configSentence(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> configSentence")
-	defer log.Debug("<-- configSentence")
+	log.Trace("--> configSentence")
+	defer log.Trace("<-- configSentence")
 
 	p := getPrinter(i)
 
@@ -1393,8 +1398,8 @@ func configSentence(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // configPatrol sets the time authorities will prevent a new heist following one being completed.
 func configPatrol(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> configPatrol")
-	defer log.Debug("<-- configPatrol")
+	log.Trace("--> configPatrol")
+	defer log.Trace("<-- configPatrol")
 
 	p := getPrinter(i)
 
@@ -1410,8 +1415,8 @@ func configPatrol(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // configBail sets the base cost of bail.
 func configBail(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> configBail")
-	defer log.Debug("<-- configBail")
+	log.Trace("--> configBail")
+	defer log.Trace("<-- configBail")
 
 	p := getPrinter(i)
 
@@ -1427,8 +1432,8 @@ func configBail(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // configDeath sets how long players remain dead.
 func configDeath(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> configDeath")
-	defer log.Debug("<-- configDeath")
+	log.Trace("--> configDeath")
+	defer log.Trace("<-- configDeath")
 
 	p := getPrinter(i)
 
@@ -1444,8 +1449,8 @@ func configDeath(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // configWait sets how long players wait for others to join the heist.
 func configWait(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> configWait")
-	defer log.Debug("<-- configWait")
+	log.Trace("--> configWait")
+	defer log.Trace("<-- configWait")
 
 	p := getPrinter(i)
 
@@ -1462,8 +1467,8 @@ func configWait(s *discordgo.Session, i *discordgo.InteractionCreate) {
 // configPayday sets how many credits a player gets for a playday. This is kinda a hack as
 // the configuration is in heist and not in payday, which should one day be fixed.
 func configPayday(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> configPayday")
-	defer log.Debug("<-- configPayday")
+	log.Trace("--> configPayday")
+	defer log.Trace("<-- configPayday")
 
 	p := getPrinter(i)
 
@@ -1479,8 +1484,8 @@ func configPayday(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // configInfo returns the configuration for the Heist bot on this server.
 func configInfo(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("--> configInfo")
-	defer log.Debug("<-- configInfo")
+	log.Trace("--> configInfo")
+	defer log.Trace("<-- configInfo")
 
 	p := getPrinter(i)
 

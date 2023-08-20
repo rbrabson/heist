@@ -91,8 +91,8 @@ func getPrinter(i *discordgo.InteractionCreate) *message.Printer {
 
 // GetPaydayAmount returns the amount of credits a player depsots into their account on a given payday.
 func GetPaydayAmount(serverID string) int64 {
-	log.Debug("--> GetPaydayAmount")
-	defer log.Debug("<-- GetPaydayAmount")
+	log.Trace("--> GetPaydayAmount")
+	defer log.Trace("<-- GetPaydayAmount")
 
 	server := getServer(serverID)
 	return server.PaydayAmount
@@ -100,8 +100,8 @@ func GetPaydayAmount(serverID string) int64 {
 
 // SetPaydayAmount sets the amount of credits a player deposits into their account on a given payday.
 func SetPaydayAmount(serverID string, amount int64) {
-	log.Debug("--> SetPaydayAmount")
-	defer log.Debug("<-- SetPaydayAmount")
+	log.Trace("--> SetPaydayAmount")
+	defer log.Trace("<-- SetPaydayAmount")
 
 	server := getServer(serverID)
 	server.PaydayAmount = amount
@@ -111,8 +111,8 @@ func SetPaydayAmount(serverID string, amount int64) {
 
 // loadServers loads payday information for all servers from the store.
 func loadServers() map[string]*server {
-	log.Debug("--> loadServers")
-	defer log.Debug("<-- loadServers")
+	log.Trace("--> loadServers")
+	defer log.Trace("<-- loadServers")
 
 	servers := make(map[string]*server)
 	serverIDs := store.Store.ListDocuments(PAYDAY)
@@ -127,8 +127,8 @@ func loadServers() map[string]*server {
 
 // saveServer saves the payday information for the server into the store.
 func saveServer(server *server) {
-	log.Debug("--> saveServer")
-	defer log.Debug("<-- saveServer")
+	log.Trace("--> saveServer")
+	defer log.Trace("<-- saveServer")
 
 	store.Store.Save(PAYDAY, server.ID, server)
 }
