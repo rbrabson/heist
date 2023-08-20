@@ -19,6 +19,7 @@ import (
 	"github.com/rbrabson/heist/pkg/cogs/economy"
 	"github.com/rbrabson/heist/pkg/cogs/payday"
 	"github.com/rbrabson/heist/pkg/format"
+	hmath "github.com/rbrabson/heist/pkg/math"
 	discmsg "github.com/rbrabson/heist/pkg/msg"
 	"github.com/rbrabson/heist/pkg/store"
 	log "github.com/sirupsen/logrus"
@@ -660,6 +661,8 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			log.WithFields(log.Fields{"Member": account.Name, "Stolen": result.stolenCredits, "Bonus": result.bonusCredits}).Debug("Heist Loot")
 		}
 	}
+	target.Vault = hmath.Max(target.Vault, target.VaultMax*4/100)
+
 	economy.SaveBank(bank)
 
 	heistMessage(s, i, "ended")
