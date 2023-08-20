@@ -17,7 +17,6 @@ var (
 		"balance":     accountInfo,
 		"bank":        bank,
 		"leaderboard": leaderboard,
-		"rank":        rank,
 		"transfer":    transferCredits,
 	}
 
@@ -85,10 +84,6 @@ var (
 		{
 			Name:        "leaderboard",
 			Description: "Gets the global economy leaderboard.",
-		},
-		{
-			Name:        "rank",
-			Description: "Gets the player's ranking in the global leaderboard.",
 		},
 		{
 			Name:        "transfer",
@@ -229,7 +224,7 @@ func accountInfo(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	p := getPrinter(i)
 
 	bank := GetBank(i.GuildID)
-	account := bank.GetAccount(i.Member.User.ID, getMemberName(i.Member.User.ID, i.Member.Nick))
+	account := bank.GetAccount(i.Member.User.ID, getMemberName(i.Member.User.Username, i.Member.Nick))
 	resp := p.Sprintf("**Name**: %s\n**Balance**: %d\n**GlobalRanking**: %d", account.Name, account.Balance, GetRanking(bank.ID, account.ID))
 	msg.SendEphemeralResponse(s, i, resp)
 }
@@ -347,18 +342,6 @@ func leaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	table.Render()
 	msg.SendEphemeralResponse(s, i, "```\n"+tableBuffer.String()+"\n```")
-}
-
-// rank returns the player's ranking in the server's economy.
-func rank(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Trace("--> rank")
-	defer log.Trace("<-- rank")
-
-	p := getPrinter(i)
-
-	rank := GetRanking(i.GuildID, i.Member.User.ID)
-	log.WithFields(log.Fields{"Member": i.Member.User.ID, "Rank": rank}).Debug("Player Ranking")
-	msg.SendEphemeralResponse(s, i, p.Sprintf("Ranking: %d", rank))
 }
 
 // Start intializes the economy.
