@@ -102,14 +102,16 @@ func calculateCredits(results *HeistResult) {
 	log.Trace("--> calculateCredits")
 	defer log.Trace("<-- calculateCredits")
 
-	// Take 3/4 of the amount of the vault, and distribute it among those who survived. The
-	totalStolen := len(results.survivingCrew) * int(math.Round(float64(results.target.Vault)*0.75/float64(len(results.survivingCrew))))
+	// Take 3/4 of the amount of the vault, and distribute it among those who survived.
+	numSurvived := results.escaped + results.apprehended
+	stolenPerSurivor := int(math.Round(float64(results.target.Vault) * 0.75 / float64(numSurvived+results.escaped)))
+	totalStolen := numSurvived * stolenPerSurivor
 
-	// Get a "base amount" of loot stolen. If you are apprehended, this is what you get. If you escapem you get 2x as much.
+	// Get a "base amount" of loot stolen. If you are apprehended, this is what you get. If you escaped you get 2x as much.
 	baseStolen := totalStolen / (2*results.escaped + results.apprehended)
 
 	// Caculate a "base amount". Those who escape get 2x those who don't. So Divide the
-	log.WithFields(log.Fields{"Vault": results.target.Vault, "Survivors": len(results.survivingCrew), "Base Credits": baseStolen}).Debug("Looted")
+	log.WithFields(log.Fields{"Target": results.target.ID, "Vault": results.target.Vault, "Survivors": numSurvived, "Base Credits": baseStolen}).Debug("Looted")
 	for _, player := range results.survivingCrew {
 		if player.status == FREE {
 			player.stolenCredits = 2 * baseStolen
