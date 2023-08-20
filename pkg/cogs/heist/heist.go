@@ -104,7 +104,7 @@ func calculateCredits(results *HeistResult) {
 
 	// Take 3/4 of the amount of the vault, and distribute it among those who survived.
 	numSurvived := results.escaped + results.apprehended
-	stolenPerSurivor := int(math.Round(float64(results.target.Vault) * 0.75 / float64(numSurvived+results.escaped)))
+	stolenPerSurivor := int(math.Round(float64(results.target.Vault) * 0.75 / float64(numSurvived)))
 	totalStolen := numSurvived * stolenPerSurivor
 
 	// Get a "base amount" of loot stolen. If you are apprehended, this is what you get. If you escaped you get 2x as much.
@@ -210,6 +210,7 @@ func handleHeistFailure(server *Server, player *Player, result *HeistMemberResul
 		"bail":          player.BailCost,
 		"criminalLevel": player.CriminalLevel,
 		"deathTimer":    player.DeathTimer,
+		"totalDeaths":   player.Deaths,
 		"jailTimer":     player.JailTimer,
 		"oob":           player.OOB,
 		"sentence":      player.Sentence,
@@ -320,7 +321,7 @@ func getTarget(heist *Heist, targets map[string]*Target) *Target {
 // vaultUpdater updates the vault periodically so each vault will, over time, recover its credits after being
 // hit by a raid.
 func vaultUpdater() {
-	const timer = time.Duration(120 * time.Second)
+	const timer = time.Duration(1 * time.Minute)
 	time.Sleep(20 * time.Second)
 	for {
 		for _, server := range servers {
