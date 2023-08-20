@@ -116,7 +116,6 @@ func calculateCredits(results *HeistResult) {
 		} else {
 			player.stolenCredits = baseStolen
 		}
-		player.bonusCredits *= len(results.survivingCrew)
 	}
 }
 
