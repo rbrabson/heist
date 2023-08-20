@@ -13,9 +13,12 @@ import (
 
 var (
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+		"account":     bankAccount,
+		"balance":     accountInfo,
 		"bank":        bank,
-		"account":  bankAccount,
-		"balance":  accountInfo,
+		"leaderboard": leaderboard,
+		"rank":        rank,
+		"transfer":    transferCredits,
 	}
 
 	adminCommands = []*discordgo.ApplicationCommand{
@@ -353,6 +356,7 @@ func rank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	p := getPrinter(i)
 
 	rank := GetRanking(i.GuildID, i.Member.User.ID)
+	log.WithFields(log.Fields{"Member": i.Member.User.ID, "Rank": rank}).Debug("Player Ranking")
 	msg.SendEphemeralResponse(s, i, p.Sprintf("Ranking: %d", rank))
 }
 
