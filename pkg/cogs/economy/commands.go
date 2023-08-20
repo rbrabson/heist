@@ -335,6 +335,7 @@ func leaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	table := tablewriter.NewWriter(&tableBuffer)
 	table.SetColumnSeparator(" ")
 	table.SetCenterSeparator(" ")
+	table.SetBorder(false)
 	table.SetHeader([]string{"Name", "Balance"})
 	for _, account := range accounts {
 		data := []string{account.Name, p.Sprintf("%d", account.Balance)}
