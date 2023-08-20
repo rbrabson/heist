@@ -1,7 +1,6 @@
 package economy
 
 import (
-	"strconv"
 	"strings"
 	"time"
 
@@ -341,9 +340,9 @@ func leaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	table := tablewriter.NewWriter(&tableBuffer)
 	table.SetColumnSeparator(" ")
 	table.SetCenterSeparator(" ")
-	table.SetHeader([]string{"Rank", "Name", "Balance"})
-	for i, account := range accounts {
-		data := []string{strconv.Itoa(i + 1), account.Name, p.Sprintf("%d", account.Balance)}
+	table.SetHeader([]string{"Name", "Balance"})
+	for _, account := range accounts {
+		data := []string{account.Name, p.Sprintf("%d", account.Balance)}
 		table.Append(data)
 	}
 	table.Render()
