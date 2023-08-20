@@ -211,103 +211,9 @@ var (
 					},
 				},
 				{
-					Name:        "target",
-					Description: "Commands that affect heist targets.",
+					Name:        "targets",
+					Description: "Gets the list of available heist targets.",
 					Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Name:        "list",
-							Description: "Gets the list of available heist targets.",
-							Type:        discordgo.ApplicationCommandOptionSubCommand,
-						},
-						{
-							Name:        "add",
-							Description: "Adds a new target to the list of heist targets.",
-							Type:        discordgo.ApplicationCommandOptionSubCommand,
-							Options: []*discordgo.ApplicationCommandOption{
-								{
-									Type:        discordgo.ApplicationCommandOptionString,
-									Name:        "id",
-									Description: "ID of the heist",
-									Required:    true,
-								},
-								{
-									Type:        discordgo.ApplicationCommandOptionInteger,
-									Name:        "crew",
-									Description: "Maximum crew size for the heist.",
-									Required:    true,
-								},
-								{
-									Type:        discordgo.ApplicationCommandOptionInteger,
-									Name:        "success",
-									Description: "Percentage liklihood of success (0..100).",
-									Required:    true,
-								},
-								{
-									Type:        discordgo.ApplicationCommandOptionInteger,
-									Name:        "vault",
-									Description: "Maximum size of the target's vault.",
-									Required:    true,
-								},
-								{
-									Type:        discordgo.ApplicationCommandOptionInteger,
-									Name:        "current",
-									Description: "Current size of the target's vault; defaults to `vault`.",
-									Required:    false,
-								},
-							},
-						},
-						{
-							Name:        "edit",
-							Description: "Edits an existing heist target.",
-							Type:        discordgo.ApplicationCommandOptionSubCommand,
-							Options: []*discordgo.ApplicationCommandOption{
-								{
-									Type:        discordgo.ApplicationCommandOptionString,
-									Name:        "id",
-									Description: "ID of the heist.",
-									Required:    true,
-								},
-								{
-									Type:        discordgo.ApplicationCommandOptionInteger,
-									Name:        "crew",
-									Description: "Maximum crew size for the heist.",
-									Required:    false,
-								},
-								{
-									Type:        discordgo.ApplicationCommandOptionInteger,
-									Name:        "success",
-									Description: "Percentage liklihood of success (0..100).",
-									Required:    false,
-								},
-								{
-									Type:        discordgo.ApplicationCommandOptionInteger,
-									Name:        "vault",
-									Description: "Maximum size of the target's vault.",
-									Required:    false,
-								},
-								{
-									Type:        discordgo.ApplicationCommandOptionInteger,
-									Name:        "current",
-									Description: "Current size of the target's vault; defaults to `vault`.",
-									Required:    false,
-								},
-							},
-						},
-						{
-							Name:        "remove",
-							Description: "Removes a target from the list of heist targets.",
-							Type:        discordgo.ApplicationCommandOptionSubCommand,
-							Options: []*discordgo.ApplicationCommandOption{
-								{
-									Type:        discordgo.ApplicationCommandOptionString,
-									Name:        "id",
-									Description: "ID of the heist.",
-									Required:    true,
-								},
-							},
-						},
-					},
 				},
 				{
 					Name:        "theme",
@@ -369,24 +275,6 @@ func config(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		configPayday(s, i)
 	case "info":
 		configInfo(s, i)
-	}
-}
-
-// target routes the target commands to the proper handlers.
-func target(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Trace("--> target")
-	defer log.Trace("<-- target")
-
-	options := i.ApplicationCommandData().Options[0].Options
-	switch options[0].Name {
-	case "add":
-		addTarget(s, i)
-	case "edit":
-		editTarget(s, i)
-	case "remove":
-		removeTarget(s, i)
-	case "list":
-		listTargets(s, i)
 	}
 }
 
@@ -552,8 +440,8 @@ func admin(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		config(s, i)
 	case "reset":
 		resetHeist(s, i)
-	case "target":
-		target(s, i)
+	case "targets":
+		listTargets(s, i)
 	case "theme":
 		theme(s, i)
 	}
@@ -1033,131 +921,6 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if server.Heist == nil || !server.Heist.Planned {
 		discmsg.SendResponse(s, i, "The "+theme.Heist+" has been reset.")
 	}
-
-	store.Store.Save(HEIST, server.ID, server)
-}
-
-// addTarget adds a target for heists
-func addTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Trace("--> addTarget")
-	defer log.Trace("<-- addTarget")
-
-	server := GetServer(servers, i.GuildID)
-
-	var id string
-	var crewSize, vaultMax, vaultCurrent int64
-	var success float64
-	options := i.ApplicationCommandData().Options[0].Options[0].Options
-	for _, option := range options {
-		switch option.Name {
-		case "id":
-			id = strings.TrimSpace(option.StringValue())
-		case "crew":
-			crewSize = option.IntValue()
-		case "success":
-			success = float64(option.IntValue())
-		case "vault":
-			vaultMax = option.IntValue()
-		case "current":
-			vaultCurrent = option.IntValue()
-		}
-	}
-	if vaultCurrent == 0 {
-		vaultCurrent = vaultMax
-	}
-
-	_, ok := server.Targets[id]
-	if ok {
-		discmsg.SendEphemeralResponse(s, i, "Target \""+id+"\" already exists.")
-		return
-	}
-	for _, target := range server.Targets {
-		if target.CrewSize == crewSize {
-			discmsg.SendEphemeralResponse(s, i, "Target \""+target.ID+"\" has the same max crew size.")
-			return
-		}
-
-	}
-
-	target := NewTarget(id, crewSize, success, vaultCurrent, vaultMax)
-	server.Targets[target.ID] = target
-
-	discmsg.SendResponse(s, i, "You have added target "+target.ID+" to the new heist.")
-
-	store.Store.Save(HEIST, server.ID, server)
-}
-
-// editTarget edits the target information.
-func editTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Trace("--> editTarget")
-	defer log.Trace("<-- editTarget")
-
-	var id string
-	var crew, vault, current int64
-	var success float64
-	options := i.ApplicationCommandData().Options[0].Options[0].Options[0].Options
-	for _, option := range options {
-		switch option.Name {
-		case "id":
-			id = option.StringValue()
-		case "crew":
-			crew = option.IntValue()
-		case "success":
-			success = float64(option.IntValue())
-		case "vault":
-			vault = option.IntValue()
-		case "current":
-			current = option.IntValue()
-		}
-	}
-
-	server := GetServer(servers, i.GuildID)
-	target, ok := server.Targets[id]
-	if !ok {
-		discmsg.SendEphemeralResponse(s, i, "Target \""+id+"\" not found.")
-		return
-	}
-	for _, t := range server.Targets {
-		if t.CrewSize == crew && t.ID != target.ID {
-			discmsg.SendEphemeralResponse(s, i, "The crew size is not unique; target \""+id+"\" was not updated.")
-			return
-		}
-	}
-
-	if crew != 0 {
-		target.CrewSize = crew
-	}
-	if vault != 0 {
-		target.VaultMax = vault
-	}
-	if current != 0 {
-		target.Vault = current
-	}
-	if success != 0.0 {
-		target.Success = success
-	}
-
-	discmsg.SendResponse(s, i, "Target \""+id+"\" updated.")
-
-	store.Store.Save(HEIST, server.ID, server)
-}
-
-// removeTarget deletes a target.
-func removeTarget(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Trace("--> deleteTarget")
-	defer log.Trace("<-- deleteTarget")
-
-	targetID := i.ApplicationCommandData().Options[0].Options[0].Options[0].StringValue()
-
-	server := GetServer(servers, i.GuildID)
-	_, ok := server.Targets[targetID]
-	if !ok {
-		discmsg.SendEphemeralResponse(s, i, "Target \""+targetID+"\" not found.")
-		return
-	}
-	delete(server.Targets, targetID)
-
-	discmsg.SendResponse(s, i, "Target \""+targetID+"\" removed.")
 
 	store.Store.Save(HEIST, server.ID, server)
 }
