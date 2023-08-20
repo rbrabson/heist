@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	hmath "github.com/rbrabson/heist/pkg/math"
 	"github.com/rbrabson/heist/pkg/store"
 	log "github.com/sirupsen/logrus"
 )
@@ -180,7 +181,7 @@ func LoadServers() map[string]*Server {
 			oldTarget, ok := server.Targets[target.ID]
 			t := NewTarget(target.ID, target.CrewSize, target.Success, target.Vault, target.VaultMax)
 			if ok {
-				t.Vault = min(oldTarget.Vault, target.VaultMax)
+				t.Vault = hmath.Min(oldTarget.Vault, target.VaultMax)
 			}
 			newTargets[t.ID] = t
 			log.WithFields(log.Fields{"Target": t.ID, "Server": server.ID}).Debug("Adding target for server")
