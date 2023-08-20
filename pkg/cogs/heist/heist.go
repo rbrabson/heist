@@ -11,6 +11,7 @@ import (
 	"github.com/rbrabson/heist/pkg/cogs/economy"
 	"github.com/rbrabson/heist/pkg/format"
 	hmath "github.com/rbrabson/heist/pkg/math"
+	"github.com/rbrabson/heist/pkg/store"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -312,13 +313,19 @@ func vaultUpdater() {
 	time.Sleep(20 * time.Second)
 	for {
 		for _, server := range servers {
+			save := false
 			for _, target := range server.Targets {
 				vault := hmath.Min(target.Vault+(target.VaultMax*4/100), target.VaultMax)
 				if vault != target.Vault {
 					log.WithFields(log.Fields{"Target": target.ID, "Old": target.Vault, "New": vault, "Max": target.VaultMax}).Debug("Updating Vault")
 					target.Vault = vault
+					save = true
 				}
 			}
+			if save {
+				store.Store.Save(HEIST, server.ID, server)
+			}
+			save = false
 		}
 		time.Sleep(timer)
 	}
