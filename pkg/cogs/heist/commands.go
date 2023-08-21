@@ -949,7 +949,7 @@ func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Trace("--> clearMember")
 	log.Trace("<-- clearMember")
 
-	memberID := i.ApplicationCommandData().Options[0].StringValue()
+	memberID := i.ApplicationCommandData().Options[0].Options[0].StringValue()
 	server := GetServer(servers, i.GuildID)
 	player, ok := server.Players[memberID]
 	if !ok {
