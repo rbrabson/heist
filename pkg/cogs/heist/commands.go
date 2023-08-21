@@ -15,7 +15,6 @@ import (
 
 	"golang.org/x/text/message"
 
-	"github.com/rbrabson/heist/pkg/checks"
 	"github.com/rbrabson/heist/pkg/cogs/economy"
 	"github.com/rbrabson/heist/pkg/cogs/payday"
 	"github.com/rbrabson/heist/pkg/format"
@@ -294,30 +293,6 @@ func theme(s *discordgo.Session, i *discordgo.InteractionCreate) {
 }
 
 /******** UTILITY FUNCTIONS ********/
-
-// getAssignedRoles returns a list of discord roles assigned to the user
-func getAssignedRoles(s *discordgo.Session, i *discordgo.InteractionCreate) discordgo.Roles {
-	guild, err := s.Guild(i.GuildID)
-	if err != nil {
-		log.Error("Unable to retrieve the guild information from Discord, error:", err)
-		return nil
-	}
-
-	member, err := s.GuildMember(i.GuildID, i.Member.User.ID)
-	if err != nil {
-		log.Error("Unable to retrieve the member information from Discord, error:", err)
-		return nil
-	}
-
-	var roles discordgo.Roles
-	for _, role := range guild.Roles {
-		if contains(member.Roles, role.ID) {
-			roles = append(roles, role)
-		}
-	}
-
-	return roles
-}
 
 // getPrinter returns a printer for the given locale of the user initiating the message.
 func getPrinter(i *discordgo.InteractionCreate) *message.Printer {
@@ -974,11 +949,6 @@ func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Trace("--> clearMember")
 	log.Trace("<-- clearMember")
 
-	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
-		discmsg.SendEphemeralResponse(s, i, "You are not allowed to use this command.")
-		return
-	}
-
 	memberID := i.ApplicationCommandData().Options[0].StringValue()
 	server := GetServer(servers, i.GuildID)
 	player, ok := server.Players[memberID]
@@ -996,10 +966,6 @@ func clearMember(s *discordgo.Session, i *discordgo.InteractionCreate) {
 func listThemes(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Trace("--> listThemes")
 	defer log.Trace("<-- listThemes")
-	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
-		discmsg.SendEphemeralResponse(s, i, "You are not allowed to use this command.")
-		return
-	}
 
 	themes, err := GetThemeNames(themes)
 	if err != nil {
@@ -1036,11 +1002,6 @@ func listThemes(s *discordgo.Session, i *discordgo.InteractionCreate) {
 func setTheme(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Trace("--> setTheme")
 	defer log.Trace("<-- setTheme")
-
-	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
-		discmsg.SendEphemeralResponse(s, i, "You are not allowed to use this command.")
-		return
-	}
 
 	server := GetServer(servers, i.GuildID)
 	var themeName string
@@ -1196,11 +1157,6 @@ func configInfo(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Trace("<-- configInfo")
 
 	p := getPrinter(i)
-
-	if !checks.IsAdminOrServerManager(getAssignedRoles(s, i)) {
-		discmsg.SendEphemeralResponse(s, i, "You are not allowed to use this command.")
-		return
-	}
 
 	server := GetServer(servers, i.GuildID)
 
