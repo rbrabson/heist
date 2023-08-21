@@ -43,8 +43,8 @@ var (
 		"join_heist": joinHeist,
 	}
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"heist":       heist,
-		"heist-admin": admin,
+		"heist":        heist,
+		"heist-admin2": admin,
 	}
 
 	playerCommands = []*discordgo.ApplicationCommand{
@@ -91,7 +91,7 @@ var (
 
 	adminCommands = []*discordgo.ApplicationCommand{
 		{
-			Name:        "heist-admin",
+			Name:        "heist-admin2",
 			Description: "Heist admin commands.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
@@ -483,9 +483,20 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		log.Error("Unable to create the `Plan Heist` message, error:", err)
 	}
 
-	server.Heist.Timer = newWaitTimer(s, i, time.Until(server.Heist.StartTime), startHeist)
+	for !time.Now().After(server.Heist.StartTime) {
+		maximumWait := time.Until(server.Heist.StartTime)
+		timeToWait := hmath.Min(maximumWait, 5*time.Second)
+		if timeToWait < 0 {
+			break
+		}
+		time.Sleep(timeToWait)
+		err := heistMessage(s, i, "update")
+		if err != nil {
+			log.Error("Unable to update the time for the heist message, error:", err)
+		}
+	}
 
-	store.Store.Save(HEIST, server.ID, server)
+	startHeist(s, i)
 }
 
 // joinHeist attempts to join a heist that is being planned
@@ -890,9 +901,6 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	if server.Heist.Timer != nil {
-		server.Heist.Timer.cancel()
-	}
 	heistMessage(s, server.Heist.Interaction, "cancel")
 	server.Heist = nil
 

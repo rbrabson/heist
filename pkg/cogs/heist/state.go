@@ -57,7 +57,6 @@ type Heist struct {
 	MessageID   string                       `json:"message_id" bson:"message_id"`
 	StartTime   time.Time                    `json:"start_time" bson:"start_time"`
 	Interaction *discordgo.InteractionCreate `json:"-" bson:"-"`
-	Timer       *waitTimer                   `json:"-" bson:"-"`
 	Mutex       sync.Mutex                   `json:"-" bson:"-"`
 }
 
