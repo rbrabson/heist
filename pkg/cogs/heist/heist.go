@@ -84,7 +84,7 @@ func heistChecks(server *Server, i *discordgo.InteractionCreate, player *Player,
 		return msg, false
 	}
 	account := bank.GetAccount(player.ID, player.Name)
-	if account.Balance < int(server.Config.HeistCost) {
+	if account.CurrentBalance < int(server.Config.HeistCost) {
 		msg := p.Sprintf("You do not have enough credits to cover the cost of entry. You need %d credits to participate", server.Config.HeistCost)
 		return msg, false
 	}

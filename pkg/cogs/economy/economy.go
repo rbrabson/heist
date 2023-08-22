@@ -40,7 +40,9 @@ type Bank struct {
 // Account is the bank account for a member of the server/guild.
 type Account struct {
 	ID              string    `json:"_id" bson:"_id"`
-	Balance         int       `json:"balance" bson:"balance"`
+	MonthlyBalance  int       `json:"monthly_balance" bson:"monthly_balance"`
+	CurrentBalance  int       `json:"current_balance" bson:"current_balance"`
+	LifetimeBalance int       `json:"lifetime_balance" bson:"lifetime_balance"`
 	CreatedAt       time.Time `json:"created_at" bson:"created_at"`
 	Name            string    `json:"name" bson:"name"`
 	NextTransferIn  time.Time `json:"next_transfer_in" bson:"next_transfer_in"`
@@ -84,10 +86,12 @@ func NewAccount(b *Bank, playerID string, playerName string) *Account {
 	defer log.Trace("<-- NewAccount")
 
 	account := Account{
-		ID:        playerID,
-		Balance:   b.DefaultBalance,
-		CreatedAt: time.Now(),
-		Name:      playerName,
+		ID:              playerID,
+		MonthlyBalance:  b.DefaultBalance,
+		CurrentBalance:  b.DefaultBalance,
+		LifetimeBalance: b.DefaultBalance,
+		CreatedAt:       time.Now(),
+		Name:            playerName,
 	}
 	return &account
 }
@@ -111,7 +115,9 @@ func (b *Bank) GetAccount(playerID string, playerName string) *Account {
 
 // DepositCredits adds the amount of credits to the account at a given bank
 func DepositCredits(bank *Bank, account *Account, amount int) {
-	account.Balance += amount
+	account.MonthlyBalance += amount
+	account.CurrentBalance += amount
+	account.LifetimeBalance += amount
 }
 
 // WithDrawCredits deducts the amount of credits from the account at the given bank
@@ -119,10 +125,12 @@ func WithdrawCredits(bank *Bank, account *Account, amount int) error {
 	log.Trace("--> WithdrawCredits")
 	defer log.Trace("<-- WithdrawCredits")
 
-	if account.Balance < amount {
+	if account.CurrentBalance < amount {
 		return ErrInsufficintBalance
 	}
-	account.Balance -= amount
+	account.MonthlyBalance -= amount
+	account.CurrentBalance -= amount
+	account.LifetimeBalance -= amount
 	return nil
 }
 

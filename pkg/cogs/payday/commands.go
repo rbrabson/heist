@@ -50,7 +50,7 @@ func payday(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	member.NextPayday = time.Now().Add(server.PaydayFrequency)
 	saveServer(server)
 
-	msg := p.Sprintf("You deposited your check of %d into your bank account. You now have %d credits.", server.PaydayAmount, account.Balance)
+	msg := p.Sprintf("You deposited your check of %d into your bank account. You now have %d credits.", server.PaydayAmount, account.CurrentBalance)
 	discmsg.SendEphemeralResponse(s, i, msg)
 }
 

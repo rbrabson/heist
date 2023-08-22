@@ -2,31 +2,26 @@
 
 package main
 
-import (
-	"fmt"
-	"time"
-
-	"github.com/rbrabson/heist/pkg/cogs/economy"
-)
-
 type OldEconomy interface{}
 
 func main() {
-	economy.Start(nil)
-	fmt.Println("Getting accounts")
-	start := time.Now()
-	accounts := economy.GetLeaderboard("1141342869383282759", 10)
-	elapsed := time.Since(start)
-	fmt.Printf("Elapsed time sorting accounts: %s\n", elapsed)
-	for _, account := range accounts {
-		fmt.Printf("Name: %s, Balance: %d\n", account.Name, account.Balance)
-	}
+	/*
+		economy.Start(nil)
+		fmt.Println("Getting accounts")
+		start := time.Now()
+		accounts := economy.GetMonthlyLeaderboard("1141342869383282759", 10)
+		elapsed := time.Since(start)
+		fmt.Printf("Elapsed time sorting accounts: %s\n", elapsed)
+		for _, account := range accounts {
+			fmt.Printf("Name: %s, Balance: %d\n", account.Name, account.CurrentBalance)
+		}
 
-	start = time.Now()
-	ranking := economy.GetRanking("1133473421532086342", "149670432331661312")
-	elapsed = time.Since(start)
-	fmt.Printf("Elapsed time getting ranking: %s\n", elapsed)
-	fmt.Printf("Ranking: %d\n", ranking)
+		start = time.Now()
+		ranking := economy.GetMonthlyRanking("1133473421532086342", "149670432331661312")
+		elapsed = time.Since(start)
+		fmt.Printf("Elapsed time getting ranking: %s\n", elapsed)
+		fmt.Printf("Ranking: %d\n", ranking)
+	*/
 
 	/*
 		godotenv.Load()

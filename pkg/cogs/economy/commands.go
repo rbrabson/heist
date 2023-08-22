@@ -12,6 +12,15 @@ import (
 )
 
 var (
+	componentHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+		"montly_leaderboard":   monthlyLeaderboard,
+		"current_leaderboard":  currentLeaderboard,
+		"lifetime_leaderboard": lifetimeLeaderboard,
+		"monthly_rank":         monthlyRank,
+		"current_rank":         currentRank,
+		"lifetime_rank":        lifetimeRank,
+	}
+
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"account":     bankAccount,
 		"balance":     accountInfo,
@@ -173,8 +182,8 @@ func transferCredits(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		msg.SendEphemeralResponse(s, i, resp)
 		return
 	}
-	if fromAccount.Balance < amount {
-		resp := p.Sprintf("Your can't transfer %d credits as your account only has %d credits", amount, fromAccount.Balance)
+	if fromAccount.CurrentBalance < amount {
+		resp := p.Sprintf("Your can't transfer %d credits as your account only has %d credits", amount, fromAccount.CurrentBalance)
 		msg.SendEphemeralResponse(s, i, resp)
 		return
 	}
@@ -183,12 +192,12 @@ func transferCredits(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		"From":         fromAccount.Name,
 		"To":           toAccount.Name,
 		"Amount":       amount,
-		"From Balance": fromAccount.Balance,
-		"To Balance":   toAccount.Balance,
+		"From Balance": fromAccount.CurrentBalance,
+		"To Balance":   toAccount.CurrentBalance,
 	}).Debug("/transfer")
 
-	fromAccount.Balance -= amount
-	toAccount.Balance += amount
+	WithdrawCredits(bank, fromAccount, amount)
+	DepositCredits(bank, toAccount, amount)
 	fromAccount.NextTransferOut = time.Now().Add(bank.MinTransferDuration)
 	toAccount.NextTransferIn = time.Now().Add(bank.MinTransferDuration)
 	SaveBank(bank)
@@ -212,7 +221,7 @@ func bankAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	resp := p.Sprintf("**ID**: %s\n**Name**: %s\n**Balance**: %d\n**GlobalRanking**: %d\n**Created**: %s\n**NextTransferIn**: %s\n**NextTransferOut**: %s", account.ID, account.Name, account.Balance, GetRanking(bank.ID, account.ID), account.CreatedAt, account.NextTransferIn, account.NextTransferOut)
+	resp := p.Sprintf("**ID**: %s\n**Name**: %s\n**Balance**: %d\n**GlobalRanking**: %d\n**Created**: %s\n**NextTransferIn**: %s\n**NextTransferOut**: %s", account.ID, account.Name, account.CurrentBalance, GetMonthlyRanking(bank.ID, account.ID), account.CreatedAt, account.NextTransferIn, account.NextTransferOut)
 	msg.SendEphemeralResponse(s, i, resp)
 }
 
@@ -225,7 +234,7 @@ func accountInfo(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	bank := GetBank(i.GuildID)
 	account := bank.GetAccount(i.Member.User.ID, getMemberName(i.Member.User.Username, i.Member.Nick))
-	resp := p.Sprintf("**Name**: %s\n**Balance**: %d\n**GlobalRanking**: %d", account.Name, account.Balance, GetRanking(bank.ID, account.ID))
+	resp := p.Sprintf("**Name**: %s\n**Balance**: %d\n**GlobalRanking**: %d", account.Name, account.CurrentBalance, GetMonthlyRanking(bank.ID, account.ID))
 	msg.SendEphemeralResponse(s, i, resp)
 }
 
@@ -257,7 +266,9 @@ func setAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	bank := GetBank(i.GuildID)
 	account := bank.GetAccount(id, getMemberName(member.User.ID, member.Nick))
-	account.Balance = amount
+	account.MonthlyBalance = amount
+	account.CurrentBalance = amount
+	account.LifetimeBalance = amount
 
 	log.WithFields(log.Fields{
 		"Account": account.Name,
@@ -266,7 +277,7 @@ func setAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	SaveBank(bank)
 
-	resp := p.Sprintf("Account for %s was set to %d credits.", account.Name, account.Balance)
+	resp := p.Sprintf("Account for %s was set to %d credits.", account.Name, account.CurrentBalance)
 	msg.SendResponse(s, i, resp)
 }
 
@@ -306,18 +317,22 @@ func transferAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	toAccount := bank.GetAccount(toID, getMemberName(member.User.Username, member.Nick))
 
-	toAccount.Balance = fromAccount.Balance
-	fromAccount.Balance = 0
+	toAccount.MonthlyBalance = fromAccount.MonthlyBalance
+	toAccount.CurrentBalance = fromAccount.CurrentBalance
+	toAccount.LifetimeBalance = fromAccount.LifetimeBalance
+	fromAccount.MonthlyBalance = 0
+	fromAccount.CurrentBalance = 0
+	fromAccount.LifetimeBalance = 0
 
 	log.WithFields(log.Fields{
 		"From":    fromAccount.Name,
 		"To":      toAccount.Name,
-		"Balance": toAccount.Balance,
+		"Balance": toAccount.CurrentBalance,
 	}).Debug("/bank transfer")
 
 	SaveBank(bank)
 
-	resp := p.Sprintf("Transferred balance of %d from %s to %s.", toAccount.Balance, fromAccount.Name, toAccount.Name)
+	resp := p.Sprintf("Transferred balance of %d from %s to %s.", toAccount.CurrentBalance, fromAccount.Name, toAccount.Name)
 	msg.SendResponse(s, i, resp)
 
 }
@@ -329,7 +344,7 @@ func leaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	p := getPrinter(i)
 
-	accounts := GetLeaderboard(i.GuildID, 10)
+	accounts := GetMonthlyLeaderboard(i.GuildID, 10)
 
 	var tableBuffer strings.Builder
 	table := tablewriter.NewWriter(&tableBuffer)
@@ -338,11 +353,41 @@ func leaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	table.SetBorder(false)
 	table.SetHeader([]string{"Name", "Balance"})
 	for _, account := range accounts {
-		data := []string{account.Name, p.Sprintf("%d", account.Balance)}
+		data := []string{account.Name, p.Sprintf("%d", account.CurrentBalance)}
 		table.Append(data)
 	}
 	table.Render()
 	msg.SendEphemeralResponse(s, i, "```\n"+tableBuffer.String()+"\n```")
+}
+
+func monthlyLeaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Trace("--> leaderboard")
+	defer log.Trace("<-- leaderboard")
+}
+
+func currentLeaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Trace("--> leaderboard")
+	defer log.Trace("<-- leaderboard")
+}
+
+func lifetimeLeaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Trace("--> leaderboard")
+	defer log.Trace("<-- leaderboard")
+}
+
+func monthlyRank(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Trace("--> leaderboard")
+	defer log.Trace("<-- leaderboard")
+}
+
+func currentRank(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Trace("--> leaderboard")
+	defer log.Trace("<-- leaderboard")
+}
+
+func lifetimeRank(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Trace("--> leaderboard")
+	defer log.Trace("<-- leaderboard")
 }
 
 // Start intializes the economy.

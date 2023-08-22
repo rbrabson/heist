@@ -734,7 +734,7 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				},
 				{
 					Name:   "Credits",
-					Value:  p.Sprintf("%d", account.Balance),
+					Value:  p.Sprintf("%d", account.CurrentBalance),
 					Inline: true,
 				},
 			},
@@ -800,7 +800,7 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		discmsg.SendEphemeralResponse(s, i, "You have already served your sentence. Use `/heist release` to be released from jail.")
 		return
 	}
-	if account.Balance < int(player.BailCost) {
+	if account.CurrentBalance < int(player.BailCost) {
 		msg := p.Sprintf("You do not have enough credits to play the bail of %d", player.BailCost)
 		discmsg.SendEphemeralResponse(s, i, msg)
 		return
