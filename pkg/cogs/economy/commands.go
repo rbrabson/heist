@@ -393,6 +393,7 @@ func lifetimeRank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 // Start intializes the economy.
 func Start(session *discordgo.Session) {
 	LoadBanks()
+	go resetMonthlyLeaderboard()
 }
 
 // GetCommands returns the component handlers, command handlers, and commands for the payday bot.

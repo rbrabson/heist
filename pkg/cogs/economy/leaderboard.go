@@ -2,6 +2,7 @@ package economy
 
 import (
 	"sort"
+	"time"
 
 	"github.com/rbrabson/heist/pkg/math"
 )
@@ -96,4 +97,29 @@ func GetLifetimeLeaderboard(serverID string, limit int) []*Account {
 	})
 	num := math.Min(limit, len(accounts))
 	return accounts[:num]
+}
+
+// resetMonthlyLeaderboard resets the MonthlyBalance for all accounts to zero.
+func resetMonthlyLeaderboard() {
+	for {
+		now := time.Now()
+		month := now.Month()
+		year := now.Year()
+
+		month++
+		if month > time.December {
+			month = time.January
+			year++
+		}
+
+		nextMonth := time.Date(year, month, 1, 0, 0, 0, 0, time.UTC)
+		time.Sleep(time.Until(nextMonth))
+
+		for _, bank := range banks {
+			for _, account := range bank.Accounts {
+				account.MonthlyBalance = 0
+			}
+			SaveBank(bank)
+		}
+	}
 }

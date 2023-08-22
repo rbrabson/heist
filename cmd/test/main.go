@@ -2,15 +2,24 @@ package main
 
 import (
 	"fmt"
-	"math"
+	"time"
 )
 
 func main() {
-	pct := 20.65
+	now := time.Now()
+	month := now.Month()
+	year := now.Year()
 
-	calc1 := int(pct * float64(float64(5)/float64(8)))
-	calc2 := (pct * 100 * 5 / 8) / 100
-	calc3 := math.Round(calc2)
+	month++
+	if month > time.December {
+		month = time.January
+		year++
+	}
 
-	fmt.Println(calc1, calc2, calc3)
+	nextMonth := time.Date(year, month, 1, 0, 0, 0, 0, time.UTC)
+
+	fmt.Println(nextMonth)
+
+	sleepTime := time.Until(nextMonth)
+	fmt.Println(sleepTime)
 }
