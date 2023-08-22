@@ -251,8 +251,8 @@ func saveReminders(server *server) {
 func GetMemberHelp() []string {
 	help := make([]string, 0, 1)
 
-	for _, command := range commands {
-		commandDescription := fmt.Sprintf("- **/%s**:  %s\n", command.Name, command.Description)
+	for _, command := range commands[0].Options {
+		commandDescription := fmt.Sprintf("- **/reminder %s**:  %s\n", command.Name, command.Description)
 		help = append(help, commandDescription)
 	}
 	sort.Slice(help, func(i, j int) bool {

@@ -12,40 +12,63 @@ var (
 
 var (
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"remadd":  addReminder,
-		"remdel":  removeReminders,
-		"remlist": listReminders,
+		"reminder": reminderRouter,
 	}
 
 	commands = []*discordgo.ApplicationCommand{
 		{
-			Name:        "remadd",
-			Description: "Sets a new reminder for you.",
+			Name:        "reminder",
+			Description: "Set, list or delete reminders.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "when",
-					Description: "Time to wait before sending the reminder",
-					Required:    true,
+					Name:        "add",
+					Description: "Sets a new reminder for you.",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Type:        discordgo.ApplicationCommandOptionString,
+							Name:        "when",
+							Description: "Time to wait before sending the reminder",
+							Required:    true,
+						},
+						{
+							Type:        discordgo.ApplicationCommandOptionString,
+							Name:        "message",
+							Description: "Message to send with the reminder",
+							Required:    false,
+						},
+					},
 				},
 				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "message",
-					Description: "Message to send with the reminder",
-					Required:    false,
+					Name:        "del",
+					Description: "Removes all of your reminders.",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+				},
+				{
+					Name:        "list",
+					Description: "List all of your reminders.",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
 				},
 			},
 		},
-		{
-			Name:        "remdel",
-			Description: "Removes all of your reminders.",
-		},
-		{
-			Name:        "remlist",
-			Description: "List all of your reminders.",
-		},
 	}
 )
+
+// reminderRouter routes the various reminder requests to the appropriate handler.
+func reminderRouter(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Trace("--> reminderRouter")
+	defer log.Trace("<-- reminderRouter")
+
+	options := i.ApplicationCommandData().Options
+	switch options[0].Name {
+	case "add":
+		addReminder(s, i)
+	case "del":
+		removeReminders(s, i)
+	case "list":
+		listReminders(s, i)
+	}
+}
 
 // addReminder adds a new reminder for the member.
 func addReminder(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -53,7 +76,7 @@ func addReminder(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Trace("<-- addReminder")
 
 	var when, message string
-	for _, option := range i.ApplicationCommandData().Options {
+	for _, option := range i.ApplicationCommandData().Options[0].Options {
 		switch option.Name {
 		case "when":
 			when = option.StringValue()
