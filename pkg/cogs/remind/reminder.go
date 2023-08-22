@@ -203,8 +203,7 @@ func sendReminders() {
 					}
 					_, err = session.ChannelMessageSendEmbed(c.ID, embed)
 					if err != nil {
-						log.Errorf("Failed to send DM, message=%s", err.Error())
-						break
+						log.WithFields(log.Fields{"Channel": c.ID, "Error": err.Error}).Error("Failed to send reminder")
 					}
 
 					member.Reminders = member.Reminders[1:]
