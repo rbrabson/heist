@@ -43,8 +43,8 @@ var (
 		"join_heist": joinHeist,
 	}
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"heist":        heist,
-		"heist-admin2": admin,
+		"heist":       heist,
+		"heist-admin": admin,
 	}
 
 	playerCommands = []*discordgo.ApplicationCommand{
@@ -91,7 +91,7 @@ var (
 
 	adminCommands = []*discordgo.ApplicationCommand{
 		{
-			Name:        "heist-admin2",
+			Name:        "heist-admin",
 			Description: "Heist admin commands.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
