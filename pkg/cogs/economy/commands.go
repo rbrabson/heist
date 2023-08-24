@@ -16,9 +16,6 @@ var (
 		"montly_leaderboard":   monthlyLeaderboard,
 		"current_leaderboard":  currentLeaderboard,
 		"lifetime_leaderboard": lifetimeLeaderboard,
-		"monthly_rank":         monthlyRank,
-		"current_rank":         currentRank,
-		"lifetime_rank":        lifetimeRank,
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -234,7 +231,7 @@ func getAccountInfo(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	bank := GetBank(i.GuildID)
 	account := bank.GetAccount(i.Member.User.ID, getMemberName(i.Member.User.Username, i.Member.Nick))
-	resp := p.Sprintf("**Name**: %s\n**Monthly Balance**: %d, **Ranking**: %d\n**Current Balance**: %d, **Ranking**: %d\n**Lifetime Balance**: %d, **Ranking** %d", account.Name, account.MonthlyBalance, GetMonthlyRanking(bank.ID, account.ID), account.CurrentBalance, GetCurrentRanking(bank.ID, account.ID), account.LifetimeBalance, GetLifetimeRanking(bank.ID, account.ID))
+	resp := p.Sprintf("**Name**: %s\n**Monthly Balance**: %d, **Ranking**: %d\n**Current Balance**: %d, **Ranking**: %", account.Name, account.MonthlyBalance, GetMonthlyRanking(bank.ID, account.ID), account.CurrentBalance, GetCurrentRanking(bank.ID, account.ID))
 	msg.SendEphemeralResponse(s, i, resp)
 }
 
@@ -375,24 +372,6 @@ func currentLeaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
 // lifetimeLeaderboard returns the top 10 players in the server's economy based on the amount of credits
 // deposited over the lifetime of the account.
 func lifetimeLeaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Trace("--> leaderboard")
-	defer log.Trace("<-- leaderboard")
-}
-
-// monthlyRank returns the ranking of the player for the current month.
-func monthlyRank(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Trace("--> leaderboard")
-	defer log.Trace("<-- leaderboard")
-}
-
-// monthlyRank returns the ranking of the player for the current balance.
-func currentRank(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Trace("--> leaderboard")
-	defer log.Trace("<-- leaderboard")
-}
-
-// monthlyRank returns the ranking of the player for the lifetime balance.
-func lifetimeRank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Trace("--> leaderboard")
 	defer log.Trace("<-- leaderboard")
 }
