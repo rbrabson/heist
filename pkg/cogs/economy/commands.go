@@ -23,7 +23,7 @@ var (
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"account":     bankAccount,
-		"balance":     accountInfo,
+		"balance":     getAccountInfo,
 		"bank":        bank,
 		"leaderboard": leaderboard,
 		"transfer":    transferCredits,
@@ -225,8 +225,8 @@ func bankAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	msg.SendEphemeralResponse(s, i, resp)
 }
 
-// accountInfo returns information about a member's bank account to that member.
-func accountInfo(s *discordgo.Session, i *discordgo.InteractionCreate) {
+// getAccountInfo returns information about a member's bank account to that member.
+func getAccountInfo(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Trace("--> accountInfo")
 	defer log.Trace("<-- accountInfo")
 
@@ -234,7 +234,7 @@ func accountInfo(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	bank := GetBank(i.GuildID)
 	account := bank.GetAccount(i.Member.User.ID, getMemberName(i.Member.User.Username, i.Member.Nick))
-	resp := p.Sprintf("**Name**: %s\n**Balance**: %d\n**GlobalRanking**: %d", account.Name, account.CurrentBalance, GetMonthlyRanking(bank.ID, account.ID))
+	resp := p.Sprintf("**Name**: %s\n**Current Balance**: %d, **Ranking**: %d\n**Lifetime Balance**: %d, **Ranking** %d", account.Name, account.CurrentBalance, GetMonthlyRanking(bank.ID, account.ID), account.LifetimeBalance, GetLifetimeRanking(bank.ID, account.ID))
 	msg.SendEphemeralResponse(s, i, resp)
 }
 
