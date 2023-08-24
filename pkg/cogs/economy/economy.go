@@ -35,6 +35,7 @@ type Bank struct {
 	Accounts            map[string]*Account `json:"accounts" bson:"accounts"`
 	MaxTransferAmount   int                 `json:"max_transfer_amount" bson:"max_transfer_amount"`
 	MinTransferDuration time.Duration       `json:"min_transfer_duration" bson:"min_transfer_duration"`
+	LastSeason          time.Time           `json:"last_season" bson:"last_season"`
 }
 
 // Account is the bank account for a member of the server/guild.

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/rbrabson/heist/pkg/math"
+	log "github.com/sirupsen/logrus"
 )
 
 // getAccounts gets the list of accounts at a given bank
@@ -101,21 +102,30 @@ func GetLifetimeLeaderboard(serverID string, limit int) []*Account {
 
 // resetMonthlyLeaderboard resets the MonthlyBalance for all accounts to zero.
 func resetMonthlyLeaderboard() {
-	for {
-		now := time.Now()
-		month := now.Month()
-		year := now.Year()
+	// TODO: need some work here. I need to handle restarts, for certain. What happens if
+	// the bot is down when the new month starts? Gotta handle that, I think. Or maybe not.
+	// Look through the logic on that edge case.
+	var lastSeason time.Time
+	for _, bank := range banks {
+		lastSeason = bank.LastSeason
+		break
+	}
+	month := lastSeason.Month()
+	year := lastSeason.Year()
 
+	for {
 		month++
 		if month > time.December {
 			month = time.January
 			year++
 		}
+		log.WithFields(log.Fields{"Month": month, "Year": year}).Debug("Reset Economy On Date")
 
 		nextMonth := time.Date(year, month, 1, 0, 0, 0, 0, time.UTC)
 		time.Sleep(time.Until(nextMonth))
 
 		for _, bank := range banks {
+			bank.LastSeason = nextMonth
 			for _, account := range bank.Accounts {
 				account.MonthlyBalance = 0
 			}

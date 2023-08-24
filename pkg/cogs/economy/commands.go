@@ -360,31 +360,38 @@ func leaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	msg.SendEphemeralResponse(s, i, "```\n"+tableBuffer.String()+"\n```")
 }
 
+// monthlyLeaderboard returns the top 10 players in the server's economy for the current month.
 func monthlyLeaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Trace("--> leaderboard")
 	defer log.Trace("<-- leaderboard")
 }
 
+// currentLeaderboard returns the top 10 players in the server's economy based on their current account balance.
 func currentLeaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Trace("--> leaderboard")
 	defer log.Trace("<-- leaderboard")
 }
 
+// lifetimeLeaderboard returns the top 10 players in the server's economy based on the amount of credits
+// deposited over the lifetime of the account.
 func lifetimeLeaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Trace("--> leaderboard")
 	defer log.Trace("<-- leaderboard")
 }
 
+// monthlyRank returns the ranking of the player for the current month.
 func monthlyRank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Trace("--> leaderboard")
 	defer log.Trace("<-- leaderboard")
 }
 
+// monthlyRank returns the ranking of the player for the current balance.
 func currentRank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Trace("--> leaderboard")
 	defer log.Trace("<-- leaderboard")
 }
 
+// monthlyRank returns the ranking of the player for the lifetime balance.
 func lifetimeRank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Trace("--> leaderboard")
 	defer log.Trace("<-- leaderboard")
