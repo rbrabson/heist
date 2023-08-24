@@ -231,7 +231,7 @@ func getAccountInfo(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	bank := GetBank(i.GuildID)
 	account := bank.GetAccount(i.Member.User.ID, getMemberName(i.Member.User.Username, i.Member.Nick))
-	resp := p.Sprintf("**Name**: %s\n**Monthly Balance**: %d, **Ranking**: %d\n**Current Balance**: %d, **Ranking**: %", account.Name, account.MonthlyBalance, GetMonthlyRanking(bank.ID, account.ID), account.CurrentBalance, GetCurrentRanking(bank.ID, account.ID))
+	resp := p.Sprintf("**Name**: %s\n**Monthly Balance**: %d, **Ranking**: %d\n**Current Balance**: %d, **Ranking**: %d", account.Name, account.MonthlyBalance, GetMonthlyRanking(bank.ID, account.ID), account.CurrentBalance, GetCurrentRanking(bank.ID, account.ID))
 	msg.SendEphemeralResponse(s, i, resp)
 }
 
