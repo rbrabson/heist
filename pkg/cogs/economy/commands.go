@@ -12,17 +12,12 @@ import (
 )
 
 var (
-	componentHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"montly_leaderboard":   monthlyLeaderboard,
-		"current_leaderboard":  currentLeaderboard,
-		"lifetime_leaderboard": lifetimeLeaderboard,
-	}
-
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"account":     bankAccount,
 		"balance":     getAccountInfo,
 		"bank":        bank,
 		"leaderboard": leaderboard,
+		"lifetime":    lifetime,
 		"transfer":    transferCredits,
 	}
 
@@ -89,7 +84,11 @@ var (
 	memberCommands = []*discordgo.ApplicationCommand{
 		{
 			Name:        "leaderboard",
-			Description: "Gets the global economy leaderboard.",
+			Description: "Gets the monthly economy leaderboard.",
+		},
+		{
+			Name:        "lifetime",
+			Description: "Gets the lifetime economy leaderboard.",
 		},
 		{
 			Name:        "transfer",
@@ -334,14 +333,12 @@ func transferAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 }
 
-// leaderboard returns the top 10 players in the server's economy.
-func leaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Trace("--> leaderboard")
-	defer log.Trace("<-- leaderboard")
+// sendLeaderboard is a utility function that sends an economy leaderboard to Discord.
+func sendLeaderboard(s *discordgo.Session, i *discordgo.InteractionCreate, title string, accounts []*leaderboardAccount) {
+	log.Trace("--> sendLeaderboard")
+	defer log.Trace("<-- sendLeaderboard")
 
 	p := getPrinter(i)
-
-	accounts := GetMonthlyLeaderboard(i.GuildID, 10)
 
 	var tableBuffer strings.Builder
 	table := tablewriter.NewWriter(&tableBuffer)
@@ -350,30 +347,47 @@ func leaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	table.SetBorder(false)
 	table.SetHeader([]string{"Name", "Balance"})
 	for _, account := range accounts {
-		data := []string{account.Name, p.Sprintf("%d", account.CurrentBalance)}
+		data := []string{account.name, p.Sprintf("%d", account.balance)}
 		table.Append(data)
 	}
 	table.Render()
-	msg.SendEphemeralResponse(s, i, "```\n"+tableBuffer.String()+"\n```")
+	embeds := []*discordgo.MessageEmbed{
+		{
+			Type:  discordgo.EmbedTypeRich,
+			Title: title,
+			Fields: []*discordgo.MessageEmbedField{
+				{
+					Value: p.Sprintf("```\n%s```\n", tableBuffer.String()),
+				},
+			},
+		},
+	}
+
+	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Embeds: embeds,
+			Flags:  discordgo.MessageFlagsEphemeral,
+		},
+	})
 }
 
-// monthlyLeaderboard returns the top 10 players in the server's economy for the current month.
-func monthlyLeaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
+// leaderboard returns the top 10 monthly players in the server's economy.
+func leaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Trace("--> leaderboard")
 	defer log.Trace("<-- leaderboard")
+
+	accounts := GetMonthlyLeaderboard(i.GuildID, 10)
+	sendLeaderboard(s, i, "Monthly Leaderboard", accounts)
 }
 
-// currentLeaderboard returns the top 10 players in the server's economy based on their current account balance.
-func currentLeaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Trace("--> leaderboard")
-	defer log.Trace("<-- leaderboard")
-}
+// lifetime returns the top 10 lifetime players in the server's economy.
+func lifetime(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Trace("--> lifetime")
+	defer log.Trace("<-- lifetime")
 
-// lifetimeLeaderboard returns the top 10 players in the server's economy based on the amount of credits
-// deposited over the lifetime of the account.
-func lifetimeLeaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Trace("--> leaderboard")
-	defer log.Trace("<-- leaderboard")
+	accounts := GetLifetimeLeaderboard(i.GuildID, 10)
+	sendLeaderboard(s, i, "Lifetime Leaderboard", accounts)
 }
 
 // Start intializes the economy.

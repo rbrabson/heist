@@ -8,6 +8,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type leaderboardAccount struct {
+	name    string
+	balance int
+}
+
 // getAccounts gets the list of accounts at a given bank
 func getAccounts(bank *Bank) []*Account {
 	accounts := make([]*Account, 0, len(bank.Accounts))
@@ -68,36 +73,60 @@ func GetLifetimeRanking(serverID string, memberID string) int {
 }
 
 // GetMonthlyLeaderboard returns the top `limit` accounts for the server.
-func GetMonthlyLeaderboard(serverID string, limit int) []*Account {
+func GetMonthlyLeaderboard(serverID string, limit int) []*leaderboardAccount {
 	bank := banks[serverID]
 	accounts := getAccounts(bank)
 	getSortedAccounts(accounts, func(i, j int) bool {
 		return accounts[i].MonthlyBalance > accounts[j].MonthlyBalance
 	})
 	num := math.Min(limit, len(accounts))
-	return accounts[:num]
+	leaderboard := make([]*leaderboardAccount, 0, num)
+	for _, account := range accounts[:num] {
+		a := leaderboardAccount{
+			name:    account.Name,
+			balance: account.MonthlyBalance,
+		}
+		leaderboard = append(leaderboard, &a)
+	}
+	return leaderboard
 }
 
 // GetCurrentLeaderboard returns the top `limit` accounts for the server.
-func GetCurrentLeaderboard(serverID string, limit int) []*Account {
+func GetCurrentLeaderboard(serverID string, limit int) []*leaderboardAccount {
 	bank := banks[serverID]
 	accounts := getAccounts(bank)
 	getSortedAccounts(accounts, func(i, j int) bool {
 		return accounts[i].CurrentBalance > accounts[j].CurrentBalance
 	})
 	num := math.Min(limit, len(accounts))
-	return accounts[:num]
+	leaderboard := make([]*leaderboardAccount, 0, num)
+	for _, account := range accounts[:num] {
+		a := leaderboardAccount{
+			name:    account.Name,
+			balance: account.CurrentBalance,
+		}
+		leaderboard = append(leaderboard, &a)
+	}
+	return leaderboard
 }
 
 // GetLifetimeLeaderboard returns the top `limit` accounts for the server.
-func GetLifetimeLeaderboard(serverID string, limit int) []*Account {
+func GetLifetimeLeaderboard(serverID string, limit int) []*leaderboardAccount {
 	bank := banks[serverID]
 	accounts := getAccounts(bank)
 	getSortedAccounts(accounts, func(i, j int) bool {
 		return accounts[i].LifetimeBalance > accounts[j].LifetimeBalance
 	})
 	num := math.Min(limit, len(accounts))
-	return accounts[:num]
+	leaderboard := make([]*leaderboardAccount, 0, num)
+	for _, account := range accounts[:num] {
+		a := leaderboardAccount{
+			name:    account.Name,
+			balance: account.LifetimeBalance,
+		}
+		leaderboard = append(leaderboard, &a)
+	}
+	return leaderboard
 }
 
 // resetMonthlyLeaderboard resets the MonthlyBalance for all accounts to zero.
