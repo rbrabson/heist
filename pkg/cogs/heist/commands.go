@@ -642,7 +642,7 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 		if results.escaped > 0 && result.stolenCredits != 0 {
 			account := bank.GetAccount(player.ID, player.Name)
-			economy.DepositCredits(bank, account, result.stolenCredits+result.bonusCredits)
+			account.DepositCredits(result.stolenCredits + result.bonusCredits)
 			target.Vault -= int64(result.stolenCredits)
 			log.WithFields(log.Fields{"Member": account.Name, "Stolen": result.stolenCredits, "Bonus": result.bonusCredits}).Debug("Heist Loot")
 		}
@@ -806,7 +806,7 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	economy.WithdrawCredits(bank, account, int(player.BailCost))
+	account.WithdrawCredits(int(player.BailCost))
 	economy.SaveBank(bank)
 	player.OOB = true
 	store.Store.Save(HEIST, server.ID, server)
