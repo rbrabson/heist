@@ -37,6 +37,7 @@ type Bank struct {
 	MaxTransferAmount   int                 `json:"max_transfer_amount" bson:"max_transfer_amount"`
 	MinTransferDuration time.Duration       `json:"min_transfer_duration" bson:"min_transfer_duration"`
 	LastSeason          time.Time           `json:"last_season" bson:"last_season"`
+	mutex               sync.Mutex          `json:"-" bson:"-"`
 }
 
 // Account is the bank account for a member of the server/guild.
@@ -52,8 +53,8 @@ type Account struct {
 	mutex           sync.Mutex `json:"-" bson:"-"`
 }
 
-// NewBank creates a new bank for the given server/guild.
-func NewBank(serverID string) *Bank {
+// newBank creates a new bank for the given server/guild.
+func newBank(serverID string) *Bank {
 	log.Trace("--> NewBank")
 	defer log.Trace("<-- NewBank")
 
@@ -76,15 +77,15 @@ func GetBank(serverID string) *Bank {
 
 	bank, ok := banks[serverID]
 	if !ok {
-		bank = NewBank(serverID)
+		bank = newBank(serverID)
 		banks[bank.ID] = bank
 		log.Warningf("Bank not found for server %s, new one created", serverID)
 	}
 	return bank
 }
 
-// NewAccount creates a new bank account for the player.
-func NewAccount(b *Bank, playerID string, playerName string) *Account {
+// newAccount creates a new bank account for the player.
+func newAccount(b *Bank, playerID string, playerName string) *Account {
 	log.Trace("--> NewAccount")
 	defer log.Trace("<-- NewAccount")
 
@@ -104,11 +105,14 @@ func (b *Bank) GetAccount(playerID string, playerName string) *Account {
 	log.Trace("--> GetAccount")
 	defer log.Trace("<-- GetAccount")
 
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
+
 	account, ok := b.Accounts[playerID]
 	if !ok {
-		account = NewAccount(b, playerID, playerName)
+		account = newAccount(b, playerID, playerName)
 		b.Accounts[account.ID] = account
-		log.Error("Account for " + playerName + " was not found")
+		log.Warningf("Account for %s was not found, new one created", playerName)
 	} else {
 		account.Name = playerName
 	}
