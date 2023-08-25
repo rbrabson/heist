@@ -156,7 +156,9 @@ func resetMonthlyLeaderboard() {
 		for _, bank := range banks {
 			bank.LastSeason = nextMonth
 			for _, account := range bank.Accounts {
+				account.mutex.Lock()
 				account.MonthlyBalance = 0
+				account.mutex.Unlock()
 			}
 			SaveBank(bank)
 		}

@@ -471,7 +471,7 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// as the required number of credits as this is verified in `heistChecks`.
 	bank := economy.GetBank(server.ID)
 	account := bank.GetAccount(player.ID, player.Name)
-	economy.WithdrawCredits(bank, account, int(server.Config.HeistCost))
+	account.WithdrawCredits(int(server.Config.HeistCost))
 	economy.SaveBank(bank)
 
 	server.Heist = NewHeist(server, player)
@@ -541,7 +541,7 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// as the required number of credits as this is verified in `heistChecks`.
 	bank := economy.GetBank(server.ID)
 	account := bank.GetAccount(player.ID, player.Name)
-	economy.WithdrawCredits(bank, account, int(server.Config.HeistCost))
+	account.WithdrawCredits(int(server.Config.HeistCost))
 	economy.SaveBank(bank)
 
 	msg := p.Sprintf("You have joined the %s at a cost of %d credits.", theme.Heist, server.Config.HeistCost)

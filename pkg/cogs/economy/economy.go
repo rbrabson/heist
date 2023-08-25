@@ -3,6 +3,7 @@ package economy
 import (
 	"fmt"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -40,14 +41,15 @@ type Bank struct {
 
 // Account is the bank account for a member of the server/guild.
 type Account struct {
-	ID              string    `json:"_id" bson:"_id"`
-	MonthlyBalance  int       `json:"monthly_balance" bson:"monthly_balance"`
-	CurrentBalance  int       `json:"current_balance" bson:"current_balance"`
-	LifetimeBalance int       `json:"lifetime_balance" bson:"lifetime_balance"`
-	CreatedAt       time.Time `json:"created_at" bson:"created_at"`
-	Name            string    `json:"name" bson:"name"`
-	NextTransferIn  time.Time `json:"next_transfer_in" bson:"next_transfer_in"`
-	NextTransferOut time.Time `json:"next_transfer_out" bson:"next_transfer_out"`
+	ID              string     `json:"_id" bson:"_id"`
+	MonthlyBalance  int        `json:"monthly_balance" bson:"monthly_balance"`
+	CurrentBalance  int        `json:"current_balance" bson:"current_balance"`
+	LifetimeBalance int        `json:"lifetime_balance" bson:"lifetime_balance"`
+	CreatedAt       time.Time  `json:"created_at" bson:"created_at"`
+	Name            string     `json:"name" bson:"name"`
+	NextTransferIn  time.Time  `json:"next_transfer_in" bson:"next_transfer_in"`
+	NextTransferOut time.Time  `json:"next_transfer_out" bson:"next_transfer_out"`
+	mutex           sync.Mutex `json:"-" bson:"-"`
 }
 
 // NewBank creates a new bank for the given server/guild.
@@ -115,23 +117,33 @@ func (b *Bank) GetAccount(playerID string, playerName string) *Account {
 }
 
 // DepositCredits adds the amount of credits to the account at a given bank
-func DepositCredits(bank *Bank, account *Account, amount int) {
-	account.MonthlyBalance += amount
-	account.CurrentBalance += amount
-	account.LifetimeBalance += amount
+func (a *Account) DepositCredits(amount int) {
+	log.Trace("--> DepositCredits")
+	defer log.Trace("<-- DepositCredits")
+
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
+	a.MonthlyBalance += amount
+	a.CurrentBalance += amount
+	a.LifetimeBalance += amount
 }
 
 // WithDrawCredits deducts the amount of credits from the account at the given bank
-func WithdrawCredits(bank *Bank, account *Account, amount int) error {
+func (a *Account) WithdrawCredits(amount int) error {
 	log.Trace("--> WithdrawCredits")
 	defer log.Trace("<-- WithdrawCredits")
 
-	if account.CurrentBalance < amount {
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
+	if a.CurrentBalance < amount {
 		return ErrInsufficintBalance
 	}
-	account.MonthlyBalance -= amount
-	account.CurrentBalance -= amount
-	account.LifetimeBalance -= amount
+	a.MonthlyBalance -= amount
+	a.CurrentBalance -= amount
+	a.LifetimeBalance -= amount
+
 	return nil
 }
 

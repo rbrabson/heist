@@ -192,8 +192,8 @@ func transferCredits(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		"To Balance":   toAccount.CurrentBalance,
 	}).Debug("/transfer")
 
-	WithdrawCredits(bank, fromAccount, amount)
-	DepositCredits(bank, toAccount, amount)
+	fromAccount.WithdrawCredits(amount)
+	toAccount.DepositCredits(amount)
 	fromAccount.NextTransferOut = time.Now().Add(bank.MinTransferDuration)
 	toAccount.NextTransferIn = time.Now().Add(bank.MinTransferDuration)
 	SaveBank(bank)
