@@ -91,7 +91,7 @@ func newAccount(b *Bank, playerID string, playerName string) *Account {
 
 	account := Account{
 		ID:              playerID,
-		MonthlyBalance:  b.DefaultBalance,
+		MonthlyBalance:  0,
 		CurrentBalance:  b.DefaultBalance,
 		LifetimeBalance: b.DefaultBalance,
 		CreatedAt:       time.Now(),
