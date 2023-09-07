@@ -33,114 +33,101 @@ func main() {
 			fmt.Printf("%s's account has %d %s\n", account.Name, account.Balance, bank.Currency)
 		}
 	*/
-
 	/*
+
+		economy.Banks = make(map[string]*economy.Bank)
+
 		oldFilename := "./store/economy/old_economy.json"
 
-			data, err := os.ReadFile(oldFilename)
-			if err != nil {
-				log.Fatal("Unable to open economy json file, error:", err)
-			}
-			var oldEconomy OldEconomy
-			err = json.Unmarshal(data, &oldEconomy)
-			if err != nil {
-				log.Fatal("Unable to unmarshal economy data, error:", err)
-			}
+		data, err := os.ReadFile(oldFilename)
+		if err != nil {
+			log.Fatal("Unable to open economy json file, error:", err)
+		}
+		var oldEconomy OldEconomy
+		err = json.Unmarshal(data, &oldEconomy)
+		if err != nil {
+			log.Fatal("Unable to unmarshal economy data, error:", err)
+		}
 
-			e := economy.Economy{}
-			e.Guilds = make(map[string]economy.Guild)
-			e.GuildMembers = make(map[string]economy.GuildMembers)
+		top, ok := oldEconomy.(map[string]interface{})
+		if !ok {
+			log.Fatal("Can't get the oldEconomy as a map")
+		}
+		var bank economy.Bank
+		for k := range top {
+			bank = *economy.GetBank(k)
+			break
+		}
+		bank.DefaultBalance = 20000
+		second := top[bank.ID].(map[string]interface{})
+		var _, guilds, guildMembers map[string]interface{}
+		for k, v := range second {
+			switch k {
+			case "GLOBAL":
+			case "GUILD":
+				guilds = v.(map[string]interface{})
+			case "MEMBER":
+				guildMembers = v.(map[string]interface{})
+			case "USER":
+			default:
+				log.Error("Unknown key ", k)
+			}
+		}
 
-			top, ok := oldEconomy.(map[string]interface{})
-			if !ok {
-				log.Fatal("Can't get the oldEconomy as a map")
-			}
-			for k := range top {
-				e.ID = k
-			}
-			second := top[e.ID].(map[string]interface{})
-			var global, guilds, guildMembers map[string]interface{}
-			for k, v := range second {
-				switch k {
-				case "global":
-					global = v.(map[string]interface{})
-				case "guilds":
-					guilds = v.(map[string]interface{})
-				case "members":
-					guildMembers = v.(map[string]interface{})
-				case "users":
+		for _, v := range guilds {
+			data := v.(map[string]interface{})
+
+			for k2, v2 := range data {
+				switch k2 {
+				case "bank_name":
+					bank.BankName = v2.(string)
+				case "currency":
+					bank.Currency = v2.(string)
+				case "default_balance":
+					bank.DefaultBalance = int(v2.(float64))
 				default:
-					log.Error("Unknown key ", k)
+					log.Error("Unknown key ", k2)
 				}
 			}
+		}
 
-			e.Global.SchemaVersion = int(global["schema_version"].(float64))
+		for _, v := range guildMembers {
+			data := v.(map[string]interface{})
 
-			for k, v := range guilds {
-				data := v.(map[string]interface{})
-				guild := economy.Guild{
-					ID: k,
+			for k2, v2 := range data {
+				memberData := v2.(map[string]interface{})
+				account := &economy.Account{
+					ID: k2,
 				}
 
-				for k2, v2 := range data {
-					switch k2 {
-					case "bank_name":
-						guild.BankName = v2.(string)
-					case "currency":
-						guild.Currency = v2.(string)
-					case "default_balance":
-						guild.DefaultBalance = int(v2.(float64))
+				for k3, v3 := range memberData {
+					switch k3 {
+					case "balance":
+						account.CurrentBalance = int(v3.(float64))
+						account.LifetimeBalance = account.CurrentBalance
+					case "created_at":
+						epoch := int64(v3.(float64))
+						account.CreatedAt = time.Unix(epoch, 0)
+					case "name":
+						account.Name = v3.(string)
 					default:
-						log.Error("Unknown key ", k2)
+						log.Error("Unknown key ", k3)
 					}
 				}
 
-				e.Guilds[k] = guild
+				bank.Accounts[k2] = account
 			}
+		}
 
-			for k, v := range guildMembers {
-				data := v.(map[string]interface{})
-
-				guildMembers := economy.GuildMembers{
-					ID: k,
-				}
-				guildMembers.Members = make(map[string]economy.Member)
-
-				for k2, v2 := range data {
-					memberData := v2.(map[string]interface{})
-					member := economy.Member{
-						ID: k2,
-					}
-
-					for k3, v3 := range memberData {
-						switch k3 {
-						case "balance":
-							member.Balance = int(v3.(float64))
-						case "created_at":
-							epoch := int64(v3.(float64))
-							member.CreatedAt = time.Unix(epoch, 0)
-						case "name":
-							member.Name = v3.(string)
-						default:
-							log.Error("Unknown key ", k3)
-						}
-					}
-
-					guildMembers.Members[k2] = member
-				}
-
-				e.GuildMembers[k] = guildMembers
-			}
-
-			newFilename := "./store/economy/economy.json"
-			// write the new economy to the file system
-			data, err = json.Marshal(e)
-			if err != nil {
-				log.Fatal("Unable to unmarshal the new economy, error:", err)
-			}
-			err = os.WriteFile(newFilename, data, 0644)
-			if err != nil {
-				log.Fatal("Unable to write the new economy file, error:", err)
-			}
+		newFilename := "./store/economy/economy.json"
+		// write the new economy to the file system
+		data, err = json.Marshal(bank)
+		if err != nil {
+			log.Fatal("Unable to unmarshal the new economy, error:", err)
+		}
+		err = os.WriteFile(newFilename, data, 0644)
+		if err != nil {
+			log.Fatal("Unable to write the new economy file, error:", err)
+		}
 	*/
 }

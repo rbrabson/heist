@@ -31,6 +31,7 @@ type Server struct {
 	Players map[string]*Player `json:"players" bson:"players"`
 	Heist   *Heist             `json:"-" bson:"-"`
 	Targets map[string]*Target `json:"targets" bson:"targets"`
+	Mutex   sync.Mutex         `json:"-" bson:"-"`
 }
 
 // Config is the configuration data for a given server.

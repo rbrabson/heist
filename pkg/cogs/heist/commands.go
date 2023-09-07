@@ -453,6 +453,7 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server := GetServer(servers, i.GuildID)
 	theme := themes[server.Config.Theme]
 
+	server.Mutex.Lock()
 	// Heist is already in progress
 	if server.Heist != nil {
 		discmsg.SendEphemeralResponse(s, i, "A "+theme.Heist+" is already being planned.")
@@ -482,6 +483,7 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if err != nil {
 		log.Error("Unable to create the `Plan Heist` message, error:", err)
 	}
+	server.Mutex.Unlock()
 
 	for !time.Now().After(server.Heist.StartTime) {
 		maximumWait := time.Until(server.Heist.StartTime)
