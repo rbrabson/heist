@@ -875,7 +875,7 @@ func revivePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 
 	if player.Status != DEAD {
-		discmsg.SendEphemeralResponse(s, i, "You still have a pulse. I can't reive someone who isn't dead.")
+		discmsg.SendEphemeralResponse(s, i, "You still have a pulse. I can't revive someone who isn't dead.")
 		return
 	}
 	if player.DeathTimer.After(time.Now()) {

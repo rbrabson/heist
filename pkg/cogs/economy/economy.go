@@ -120,6 +120,23 @@ func (b *Bank) GetAccount(playerID string, playerName string) *Account {
 	return account
 }
 
+// transferCredits transfers credits from one account to another. This does `not` affect the
+// monthly balance, unlike most other transactions.
+func (a *Account) transferCredits(target *Account, amount int) {
+	log.Trace("--> transferCredits")
+	defer log.Trace("<-- transferCredits")
+
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+	a.CurrentBalance -= amount
+	a.LifetimeBalance -= amount
+
+	target.mutex.Lock()
+	defer target.mutex.Unlock()
+	a.CurrentBalance += amount
+	a.LifetimeBalance += amount
+}
+
 // DepositCredits adds the amount of credits to the account at a given bank
 func (a *Account) DepositCredits(amount int) {
 	log.Trace("--> DepositCredits")

@@ -169,7 +169,7 @@ func transferCredits(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	if toAccount.NextTransferIn.After(time.Now()) {
 		duration := time.Until(toAccount.NextTransferIn)
-		resp := p.Sprintf("%s can't receive credits yet. Please wait %s to transfer credits.", format.Duration(duration))
+		resp := p.Sprintf("%s can't receive credits yet. Please wait %s to transfer credits.", toAccount.Name, format.Duration(duration))
 		msg.SendEphemeralResponse(s, i, resp)
 		return
 	}
@@ -192,8 +192,7 @@ func transferCredits(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		"To Balance":   toAccount.CurrentBalance,
 	}).Debug("/transfer")
 
-	fromAccount.WithdrawCredits(amount)
-	toAccount.DepositCredits(amount)
+	fromAccount.transferCredits(toAccount, amount)
 	fromAccount.NextTransferOut = time.Now().Add(bank.MinTransferDuration)
 	toAccount.NextTransferIn = time.Now().Add(bank.MinTransferDuration)
 	SaveBank(bank)
