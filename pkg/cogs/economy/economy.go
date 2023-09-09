@@ -58,6 +58,10 @@ func newBank(serverID string) *Bank {
 	log.Trace("--> NewBank")
 	defer log.Trace("<-- NewBank")
 
+	now := time.Now()
+	month := now.Month()
+	year := now.Year()
+	lastMonth := time.Date(year, month, 1, 0, 0, 0, 0, time.UTC)
 	bank := Bank{
 		ID:                  serverID,
 		DefaultBalance:      0,
@@ -65,6 +69,7 @@ func newBank(serverID string) *Bank {
 		Currency:            "Coins",
 		MaxTransferAmount:   50000,
 		MinTransferDuration: time.Duration(24 * time.Hour),
+		LastSeason:          lastMonth,
 	}
 	bank.Accounts = make(map[string]*Account)
 	return &bank
