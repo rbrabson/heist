@@ -136,7 +136,9 @@ func resetMonthlyLeaderboard() {
 	// Look through the logic on that edge case.
 	var lastSeason time.Time
 	for _, bank := range banks {
-		lastSeason = bank.LastSeason
+		if lastSeason.Before(bank.LastSeason) {
+			lastSeason = bank.LastSeason
+		}
 		break
 	}
 	month := lastSeason.Month()
