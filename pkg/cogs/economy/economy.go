@@ -67,7 +67,7 @@ func newBank(serverID string) *Bank {
 		DefaultBalance:      0,
 		BankName:            "Treasury",
 		Currency:            "Coins",
-		MaxTransferAmount:   50000,
+		MaxTransferAmount:   20000,
 		MinTransferDuration: time.Duration(24 * time.Hour),
 		LastSeason:          lastMonth,
 	}

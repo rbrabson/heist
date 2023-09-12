@@ -898,19 +898,19 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Trace("--> resetHeist")
 	defer log.Trace("<-- resetHeist")
 
+	channel := newChannelMute(s, i)
+	defer channel.unmuteChannel()
+
 	server := GetServer(servers, i.GuildID)
 	theme := themes[server.Config.Theme]
-	if server.Heist == nil || !server.Heist.Planned {
+	if server.Heist == nil {
 		discmsg.SendEphemeralResponse(s, i, "No "+theme.Heist+" is being planned.")
 		return
 	}
 
 	heistMessage(s, server.Heist.Interaction, "cancel")
 	server.Heist = nil
-
-	if server.Heist == nil || !server.Heist.Planned {
-		discmsg.SendResponse(s, i, "The "+theme.Heist+" has been reset.")
-	}
+	discmsg.SendResponse(s, i, "The "+theme.Heist+" has been reset.")
 
 	store.Store.Save(HEIST, server.ID, server)
 }
