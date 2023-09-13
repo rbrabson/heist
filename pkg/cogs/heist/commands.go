@@ -346,7 +346,7 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 
 	theme := themes[server.Config.Theme]
 	caser := cases.Caser(cases.Title(language.Und, cases.NoLower))
-	msg := p.Sprintf("A new %s is being planned by %s. You can join the %s for a cost of %d credits at any time to the %s starting.", theme.Heist, player.Name, theme.Heist, server.Config.HeistCost, theme.Heist)
+	msg := p.Sprintf("A new %s is being planned by %s. You can join the %s for a cost of %d credits at any time prior to the %s starting.", theme.Heist, player.Name, theme.Heist, server.Config.HeistCost, theme.Heist)
 	embeds := []*discordgo.MessageEmbed{
 		{
 			Type:        discordgo.EmbedTypeRich,
