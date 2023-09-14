@@ -953,7 +953,7 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	table.Render()
 
-	discmsg.SendResponse(s, i, "```\n"+tableBuffer.String()+"\n```")
+	discmsg.SendEphemeralResponse(s, i, "```\n"+tableBuffer.String()+"\n```")
 }
 
 // clearMember clears the criminal state of the player.
