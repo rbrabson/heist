@@ -85,6 +85,11 @@ var (
 					Description: "Plans a new heist.",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 				},
+				{
+					Name:        "targets",
+					Description: "Gets the list of available heist targets.",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+				},
 			},
 		},
 	}
@@ -209,11 +214,6 @@ var (
 							},
 						},
 					},
-				},
-				{
-					Name:        "targets",
-					Description: "Gets the list of available heist targets.",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
 				},
 				{
 					Name:        "theme",
@@ -416,8 +416,6 @@ func admin(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		config(s, i)
 	case "reset":
 		resetHeist(s, i)
-	case "targets":
-		listTargets(s, i)
 	case "theme":
 		theme(s, i)
 	}
@@ -440,6 +438,8 @@ func heist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		planHeist(s, i)
 	case "stats":
 		playerStats(s, i)
+	case "targets":
+		listTargets(s, i)
 	}
 }
 
@@ -570,7 +570,7 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	if len(server.Targets) == 1 {
-		discmsg.SendEphemeralResponse(s, i, "There are no heist targets. Add one using the `/target add` command.")
+		discmsg.SendEphemeralResponse(s, i, "There are no heist targets.")
 		server.Heist = nil
 		return
 	}
@@ -926,7 +926,7 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	theme := themes[server.Config.Theme]
 
 	if len(server.Targets) == 0 {
-		msg := "There aren't any targets! To create a target use `/target add`."
+		msg := "There aren't any targets!"
 		discmsg.SendEphemeralResponse(s, i, msg)
 		return
 	}
