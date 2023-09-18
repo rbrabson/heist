@@ -594,7 +594,7 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	log.Debug("Heist is starting")
-	msg := p.Sprintf("Get ready! The %s is starting.", theme.Heist)
+	msg := p.Sprintf("Get ready! The %s is starting with %d members.", theme.Heist, len(server.Heist.Crew))
 	s.ChannelMessageSend(i.ChannelID, msg)
 	time.Sleep(3 * time.Second)
 	heistMessage(s, i, "start")
