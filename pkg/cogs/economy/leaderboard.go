@@ -156,6 +156,11 @@ func resetMonthlyLeaderboard() {
 		time.Sleep(time.Until(nextMonth))
 
 		for _, bank := range banks {
+			// Trace last season's leaderboard. Right now, I don't have a good way to output this to a server's channel
+			for i, account := range GetMonthlyLeaderboard(bank.ID, 10) {
+				log.WithFields(log.Fields{"Rank": i + 1, "Server": bank.ID, "Account": account.name, "Balance": account.balance}).Info("Monthly Leaderboard Reset")
+			}
+
 			bank.LastSeason = nextMonth
 			for _, account := range bank.Accounts {
 				account.mutex.Lock()
