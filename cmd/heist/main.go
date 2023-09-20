@@ -23,7 +23,7 @@ func main() {
 
 	// log.SetLevel(log.DebugLevel)
 	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	log.Info("Press Ctrl+C to exit")
 	<-sc
 }
