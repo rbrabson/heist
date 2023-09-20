@@ -138,8 +138,8 @@ func (a *Account) transferCredits(target *Account, amount int) {
 
 	target.mutex.Lock()
 	defer target.mutex.Unlock()
-	a.CurrentBalance += amount
-	a.LifetimeBalance += amount
+	target.CurrentBalance += amount
+	target.LifetimeBalance += amount
 }
 
 // DepositCredits adds the amount of credits to the account at a given bank
