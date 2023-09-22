@@ -5,10 +5,13 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/olekukonko/tablewriter"
 	"github.com/rbrabson/heist/pkg/format"
 	"github.com/rbrabson/heist/pkg/msg"
 	log "github.com/sirupsen/logrus"
+)
+
+var (
+	session *discordgo.Session
 )
 
 var (
@@ -77,6 +80,19 @@ var (
 						},
 					},
 				},
+				{
+					Name:        "channel",
+					Description: "Sets the channel ID where the monthly leaderboard is published at the end of the month.",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Type:        discordgo.ApplicationCommandOptionString,
+							Name:        "id",
+							Description: "The channel ID.",
+							Required:    true,
+						},
+					},
+				},
 			},
 		},
 	}
@@ -128,6 +144,8 @@ func bank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		transferAccount(s, i)
 	case "account":
 		bankAccount(s, i)
+	case "channel":
+		setLeaderboardChannel(s, i)
 	}
 }
 
@@ -218,6 +236,21 @@ func bankAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	resp := p.Sprintf("**ID**: %s\n**Name**: %s\n**Balance**: %d\n**GlobalRanking**: %d\n**Created**: %s\n**NextTransferIn**: %s\n**NextTransferOut**: %s", account.ID, account.Name, account.CurrentBalance, GetMonthlyRanking(bank.ID, account.ID), account.CreatedAt, account.NextTransferIn, account.NextTransferOut)
 	msg.SendEphemeralResponse(s, i, resp)
+}
+
+// bankAccount returns information about a bank account for the specified member.
+func setLeaderboardChannel(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Trace("--> setLeaderboardChannel")
+	defer log.Trace("<-- setLeaderboardChannel")
+
+	p := getPrinter(i)
+
+	bank := GetBank(i.GuildID)
+	channelID := i.ApplicationCommandData().Options[0].Options[0].StringValue()
+	bank.ChannelID = channelID
+
+	resp := p.Sprintf("Channel ID for the monthly leaderboard set to %s.", bank.ChannelID)
+	msg.SendResponse(s, i, resp)
 }
 
 // getAccountInfo returns information about a member's bank account to that member.
@@ -338,29 +371,7 @@ func sendLeaderboard(s *discordgo.Session, i *discordgo.InteractionCreate, title
 	defer log.Trace("<-- sendLeaderboard")
 
 	p := getPrinter(i)
-
-	var tableBuffer strings.Builder
-	table := tablewriter.NewWriter(&tableBuffer)
-	table.SetColumnSeparator(" ")
-	table.SetCenterSeparator(" ")
-	table.SetBorder(false)
-	table.SetHeader([]string{"Name", "Balance"})
-	for _, account := range accounts {
-		data := []string{account.name, p.Sprintf("%d", account.balance)}
-		table.Append(data)
-	}
-	table.Render()
-	embeds := []*discordgo.MessageEmbed{
-		{
-			Type:  discordgo.EmbedTypeRich,
-			Title: title,
-			Fields: []*discordgo.MessageEmbedField{
-				{
-					Value: p.Sprintf("```\n%s```\n", tableBuffer.String()),
-				},
-			},
-		},
-	}
+	embeds := formatAccounts(p, title, accounts)
 
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -390,7 +401,8 @@ func lifetime(s *discordgo.Session, i *discordgo.InteractionCreate) {
 }
 
 // Start intializes the economy.
-func Start(session *discordgo.Session) {
+func Start(s *discordgo.Session) {
+	session = s
 	LoadBanks()
 	go resetMonthlyLeaderboard()
 }

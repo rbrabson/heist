@@ -2,15 +2,48 @@ package economy
 
 import (
 	"sort"
+	"strings"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
+	"github.com/olekukonko/tablewriter"
 	"github.com/rbrabson/heist/pkg/math"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 type leaderboardAccount struct {
 	name    string
 	balance int
+}
+
+// formatAccounts formats the leaderboard to be sent to a Discord server
+func formatAccounts(p *message.Printer, title string, accounts []*leaderboardAccount) []*discordgo.MessageEmbed {
+	var tableBuffer strings.Builder
+	table := tablewriter.NewWriter(&tableBuffer)
+	table.SetColumnSeparator(" ")
+	table.SetCenterSeparator(" ")
+	table.SetBorder(false)
+	table.SetHeader([]string{"Name", "Balance"})
+	for _, account := range accounts {
+		data := []string{account.name, p.Sprintf("%d", account.balance)}
+		table.Append(data)
+	}
+	table.Render()
+	embeds := []*discordgo.MessageEmbed{
+		{
+			Type:  discordgo.EmbedTypeRich,
+			Title: title,
+			Fields: []*discordgo.MessageEmbedField{
+				{
+					Value: p.Sprintf("```\n%s```\n", tableBuffer.String()),
+				},
+			},
+		},
+	}
+
+	return embeds
 }
 
 // getAccounts gets the list of accounts at a given bank
@@ -156,9 +189,23 @@ func resetMonthlyLeaderboard() {
 		time.Sleep(time.Until(nextMonth))
 
 		for _, bank := range banks {
-			// Trace last season's leaderboard. Right now, I don't have a good way to output this to a server's channel
-			for i, account := range GetMonthlyLeaderboard(bank.ID, 10) {
+			// Trace last season's leaderboard
+			accounts := GetMonthlyLeaderboard(bank.ID, 10)
+			for i, account := range accounts {
 				log.WithFields(log.Fields{"Rank": i + 1, "Server": bank.ID, "Account": account.name, "Balance": account.balance}).Info("Monthly Leaderboard Reset")
+			}
+
+			if bank.ChannelID != "" {
+				p := message.NewPrinter(language.English)
+				embeds := formatAccounts(p, "Monthly Leaderboard", accounts)
+				_, err := session.ChannelMessageSendComplex(bank.ChannelID, &discordgo.MessageSend{
+					Embeds: embeds,
+				})
+				if err != nil {
+					log.Error("Unable to send montly leaderboard, err:", err)
+				}
+			} else {
+				log.WithField("guildID", bank.ChannelID).Warning("No leaderboard channel set for server")
 			}
 
 			bank.LastSeason = nextMonth

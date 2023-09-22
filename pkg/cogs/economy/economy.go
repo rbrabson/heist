@@ -37,6 +37,7 @@ type Bank struct {
 	MaxTransferAmount   int                 `json:"max_transfer_amount" bson:"max_transfer_amount"`
 	MinTransferDuration time.Duration       `json:"min_transfer_duration" bson:"min_transfer_duration"`
 	LastSeason          time.Time           `json:"last_season" bson:"last_season"`
+	ChannelID           string              `json:"channel_id" bson:"channel_id"`
 	mutex               sync.Mutex          `json:"-" bson:"-"`
 }
 
