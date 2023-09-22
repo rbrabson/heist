@@ -249,6 +249,8 @@ func setLeaderboardChannel(s *discordgo.Session, i *discordgo.InteractionCreate)
 	channelID := i.ApplicationCommandData().Options[0].Options[0].StringValue()
 	bank.ChannelID = channelID
 
+	SaveBank(bank)
+
 	resp := p.Sprintf("Channel ID for the monthly leaderboard set to %s.", bank.ChannelID)
 	msg.SendResponse(s, i, resp)
 }
