@@ -79,7 +79,6 @@ func NewBot() *Bot {
 	}
 
 	economy.Start(bot.Session)
-
 	commands = addCommands(componentHandlers, commandHandlers, commands, economy.GetCommands)
 
 	heist.Start(bot.Session)

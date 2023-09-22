@@ -1,25 +1,63 @@
 package main
 
 import (
-	"fmt"
-	"time"
+	"log"
+	"os"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/joho/godotenv"
 )
 
-func main() {
-	now := time.Now()
-	month := now.Month()
-	year := now.Year()
+const (
+	botIntents = discordgo.IntentGuilds |
+		discordgo.IntentGuildMessages |
+		discordgo.IntentDirectMessages |
+		discordgo.IntentGuildEmojis
+)
 
-	month++
-	if month > time.December {
-		month = time.January
-		year++
+type Bot struct {
+	Session *discordgo.Session
+	timer   chan int
+}
+
+func main() {
+	godotenv.Load()
+
+	token := os.Getenv("BOT_TOKEN")
+	s, err := discordgo.New("Bot " + token)
+	if err != nil {
+		log.Fatal("Failed to create new bot, error:", err)
 	}
 
-	nextMonth := time.Date(year, month, 1, 0, 0, 0, 0, time.UTC)
+	bot := &Bot{
+		Session: s,
+		timer:   make(chan int),
+	}
+	bot.Session.Identify.Intents = botIntents
 
-	fmt.Println(nextMonth)
+	err = bot.Session.Open()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer bot.Session.Close()
 
-	sleepTime := time.Until(nextMonth)
-	fmt.Println(sleepTime)
+	channelID := "1133474546121449492"
+
+	embeds := []*discordgo.MessageEmbed{
+		{
+			Type:  discordgo.EmbedTypeRich,
+			Title: "Monthly Leaderboard",
+			Fields: []*discordgo.MessageEmbedField{
+				{
+					Value: "This is where the data would go",
+				},
+			},
+		},
+	}
+	_, err = bot.Session.ChannelMessageSendComplex(channelID, &discordgo.MessageSend{
+		Embeds: embeds,
+	})
+	if err != nil {
+		log.Fatal("Unable to send montly leaderboard, err:", err)
+	}
 }
