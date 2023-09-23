@@ -164,9 +164,6 @@ func GetLifetimeLeaderboard(serverID string, limit int) []*leaderboardAccount {
 
 // resetMonthlyLeaderboard resets the MonthlyBalance for all accounts to zero.
 func resetMonthlyLeaderboard() {
-	// TODO: need some work here. I need to handle restarts, for certain. What happens if
-	// the bot is down when the new month starts? Gotta handle that, I think. Or maybe not.
-	// Look through the logic on that edge case.
 	var lastSeason time.Time
 	for _, bank := range banks {
 		if lastSeason.Before(bank.LastSeason) {
@@ -197,7 +194,7 @@ func resetMonthlyLeaderboard() {
 
 			if bank.ChannelID != "" {
 				p := message.NewPrinter(language.English)
-				embeds := formatAccounts(p, "Monthly Leaderboard", accounts)
+				embeds := formatAccounts(p, p.Sprintf("%s %d Leaderboard", bank.LastSeason.Month().String(), bank.LastSeason.Year()), accounts)
 				_, err := session.ChannelMessageSendComplex(bank.ChannelID, &discordgo.MessageSend{
 					Embeds: embeds,
 				})

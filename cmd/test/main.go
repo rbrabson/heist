@@ -60,4 +60,9 @@ func main() {
 	if err != nil {
 		log.Fatal("Unable to send montly leaderboard, err:", err)
 	}
+
+	/*
+		lastSeason := time.Date(2023, time.September, 1, 0, 0, 0, 0, time.UTC)
+		fmt.Printf("%s %d Leaderboard\n", lastSeason.Month().String(), lastSeason.Year())
+	*/
 }
