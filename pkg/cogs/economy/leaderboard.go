@@ -194,7 +194,7 @@ func resetMonthlyLeaderboard() {
 
 			if bank.ChannelID != "" {
 				p := message.NewPrinter(language.English)
-				embeds := formatAccounts(p, p.Sprintf("%s %d Leaderboard", bank.LastSeason.Month().String(), bank.LastSeason.Year()), accounts)
+				embeds := formatAccounts(p, p.Sprintf("%s %d Top 10", bank.LastSeason.Month().String(), bank.LastSeason.Year()), accounts)
 				_, err := session.ChannelMessageSendComplex(bank.ChannelID, &discordgo.MessageSend{
 					Embeds: embeds,
 				})
