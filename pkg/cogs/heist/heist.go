@@ -63,26 +63,6 @@ func heistChecks(server *Server, i *discordgo.InteractionCreate, player *Player,
 		msg := fmt.Sprintf("You are already in the %s.", theme.Crew)
 		return msg, false
 	}
-	if player.Status == APPREHENDED && !player.OOB {
-		if player.JailTimer.After(time.Now()) {
-			remainingTime := time.Until(player.JailTimer)
-			msg := fmt.Sprintf("You are in %s. You are serving a %s of %s.\nYou can wait out your remaining %s of %s, or pay %d credits to be released on %s.",
-				theme.Jail, theme.Sentence, format.Duration(player.Sentence), theme.Sentence, format.Duration(remainingTime), player.BailCost, theme.Bail)
-			return msg, false
-		}
-
-		msg := p.Sprintf("Looks like your %s is over, but you're still in %s! Get released released by typing `/heist release`.", theme.Sentence, theme.Jail)
-		return msg, false
-	}
-	if player.Status == DEAD {
-		if player.DeathTimer.After(time.Now()) {
-			remainingTime := time.Until(player.DeathTimer)
-			msg := p.Sprintf("You are dead. You will revive in %s", format.Duration(remainingTime))
-			return msg, false
-		}
-		msg := "Looks like you are still dead, but you can revive at anytime by using the command `/heist revive`."
-		return msg, false
-	}
 	account := bank.GetAccount(player.ID, player.Name)
 	if account.CurrentBalance < int(server.Config.HeistCost) {
 		msg := p.Sprintf("You do not have enough credits to cover the cost of entry. You need %d credits to participate", server.Config.HeistCost)
@@ -92,6 +72,35 @@ func heistChecks(server *Server, i *discordgo.InteractionCreate, player *Player,
 		remainingTime := time.Until(server.Config.AlertTime)
 		msg := p.Sprintf("The %s are on high alert after the last target. We should wait for things to cool off before hitting another target. Time remaining: %s.", theme.Police, format.Duration(remainingTime))
 		return msg, false
+	}
+	if player.Status == APPREHENDED {
+		if player.OOB {
+			if player.JailTimer.Before(time.Now()) {
+				msg := p.Sprintf("Your %s is over, and you are no longer on probation! 3x penalty removed.", theme.Sentence)
+				player.ClearJailAndDeathStatus()
+				return msg, true
+			}
+			return "", true
+		}
+		if player.JailTimer.After(time.Now()) {
+			remainingTime := time.Until(player.JailTimer)
+			msg := fmt.Sprintf("You are in %s. You are serving a %s of %s.\nYou can wait out your remaining %s of %s, or pay %d credits to be released on %s.",
+				theme.Jail, theme.Sentence, format.Duration(player.Sentence), theme.Sentence, format.Duration(remainingTime), player.BailCost, theme.Bail)
+			return msg, false
+		}
+		msg := "You served your time. Enjoy the fresh air of freedom while you can."
+		player.ClearJailAndDeathStatus()
+		return msg, true
+	}
+	if player.Status == DEAD {
+		if player.DeathTimer.After(time.Now()) {
+			remainingTime := time.Until(player.DeathTimer)
+			msg := p.Sprintf("You are dead. You will revive in %s", format.Duration(remainingTime))
+			return msg, false
+		}
+		msg := "You have risen from the dead!`."
+		player.ClearJailAndDeathStatus()
+		return msg, true
 	}
 
 	return "", true

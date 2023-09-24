@@ -66,16 +66,6 @@ var (
 					},
 				},
 				{
-					Name:        "revive",
-					Description: "Resurrect player from the dead.",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-				},
-				{
-					Name:        "release",
-					Description: "Releases player from jail.",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-				},
-				{
 					Name:        "stats",
 					Description: "Shows a user's stats.",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
@@ -430,10 +420,6 @@ func heist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	switch options[0].Name {
 	case "bail":
 		bailoutPlayer(s, i)
-	case "release":
-		releasePlayer(s, i)
-	case "revive":
-		revivePlayer(s, i)
 	case "start":
 		planHeist(s, i)
 	case "stats":
@@ -464,7 +450,8 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 
 	// Basic error checks for the heist
-	if msg, ok := heistChecks(server, i, player, server.Targets); !ok {
+	msg, ok := heistChecks(server, i, player, server.Targets)
+	if !ok {
 		discmsg.SendEphemeralResponse(s, i, msg)
 		server.Mutex.Unlock()
 		return
@@ -486,6 +473,10 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		log.Error("Unable to create the `Plan Heist` message, error:", err)
 	}
 	server.Mutex.Unlock()
+
+	if msg != "" {
+		discmsg.SendEphemeralResponse(s, i, msg)
+	}
 
 	for !time.Now().After(server.Heist.StartTime) {
 		maximumWait := time.Until(server.Heist.StartTime)
@@ -524,7 +515,8 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		discmsg.SendEphemeralResponse(s, i, "You are already a member of the "+theme.Heist+".")
 		return
 	}
-	if msg, ok := heistChecks(server, i, player, server.Targets); !ok {
+	msg, ok := heistChecks(server, i, player, server.Targets)
+	if !ok {
 		discmsg.SendEphemeralResponse(s, i, msg)
 		return
 	}
@@ -548,8 +540,13 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	account.WithdrawCredits(int(server.Config.HeistCost))
 	economy.SaveBank(bank)
 
-	msg := p.Sprintf("You have joined the %s at a cost of %d credits.", theme.Heist, server.Config.HeistCost)
-	discmsg.SendEphemeralResponse(s, i, msg)
+	if msg != "" {
+		msg := p.Sprintf("%s You have joined the %s at a cost of %d credits.", msg, theme.Heist, server.Config.HeistCost)
+		discmsg.SendEphemeralResponse(s, i, msg)
+	} else {
+		msg := p.Sprintf("You have joined the %s at a cost of %d credits.", theme.Heist, server.Config.HeistCost)
+		discmsg.SendEphemeralResponse(s, i, msg)
+	}
 
 	store.Store.Save(HEIST, server.ID, server)
 }
@@ -823,72 +820,6 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		msg = p.Sprintf("Congratulations, %s, %s bailed you out by spending %d credits and now you are free!. Enjoy your freedom while it lasts.", player.Name, initiatingPlayer.Name, player.BailCost)
 		discmsg.SendResponse(s, i, msg)
 	}
-}
-
-// releasePlayer releases a player from jail if their sentence has been served.
-func releasePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Trace("--> releasePlayer")
-	defer log.Trace("<-- releasePlayer")
-
-	p := getPrinter(i)
-
-	server := GetServer(servers, i.GuildID)
-	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
-	theme := themes[server.Config.Theme]
-
-	if player.Status != APPREHENDED || player.OOB {
-		if player.OOB && player.JailTimer.Before(time.Now()) {
-			player.ClearJailAndDeathStatus()
-			store.Store.Save(HEIST, server.ID, server)
-			discmsg.SendEphemeralResponse(s, i, "You are no longer on probation! 3x penalty removed.")
-			return
-		}
-		discmsg.SendEphemeralResponse(s, i, "I can't remove you from jail if you're not *in* jail")
-		return
-	}
-	if player.JailTimer.After(time.Now()) {
-		remainingTime := time.Until(player.JailTimer)
-		msg := p.Sprintf("You still have time on your %s, you still need to wait %s.", theme.Sentence, format.Duration(remainingTime))
-		discmsg.SendEphemeralResponse(s, i, msg)
-		return
-	}
-
-	msg := "You served your time. Enjoy the fresh air of freedom while you can."
-	if player.OOB {
-		msg += "/nYou are no longer on probabtion! 3x penalty removed."
-	}
-
-	player.ClearJailAndDeathStatus()
-	store.Store.Save(HEIST, server.ID, server)
-
-	discmsg.SendEphemeralResponse(s, i, msg)
-}
-
-// revivePlayer raises a player from the dead if their death timer has expired.
-func revivePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Trace("--> revivePlayer")
-	defer log.Trace("<-- revivePlayer")
-
-	p := getPrinter(i)
-
-	server := GetServer(servers, i.GuildID)
-	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
-
-	if player.Status != DEAD {
-		discmsg.SendEphemeralResponse(s, i, "You still have a pulse. I can't revive someone who isn't dead.")
-		return
-	}
-	if player.DeathTimer.After(time.Now()) {
-		remainingTime := time.Until(player.DeathTimer)
-		msg := p.Sprintf("You can't revive yet. You need to wait %s", format.Duration(remainingTime))
-		discmsg.SendEphemeralResponse(s, i, msg)
-		return
-	}
-
-	player.ClearJailAndDeathStatus()
-	store.Store.Save(HEIST, server.ID, server)
-
-	discmsg.SendEphemeralResponse(s, i, "You have risen from the dead!")
 }
 
 /******** ADMIN COMMANDS ********/
