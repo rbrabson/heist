@@ -474,9 +474,11 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	server.Mutex.Unlock()
 
-	if msg != "" {
-		discmsg.SendEphemeralResponse(s, i, msg)
-	}
+	/*
+		if msg != "" {
+			discmsg.SendEphemeralResponse(s, i, msg)
+		}
+	*/
 
 	for !time.Now().After(server.Heist.StartTime) {
 		maximumWait := time.Until(server.Heist.StartTime)
