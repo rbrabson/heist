@@ -98,7 +98,7 @@ func heistChecks(server *Server, i *discordgo.InteractionCreate, player *Player,
 			msg := p.Sprintf("You are dead. You will revive in %s", format.Duration(remainingTime))
 			return msg, false
 		}
-		msg := "You have risen from the dead!`."
+		msg := "You have risen from the dead!."
 		player.ClearJailAndDeathStatus()
 		return msg, true
 	}
