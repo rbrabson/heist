@@ -6,9 +6,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 	"github.com/rbrabson/heist/pkg/cogs/economy"
-	"github.com/rbrabson/heist/pkg/cogs/heist"
-	"github.com/rbrabson/heist/pkg/cogs/payday"
-	"github.com/rbrabson/heist/pkg/cogs/remind"
+	"github.com/rbrabson/heist/pkg/cogs/race"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -79,16 +77,19 @@ func NewBot() *Bot {
 	}
 
 	economy.Start(bot.Session)
-	commands = addCommands(componentHandlers, commandHandlers, commands, economy.GetCommands)
+	// commands = addCommands(componentHandlers, commandHandlers, commands, economy.GetCommands)
 
-	heist.Start(bot.Session)
-	commands = addCommands(componentHandlers, commandHandlers, commands, heist.GetCommands)
+	// heist.Start(bot.Session)
+	// commands = addCommands(componentHandlers, commandHandlers, commands, heist.GetCommands)
 
-	payday.Start(bot.Session)
-	commands = addCommands(componentHandlers, commandHandlers, commands, payday.GetCommands)
+	// payday.Start(bot.Session)
+	// commands = addCommands(componentHandlers, commandHandlers, commands, payday.GetCommands)
 
-	remind.Start(bot.Session)
-	commands = addCommands(componentHandlers, commandHandlers, commands, remind.GetCommands)
+	race.Start(bot.Session)
+	commands = addCommands(componentHandlers, commandHandlers, commands, race.GetCommands)
+
+	// remind.Start(bot.Session)
+	// commands = addCommands(componentHandlers, commandHandlers, commands, remind.GetCommands)
 
 	log.Debug("Add bot handlers")
 	bot.Session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
