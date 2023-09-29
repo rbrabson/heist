@@ -406,7 +406,7 @@ func lifetime(s *discordgo.Session, i *discordgo.InteractionCreate) {
 func Start(s *discordgo.Session) {
 	session = s
 	LoadBanks()
-	go resetMonthlyLeaderboard()
+	// go resetMonthlyLeaderboard()
 }
 
 // GetCommands returns the component handlers, command handlers, and commands for the payday bot.

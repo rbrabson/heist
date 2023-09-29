@@ -294,7 +294,7 @@ func getCurrentTrack(racers []*Racer, mode *Mode) string {
 
 	var track strings.Builder
 	for _, racer := range racers {
-		line := fmt.Sprintf("%s %s %s [%s]\n", mode.Beginning, racer.Current, mode.Ending, racer.Player.Name)
+		line := fmt.Sprintf("%s **%s %s** [%s]\n", mode.Beginning, racer.Current, mode.Ending, racer.Player.Name)
 		track.WriteString(line)
 	}
 	return track.String()
@@ -330,6 +330,7 @@ func (s *Server) RunRace(channelID string) {
 		log.Error("Failed to send message at the start of the race, error:", err)
 	}
 	messageID := message.ID
+	time.Sleep(3 * time.Second)
 
 	done := false
 	for !done {

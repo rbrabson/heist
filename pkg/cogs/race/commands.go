@@ -455,7 +455,6 @@ func startRace(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	time.Sleep(5 * time.Second) // TODO: use server.Config.WaitForBetting
 
 	session.ChannelMessageSend(i.ChannelID, "`Get ready - the race is starting!`")
-	time.Sleep(3 * time.Second)
 	server.mutex.Lock()
 	err = raceMessage(s, i, "started")
 	if err != nil {
@@ -644,7 +643,7 @@ func betOnRace(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		Bet:   server.Config.BetAmount,
 	}
 	server.Race.Bets = append(server.Race.Bets, bettor)
-	account.WithdrawCredits(bettor.Bet)
+	// account.WithdrawCredits(bettor.Bet) TODO: enable
 	log.WithFields(log.Fields{
 		"Name":   player.Name,
 		"ID":     player.ID,
@@ -652,7 +651,7 @@ func betOnRace(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}).Debug("Bet on Race")
 
 	resp := fmt.Sprintf("%s placed a %d %s bet on %s", player.Name, server.Config.BetAmount, server.Config.Currency, racer.Player.Name)
-	msg.SendResponse(s, i, resp)
+	msg.SendEphemeralResponse(s, i, resp)
 }
 
 /******** ADMIN COMMANDS ********/
