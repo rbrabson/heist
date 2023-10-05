@@ -29,16 +29,14 @@ type BankStore interface {
 
 // Bank is the repository for all accounts for a given server/guild.
 type Bank struct {
-	ID                  string              `json:"_id" bson:"_id"`
-	BankName            string              `json:"bank_name" bson:"bank_name"`
-	Currency            string              `json:"currency" bson:"currency"`
-	DefaultBalance      int                 `json:"default_balance" bson:"default_balance"`
-	Accounts            map[string]*Account `json:"accounts" bson:"accounts"`
-	MaxTransferAmount   int                 `json:"max_transfer_amount" bson:"max_transfer_amount"`
-	MinTransferDuration time.Duration       `json:"min_transfer_duration" bson:"min_transfer_duration"`
-	LastSeason          time.Time           `json:"last_season" bson:"last_season"`
-	ChannelID           string              `json:"channel_id" bson:"channel_id"`
-	mutex               sync.Mutex          `json:"-" bson:"-"`
+	ID             string              `json:"_id" bson:"_id"`
+	BankName       string              `json:"bank_name" bson:"bank_name"`
+	Currency       string              `json:"currency" bson:"currency"`
+	DefaultBalance int                 `json:"default_balance" bson:"default_balance"`
+	Accounts       map[string]*Account `json:"accounts" bson:"accounts"`
+	LastSeason     time.Time           `json:"last_season" bson:"last_season"`
+	ChannelID      string              `json:"channel_id" bson:"channel_id"`
+	mutex          sync.Mutex          `json:"-" bson:"-"`
 }
 
 // Account is the bank account for a member of the server/guild.
@@ -49,8 +47,6 @@ type Account struct {
 	LifetimeBalance int        `json:"lifetime_balance" bson:"lifetime_balance"`
 	CreatedAt       time.Time  `json:"created_at" bson:"created_at"`
 	Name            string     `json:"name" bson:"name"`
-	NextTransferIn  time.Time  `json:"next_transfer_in" bson:"next_transfer_in"`
-	NextTransferOut time.Time  `json:"next_transfer_out" bson:"next_transfer_out"`
 	mutex           sync.Mutex `json:"-" bson:"-"`
 }
 
@@ -64,13 +60,11 @@ func newBank(serverID string) *Bank {
 	year := now.Year()
 	lastMonth := time.Date(year, month, 1, 0, 0, 0, 0, time.UTC)
 	bank := Bank{
-		ID:                  serverID,
-		DefaultBalance:      20000,
-		BankName:            "Treasury",
-		Currency:            "Coins",
-		MaxTransferAmount:   20000,
-		MinTransferDuration: time.Duration(24 * time.Hour),
-		LastSeason:          lastMonth,
+		ID:             serverID,
+		DefaultBalance: 20000,
+		BankName:       "Treasury",
+		Currency:       "Coins",
+		LastSeason:     lastMonth,
 	}
 	bank.Accounts = make(map[string]*Account)
 	return &bank
@@ -124,23 +118,6 @@ func (b *Bank) GetAccount(playerID string, playerName string) *Account {
 	}
 
 	return account
-}
-
-// transferCredits transfers credits from one account to another. This does `not` affect the
-// monthly balance, unlike most other transactions.
-func (a *Account) transferCredits(target *Account, amount int) {
-	log.Trace("--> transferCredits")
-	defer log.Trace("<-- transferCredits")
-
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
-	a.CurrentBalance -= amount
-	a.LifetimeBalance -= amount
-
-	target.mutex.Lock()
-	defer target.mutex.Unlock()
-	target.CurrentBalance += amount
-	target.LifetimeBalance += amount
 }
 
 // DepositCredits adds the amount of credits to the account at a given bank
