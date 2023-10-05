@@ -2,11 +2,9 @@ package economy
 
 import (
 	"strings"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
-	"github.com/rbrabson/heist/pkg/format"
 	"github.com/rbrabson/heist/pkg/msg"
 	log "github.com/sirupsen/logrus"
 )
@@ -22,7 +20,6 @@ var (
 		"bank":        bank,
 		"leaderboard": leaderboard,
 		"lifetime":    lifetime,
-		"transfer":    transferCredits,
 	}
 
 	adminCommands = []*discordgo.ApplicationCommand{
@@ -58,25 +55,6 @@ var (
 							Type:        discordgo.ApplicationCommandOptionInteger,
 							Name:        "amount",
 							Description: "The amount to set the account to.",
-							Required:    true,
-						},
-					},
-				},
-				{
-					Name:        "transfer",
-					Description: "Transfers the account balance from one account to another.",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Type:        discordgo.ApplicationCommandOptionString,
-							Name:        "from",
-							Description: "The ID of the account to transfer credits from.",
-							Required:    true,
-						},
-						{
-							Type:        discordgo.ApplicationCommandOptionInteger,
-							Name:        "to",
-							Description: "The ID of the account to receive account balance.",
 							Required:    true,
 						},
 					},
@@ -150,75 +128,6 @@ func bank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 }
 
-// transferCredits removes a specified amount of credits from initiators account and deposits them in the target's account.
-func transferCredits(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Trace("--> bank")
-	defer log.Trace("<-- bank")
-
-	var toID string
-	var amount int
-	options := i.ApplicationCommandData().Options
-	for _, option := range options {
-		switch option.Name {
-		case "to":
-			toID = option.StringValue()
-		case "amount":
-			amount = int(option.IntValue())
-		}
-	}
-
-	p := getPrinter(i)
-
-	member, err := s.GuildMember(i.GuildID, toID)
-	if err != nil {
-		resp := p.Sprintf("A account with ID `%s` is not a member of this server", toID)
-		msg.SendEphemeralResponse(s, i, resp)
-		return
-	}
-
-	bank := GetBank(i.GuildID)
-	fromAccount := bank.GetAccount(i.Member.User.ID, getMemberName(i.Member.User.ID, i.Member.Nick))
-	toAccount := bank.GetAccount(toID, getMemberName(member.User.ID, member.Nick))
-
-	if fromAccount.NextTransferOut.After(time.Now()) {
-		duration := time.Until(fromAccount.NextTransferOut)
-		resp := p.Sprintf("You can't transfer credits yet. Please wait %s to transfer credits.", format.Duration(duration))
-		msg.SendEphemeralResponse(s, i, resp)
-		return
-	}
-	if toAccount.NextTransferIn.After(time.Now()) {
-		duration := time.Until(toAccount.NextTransferIn)
-		resp := p.Sprintf("%s can't receive credits yet. Please wait %s to transfer credits.", toAccount.Name, format.Duration(duration))
-		msg.SendEphemeralResponse(s, i, resp)
-		return
-	}
-	if amount > bank.MaxTransferAmount {
-		resp := p.Sprintf("You can only transfer a maximum of %d credits.", bank.MaxTransferAmount)
-		msg.SendEphemeralResponse(s, i, resp)
-		return
-	}
-	if fromAccount.CurrentBalance < amount {
-		resp := p.Sprintf("Your can't transfer %d credits as your account only has %d credits", amount, fromAccount.CurrentBalance)
-		msg.SendEphemeralResponse(s, i, resp)
-		return
-	}
-
-	log.WithFields(log.Fields{
-		"From":         fromAccount.Name,
-		"To":           toAccount.Name,
-		"Amount":       amount,
-		"From Balance": fromAccount.CurrentBalance,
-		"To Balance":   toAccount.CurrentBalance,
-	}).Debug("/transfer")
-
-	fromAccount.transferCredits(toAccount, amount)
-	fromAccount.NextTransferOut = time.Now().Add(bank.MinTransferDuration)
-	toAccount.NextTransferIn = time.Now().Add(bank.MinTransferDuration)
-	SaveBank(bank)
-	resp := p.Sprintf("You transfered %d credits to %s's account.", amount, toAccount.Name)
-	msg.SendResponse(s, i, resp)
-}
-
 // bankAccount returns information about a bank account for the specified member.
 func bankAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Trace("--> bankAccount")
@@ -235,7 +144,7 @@ func bankAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	resp := p.Sprintf("**ID**: %s\n**Name**: %s\n**Balance**: %d\n**GlobalRanking**: %d\n**Created**: %s\n**NextTransferIn**: %s\n**NextTransferOut**: %s", account.ID, account.Name, account.CurrentBalance, GetMonthlyRanking(bank.ID, account.ID), account.CreatedAt, account.NextTransferIn, account.NextTransferOut)
+	resp := p.Sprintf("**ID**: %s\n**Name**: %s\n**Balance**: %d\n**GlobalRanking**: %d\n**Created**: %s\n", account.ID, account.Name, account.CurrentBalance, GetMonthlyRanking(bank.ID, account.ID), account.CreatedAt)
 	msg.SendEphemeralResponse(s, i, resp)
 }
 
