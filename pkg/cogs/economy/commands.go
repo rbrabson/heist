@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/joho/godotenv"
 	"github.com/rbrabson/heist/pkg/format"
 	"github.com/rbrabson/heist/pkg/msg"
 	log "github.com/sirupsen/logrus"
@@ -404,9 +405,10 @@ func lifetime(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // Start intializes the economy.
 func Start(s *discordgo.Session) {
+	godotenv.Load()
 	session = s
 	LoadBanks()
-	// go resetMonthlyLeaderboard()
+	go resetMonthlyLeaderboard()
 }
 
 // GetCommands returns the component handlers, command handlers, and commands for the payday bot.

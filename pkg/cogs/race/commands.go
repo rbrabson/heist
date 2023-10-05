@@ -7,10 +7,11 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/rbrabson/heist/pkg/channel"
 	"github.com/rbrabson/heist/pkg/cogs/economy"
 	"github.com/rbrabson/heist/pkg/format"
+	"github.com/rbrabson/heist/pkg/math"
 	"github.com/rbrabson/heist/pkg/msg"
-	"github.com/rbrabson/heist/pkg/timer"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -95,6 +96,9 @@ var (
 
 // getPrinter returns a printer for the given locale of the user initiating the message.
 func getPrinter(i *discordgo.InteractionCreate) *message.Printer {
+	log.Trace("--> getPrinter")
+	defer log.Trace("<-- getPrinter")
+
 	tag, err := language.Parse(string(i.Locale))
 	if err != nil {
 		log.Error("Unable to parse locale, error:", err)
@@ -105,23 +109,35 @@ func getPrinter(i *discordgo.InteractionCreate) *message.Printer {
 
 // getRacerButtons returns action rows for the buttons used to vote on the racers.
 func getRacerButtons(race *Race) []discordgo.ActionsRow {
+	log.Trace("--> getRacerButtons")
+	defer log.Trace("<-- getRacerButtons")
+
 	buttonsPerRow := 5
 	rows := make([]discordgo.ActionsRow, 0, len(race.Racers)/buttonsPerRow)
 
-	i := 0
-	for len(race.Racers) > i {
-		buttons := make([]discordgo.MessageComponent, 0, 5)
-		for j := i; j < len(race.Racers); j++ {
+	racersIncludedInButtons := 0
+	for len(race.Racers) > racersIncludedInButtons {
+		racersNotInButtons := len(race.Racers) - racersIncludedInButtons
+		buttonsForNextRow := math.Min(buttonsPerRow, racersNotInButtons)
+		buttons := make([]discordgo.MessageComponent, 0, buttonsForNextRow)
+		for j := 0; j < buttonsForNextRow; j++ {
+			index := j + racersIncludedInButtons
 			button := discordgo.Button{
-				Label:    race.Racers[i].Player.Name,
+				Label:    race.Racers[index].Player.Name,
 				Style:    discordgo.PrimaryButton,
-				CustomID: racers[i],
+				CustomID: racers[index],
 			}
 			buttons = append(buttons, button)
-			i++
 		}
+		racersIncludedInButtons += buttonsForNextRow
+
 		row := discordgo.ActionsRow{Components: buttons}
 		rows = append(rows, row)
+		log.WithFields(log.Fields{
+			"numRacers": len(race.Racers),
+			"buttons":   len(buttons),
+			"row":       len(rows),
+		}).Trace("Race Buttons")
 	}
 
 	return rows
@@ -142,93 +158,41 @@ func raceMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action st
 		racerNames = append(racerNames, racer.Player.Name)
 	}
 
-	var embeds []*discordgo.MessageEmbed
+	var msg string
 	if action == "start" || action == "join" || action == "update" {
 		until := time.Until(race.StartTime)
-		embeds = []*discordgo.MessageEmbed{
-			{
-				/* These should be centered
-				:triangular_flag_on_post: A race has begun! Type !race enter to join the race! :triangular_flag_on_post:
-				The race will begin in 30 seconds!
-				*/
-
-				/*
-					Consider bolding the race field
-				*/
-
-				Type:  discordgo.EmbedTypeRich,
-				Title: "Race",
-				Fields: []*discordgo.MessageEmbedField{
-					{
-						Name:   p.Sprintf("🚩 A race is starting in %s. You can join the race at any time prior to the race starting 🚩", format.Duration(until)),
-						Inline: false,
-					},
-					{
-						Name:   p.Sprintf("Racers (%d)", len(race.Racers)),
-						Value:  strings.Join(racerNames, ", "),
-						Inline: false,
-					},
-				},
-			},
-		}
+		msg = p.Sprintf(":triangular_flag_on_post: A race is starting! Click the button to join the race! :triangular_flag_on_post:\n\t\t\t\t\tThe race will begin in %s!", format.Duration(until))
 	} else if action == "betting" {
-		embeds = []*discordgo.MessageEmbed{
-			{
-				Type:  discordgo.EmbedTypeRich,
-				Title: "Race",
-				Fields: []*discordgo.MessageEmbedField{
-					{
-						Name:   p.Sprintf("🚩 The racers have been set - betting is now open. You can place a %d bet on one of the racers by clicking on their name. 🚩", server.Config.BetAmount),
-						Inline: false,
-					},
-					{
-						Name:   p.Sprintf("Racers (%d)", len(race.Racers)),
-						Value:  strings.Join(racerNames, ", "),
-						Inline: false,
-					},
-				},
-			},
-		}
+		until := time.Until(race.BetEndTime)
+		msg = p.Sprintf(":triangular_flag_on_post: The racers have been set - betting is now open! :triangular_flag_on_post:\n\t\tYou have %s to place a %d credit bet!", format.Duration(until), server.Config.BetAmount)
 	} else if action == "started" {
-		embeds = []*discordgo.MessageEmbed{
-			{
-				Type:  discordgo.EmbedTypeRich,
-				Title: "Race",
-				Fields: []*discordgo.MessageEmbedField{
-					{
-						Name:   "🚩 The race is now in progress. 🚩",
-						Inline: false,
-					},
-					{
-						Name:   p.Sprintf("Racers (%d)", len(race.Racers)),
-						Value:  strings.Join(racerNames, ", "),
-						Inline: false,
-					},
-				},
-			},
-		}
+		msg = ":checkered_flag: The race is now in progress! :checkered_flag:"
 	} else if action == "ended" {
-		embeds = []*discordgo.MessageEmbed{
-			{
-				Type:  discordgo.EmbedTypeRich,
-				Title: "Race",
-				Fields: []*discordgo.MessageEmbedField{
-					{
-						Name:   "🚩 The race has ended - lets find out the results. 🚩",
-						Inline: false,
-					},
-					{
-						Name:   p.Sprintf("Racers (%d)", len(race.Racers)),
-						Value:  strings.Join(racerNames, ", "),
-						Inline: false,
-					},
-				},
-			},
-		}
+		msg = ":checkered_flag: The race has ended - lets find out the results. :checkered_flag:"
+	} else if action == "cancelled" {
+		msg = "Not enough players entered the race, so it was cancelled."
 	} else {
 		errMsg := fmt.Sprintf("Unrecognized action: %s", action)
 		log.Error(errMsg)
 		return errors.New(errMsg)
+	}
+
+	embeds := []*discordgo.MessageEmbed{
+		{
+			Type:  discordgo.EmbedTypeRich,
+			Title: "Race",
+			Fields: []*discordgo.MessageEmbedField{
+				{
+					Name:   msg,
+					Inline: false,
+				},
+				{
+					Name:   p.Sprintf("Racers (%d)", len(race.Racers)),
+					Value:  strings.Join(racerNames, ", "),
+					Inline: false,
+				},
+			},
+		},
 	}
 
 	var err error
@@ -382,15 +346,16 @@ func prepareRace(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server := GetServer(i.GuildID)
 
 	server.mutex.Lock()
-	defer server.mutex.Unlock()
 	if server.Race != nil {
 		msg.SendEphemeralResponse(s, i, "A race is already starting. You can join that race instead.")
+		server.mutex.Unlock()
 		return
 	}
 	timeSinceLastRace := time.Since(server.LastRaceEnded)
 	if timeSinceLastRace < server.Config.WaitBetweenRaces {
 		timeUntilRaceCanStart := server.Config.WaitBetweenRaces - timeSinceLastRace
-		msg.SendEphemeralResponse(s, i, p.Sprintf("The racers are resting. Try again in %s seconds!", format.Duration(timeUntilRaceCanStart)))
+		msg.SendEphemeralResponse(s, i, p.Sprintf("The racers are resting. Try again in %s!", format.Duration(timeUntilRaceCanStart)))
+		server.mutex.Unlock()
 		return
 	}
 
@@ -404,16 +369,6 @@ func prepareRace(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	racer := NewRacer(player, mode)
 	server.Race.Racers = append(server.Race.Racers, racer)
 	racer.Player.NumRaces++
-	racer = NewRacer(BotPlayer, mode)
-	server.Race.Racers = append(server.Race.Racers, racer)
-
-	// TODO: eventually, get rid of this
-	player = server.GetPlayer("OP", "Opt!mus Pr!me", "")
-	racer = NewRacer(player, mode)
-	server.Race.Racers = append(server.Race.Racers, racer)
-	player = server.GetPlayer("ebiv", "Vibe", "")
-	racer = NewRacer(player, mode)
-	server.Race.Racers = append(server.Race.Racers, racer)
 
 	err := raceMessage(s, i, "start")
 	if err != nil {
@@ -424,8 +379,24 @@ func prepareRace(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		"ID":        player.ID,
 		"Character": racer.Character.Emoji,
 	}).Debug("Start Race")
+	server.mutex.Unlock()
 
-	timer.NewWaitTimer(s, i, 5*time.Second, raceMessage, startRace) // TODO: use the wait timer
+	// Update the message every five seconds with the new expiration time until the
+	// time has expired.
+	for !time.Now().After(server.Race.StartTime) {
+		maximumWait := time.Until(server.Race.StartTime)
+		timeToWait := math.Min(maximumWait, 5*time.Second)
+		if timeToWait < 0 {
+			break
+		}
+		time.Sleep(timeToWait)
+		err = raceMessage(s, i, "update")
+		if err != nil {
+			log.Error("Unable to update the time for the race message, error:", err)
+		}
+	}
+
+	startRace(s, i)
 }
 
 // startRace is called once the timer waiting for players to join the race or place
@@ -438,23 +409,37 @@ func startRace(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	server.mutex.Lock()
 	if len(server.Race.Racers) < server.Config.MinRacers {
-		log.WithFields(log.Fields{"Number: ": len(server.Race.Racers)}).Info("Race cancelled due to lack of racers.")
-		msg.SendEphemeralResponse(s, i, "Not enough players entered the race, so it was cancelled.")
+		log.WithFields(log.Fields{"Number": len(server.Race.Racers)}).Info("Race cancelled due to lack of racers.")
+		raceMessage(s, i, "cancelled")
 		server.Race = nil
 		server.mutex.Unlock()
 		return
 	}
 
-	session.ChannelMessageSend(i.ChannelID, "`The racers area ready - place your bets!`")
 	err := raceMessage(s, i, "betting")
 	if err != nil {
 		log.Error("Unable to update the race message for betting, error:", err)
 	}
 	server.mutex.Unlock()
 
-	time.Sleep(5 * time.Second) // TODO: use server.Config.WaitForBetting
+	// Update the message every five seconds with the new expiration time until the
+	// time has expired.
+	mute := channel.NewChannelMute(s, i)
+	mute.MuteChannel()
+	defer mute.UnmuteChannel()
+	for !time.Now().After(server.Race.BetEndTime) {
+		maximumWait := time.Until(server.Race.BetEndTime)
+		timeToWait := math.Min(maximumWait, 5*time.Second)
+		if timeToWait < 0 {
+			break
+		}
+		time.Sleep(timeToWait)
+		err = raceMessage(s, i, "betting")
+		if err != nil {
+			log.Error("Unable to update the time for the race message, error:", err)
+		}
+	}
 
-	session.ChannelMessageSend(i.ChannelID, "`Get ready - the race is starting!`")
 	server.mutex.Lock()
 	err = raceMessage(s, i, "started")
 	if err != nil {
@@ -472,10 +457,11 @@ func startRace(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	raceMessage(s, i, "ended")
-	session.ChannelMessageSend(i.ChannelID, "`The race has ended. Lets get the results!`")
 
 	calculateRacerWinnings(server)
 	calcualteBetWinnings(server)
+
+	bank := economy.GetBank(i.GuildID)
 
 	for index, racer := range server.Race.Racers {
 		switch index {
@@ -488,19 +474,28 @@ func startRace(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		default:
 			racer.Player.Results.Losses++
 		}
-		if racer.Prize != 0 {
+		if racer.Prize != 0 && racer.Player.ID != "" {
+			account := bank.GetAccount(racer.Player.ID, racer.Player.Name)
+			account.DepositCredits(racer.Prize)
 			racer.Player.Results.Earnings += racer.Prize
-			// TODO: deposit into the bank account
 		}
 	}
 	for _, bet := range server.Race.Bets {
+		player := server.Players[bet.ID]
+		player.Results.BetsPlaced++
 		if bet.Winnings != 0 {
-			// TODO: deposit into the bank account
+			player.Results.BetsWon++
+			player.Results.BetEarnings += bet.Winnings
+			account := bank.GetAccount(bet.ID, bet.Name)
+			account.DepositCredits(bet.Winnings)
 		}
 	}
+	economy.SaveBank(bank)
+	SaveServer(server)
 
 	sendRaceResults(s, i.ChannelID, server)
 	server.Race = nil
+	server.LastRaceEnded = time.Now()
 }
 
 // joinRace attempts to join a race that is getting ready to start.
@@ -560,6 +555,12 @@ func raceStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server := GetServer(i.GuildID)
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 
+	var betPercentage float64
+	if player.Results.BetsPlaced > 0 {
+		betPercentage = 100 * float64(player.Results.BetsWon) / float64(player.Results.BetsPlaced)
+	} else {
+		betPercentage = 0.0
+	}
 	embeds := []*discordgo.MessageEmbed{
 		{
 			Type:  discordgo.EmbedTypeRich,
@@ -567,27 +568,47 @@ func raceStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			Fields: []*discordgo.MessageEmbedField{
 				{
 					Name:   "First",
-					Value:  p.Sprintf("%d", player.Results.Win),
+					Value:  p.Sprintf("%d (%.0f%%)", player.Results.Win, 100*float64(player.Results.Win)/float64(player.NumRaces)),
 					Inline: true,
 				},
 				{
 					Name:   "Second",
-					Value:  p.Sprintf("%d", player.Results.Place),
+					Value:  p.Sprintf("%d (%.0f%%)", player.Results.Place, 100*float64(player.Results.Place)/float64(player.NumRaces)),
 					Inline: true,
 				},
 				{
 					Name:   "Third",
-					Value:  p.Sprintf("%d", player.Results.Show),
+					Value:  p.Sprintf("%d (%.0f%%)", player.Results.Show, 100*float64(player.Results.Show)/float64(player.NumRaces)),
 					Inline: true,
 				},
 				{
 					Name:   "Losses",
-					Value:  p.Sprintf("%d", player.Results.Losses),
+					Value:  p.Sprintf("%d (%.0f%%)", player.Results.Losses, 100*float64(player.Results.Losses)/float64(player.NumRaces)),
+					Inline: true,
+				},
+				{
+					Name:   "Races",
+					Value:  p.Sprintf("%d (%.0f%%)", player.NumRaces, 100*float64(player.NumRaces)/float64(server.GamesPlayed)),
 					Inline: true,
 				},
 				{
 					Name:   "Earnings",
 					Value:  p.Sprintf("%d", player.Results.Earnings),
+					Inline: true,
+				},
+				{
+					Name:   "Bets Won",
+					Value:  p.Sprintf("%d (%.0f%%)", player.Results.BetsWon, betPercentage),
+					Inline: true,
+				},
+				{
+					Name:   "Bet Earnings",
+					Value:  p.Sprintf("%d", player.Results.BetEarnings),
+					Inline: true,
+				},
+				{
+					Name:   "Net Bet Earnings",
+					Value:  p.Sprintf("%d", player.Results.BetEarnings-player.Results.BetsPlaced*server.Config.BetAmount),
 					Inline: true,
 				},
 			},
@@ -643,14 +664,15 @@ func betOnRace(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		Bet:   server.Config.BetAmount,
 	}
 	server.Race.Bets = append(server.Race.Bets, bettor)
-	// account.WithdrawCredits(bettor.Bet) TODO: enable
+	account.WithdrawCredits(bettor.Bet)
+	economy.SaveBank(bank)
 	log.WithFields(log.Fields{
-		"Name":   player.Name,
-		"ID":     player.ID,
-		"Bet On": racer.Player.Name,
-	}).Debug("Bet on Race")
+		"Name":  player.Name,
+		"ID":    player.ID,
+		"Racer": racer.Player.Name,
+	}).Debug("Placed Bet")
 
-	resp := fmt.Sprintf("%s placed a %d %s bet on %s", player.Name, server.Config.BetAmount, server.Config.Currency, racer.Player.Name)
+	resp := fmt.Sprintf("You placed a %d %s bet on %s", server.Config.BetAmount, server.Config.Currency, racer.Player.Name)
 	msg.SendEphemeralResponse(s, i, resp)
 }
 
@@ -663,6 +685,8 @@ func resetRace(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	server := GetServer(i.GuildID)
 	server.Race = nil
+	mute := channel.NewChannelMute(s, i)
+	mute.UnmuteChannel()
 	msg.SendResponse(s, i, "The race has been reset.")
 }
 

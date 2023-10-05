@@ -65,7 +65,7 @@ func newBank(serverID string) *Bank {
 	lastMonth := time.Date(year, month, 1, 0, 0, 0, 0, time.UTC)
 	bank := Bank{
 		ID:                  serverID,
-		DefaultBalance:      0,
+		DefaultBalance:      20000,
 		BankName:            "Treasury",
 		Currency:            "Coins",
 		MaxTransferAmount:   20000,

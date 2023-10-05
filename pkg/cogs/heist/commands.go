@@ -15,6 +15,7 @@ import (
 
 	"golang.org/x/text/message"
 
+	"github.com/rbrabson/heist/pkg/channel"
 	"github.com/rbrabson/heist/pkg/cogs/economy"
 	"github.com/rbrabson/heist/pkg/cogs/payday"
 	"github.com/rbrabson/heist/pkg/format"
@@ -574,9 +575,9 @@ func startHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	channel := newChannelMute(s, i)
-	channel.muteChannel()
-	defer channel.unmuteChannel()
+	mute := channel.NewChannelMute(s, i)
+	mute.MuteChannel()
+	defer mute.UnmuteChannel()
 
 	server.Heist.Started = true
 	server.Heist.Planned = false
@@ -832,8 +833,8 @@ func resetHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Trace("--> resetHeist")
 	defer log.Trace("<-- resetHeist")
 
-	channel := newChannelMute(s, i)
-	defer channel.unmuteChannel()
+	mute := channel.NewChannelMute(s, i)
+	defer mute.UnmuteChannel()
 
 	server := GetServer(servers, i.GuildID)
 	theme := themes[server.Config.Theme]

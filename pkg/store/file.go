@@ -28,7 +28,7 @@ func (f *fileStore) ListDocuments(collection string) []string {
 	dirName := f.dir + "/" + collection
 	files, err := os.ReadDir(dirName)
 	if err != nil {
-		log.Errorf("Failed to get the list of files for colledction %s, error=%s", collection, err.Error())
+		log.Errorf("Failed to get the list of files for collection %s, error=%s", collection, err.Error())
 		return nil
 	}
 	fileNames := make([]string, 0, len(files))

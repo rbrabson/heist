@@ -64,7 +64,7 @@ func NewBot() *Bot {
 	bot.Session.Identify.Intents = botIntents
 
 	bot.Session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
-		log.Info("Heist bot is up!")
+		log.Info("Game bot is up!")
 	})
 
 	componentHandlers := make(map[string]func(*discordgo.Session, *discordgo.InteractionCreate))

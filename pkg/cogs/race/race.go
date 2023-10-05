@@ -9,6 +9,8 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/rbrabson/heist/pkg/math"
+
 	"github.com/rbrabson/heist/pkg/store"
 	log "github.com/sirupsen/logrus"
 
@@ -23,20 +25,16 @@ const (
 )
 
 var (
-	Servers   map[string]*Server
-	Track     = strings.Repeat("•   ", 20)
-	TrackLen  = int64(utf8.RuneCountInString(Track))
-	BotPlayer = &Player{
-		ID:   "",
-		Name: "Goblin King",
-	}
+	Servers  map[string]*Server
+	Track    = strings.Repeat("•   ", 20)
+	TrackLen = int64(utf8.RuneCountInString(Track))
 )
 
 // Server represents a guild/server where the Race game is played
 type Server struct {
 	ID            string             `json:"_id" bson:"_id"`                         // Guild ID
 	Config        *Config            `json:"config" bson:"config"`                   // Server-specific configuration
-	GamesPlayed   int64              `json:"games_played" bson:"games_played"`       // Number of race games played on the server
+	GamesPlayed   int                `json:"games_played" bson:"games_played"`       // Number of race games played on the server
 	Players       map[string]*Player `json:"players" bson:"players"`                 // All members who have entered a race on the server
 	LastRaceEnded time.Time          `json:"last_race_ended" bson:"last_race_ended"` // Time the last race ended
 	Race          *Race              `json:"-" bson:"-"`                             // The current race (don't save to the store)
@@ -48,7 +46,6 @@ type Config struct {
 	BetAmount        int           `json:"bet_amount" bson:"bet_amount"`                 // The amount a player bets on the race
 	Currency         string        `json:"currency" bson:"currency"`                     // Currency type used on the server
 	Mode             string        `json:"mode" bson:"mode"`                             // The name of the race mode being used
-	PayoutMin        int64         `json:"payout_min" bson:"payout_min"`                 // Minimum payout for the race
 	PrizeMin         int           `json:"prize_min" bson:"prize_min"`                   // The minimum prize for winning racer, multiplied by the number of racers
 	PrizeMax         int           `json:"prize_max" bson:"prize_max"`                   // The maximum prize for the winning racer, multiplied by the numbe of racers
 	WaitForJoin      time.Duration `json:"wait_for_join" bson:"wait_for_join"`           // Time to wait for people to join a race
@@ -68,22 +65,26 @@ type Player struct {
 
 // LifetimeResults keeps track of the lifetime results for a given player.
 type LifetimeResults struct {
-	Win      int `json:"win" bson:"win"`           // Number of races a player came in first
-	Place    int `json:"place" bson:"place"`       // Number of races a player came in second
-	Show     int `json:"show" bson:"show"`         // Number of races a player came in third
-	Losses   int `json:"loses" bson:"loses"`       // Number of races a player came in fourth or lower
-	Earnings int `json:"earnings" bson:"earnings"` // Lifetime earnings for the player in races
+	Win         int `json:"win" bson:"win"`                   // Number of races a player came in first
+	Place       int `json:"place" bson:"place"`               // Number of races a player came in second
+	Show        int `json:"show" bson:"show"`                 // Number of races a player came in third
+	Losses      int `json:"loses" bson:"loses"`               // Number of races a player came in fourth or lower
+	Earnings    int `json:"earnings" bson:"earnings"`         // Lifetime earnings for the player in races
+	BetsPlaced  int `json:"bets_placed" bson:"bets_placed"`   // Number of bets a player has placed on races
+	BetsWon     int `json:"bets_won" bson:"bets_won"`         // Number of bets a player has won
+	BetEarnings int `json:"bet_earnings" bson:"bet_earnings"` // Lifetime earnings from placing bets
 }
 
 // Race represents the race data for a given guild/server.
 type Race struct {
-	Bets        []*Bettor                    `json:"bets" bson:"bets"`             // Bets placed by members on the race
-	Racers      []*Racer                     `json:"racers" bson:"racers"`         // Members who have entered the race
-	Planned     bool                         `json:"planned" bson:"planned"`       // Waiting for members to join the race
-	Started     bool                         `json:"started" bson:"started"`       // The race is now in progress
-	Ended       bool                         `json:"ended" bson:"ended"`           // The race has ended
-	StartTime   time.Time                    `json:"start_time" bson:"start_time"` // Time the race will begin
-	Interaction *discordgo.InteractionCreate `json:"-" bson:"-"`                   // Interaction for the initial race start message
+	Bets        []*Bettor                    `json:"bets" bson:"bets"`                 // Bets placed by members on the race
+	Racers      []*Racer                     `json:"racers" bson:"racers"`             // Members who have entered the race
+	Planned     bool                         `json:"planned" bson:"planned"`           // Waiting for members to join the race
+	Started     bool                         `json:"started" bson:"started"`           // The race is now in progress
+	Ended       bool                         `json:"ended" bson:"ended"`               // The race has ended
+	StartTime   time.Time                    `json:"start_time" bson:"start_time"`     // Time the race will begin
+	BetEndTime  time.Time                    `json:"bet_end_time" bson:"bet_end_time"` // The time betting will close
+	Interaction *discordgo.InteractionCreate `json:"-" bson:"-"`                       // Interaction for the initial race start message
 }
 
 // Racer is a player who is entered into a race.
@@ -151,11 +152,11 @@ func NewConfig() *Config {
 		Mode:             mode.ID,
 		PrizeMin:         750,
 		PrizeMax:         1250,
-		MinRacers:        3,
-		MaxRacers:        11,
+		MinRacers:        2,
+		MaxRacers:        10,
 		WaitForJoin:      time.Duration(30 * time.Second),
 		WaitForBetting:   time.Duration(30 * time.Second),
-		WaitBetweenRaces: time.Duration(2 * time.Minute),
+		WaitBetweenRaces: time.Duration(1 * time.Minute),
 	}
 	return config
 }
@@ -177,16 +178,18 @@ func (server *Server) GetPlayer(playerID string, username string, nickname strin
 	log.Trace("--> GetPlayer")
 	defer log.Trace("<-- GetPlayer")
 
+	var playerName string
+	if nickname != "" {
+		playerName = nickname
+	} else {
+		playerName = username
+	}
 	player, ok := server.Players[playerID]
 	if !ok {
-		var playerName string
-		if nickname != "" {
-			playerName = nickname
-		} else {
-			playerName = username
-		}
 		player = NewPlayer(server, playerID, playerName)
 		server.Players[playerID] = player
+	} else {
+		player.Name = playerName
 	}
 	return player
 }
@@ -197,10 +200,11 @@ func NewRace(server *Server) *Race {
 	defer log.Trace("<-- NewRace")
 
 	race := &Race{
-		Bets:      make([]*Bettor, 0, 10),
-		Racers:    make([]*Racer, 0, 10),
-		Planned:   true,
-		StartTime: time.Now().Add(server.Config.WaitForJoin),
+		Bets:       make([]*Bettor, 0, 5),
+		Racers:     make([]*Racer, 0, server.Config.MaxRacers),
+		Planned:    true,
+		StartTime:  time.Now().Add(server.Config.WaitForJoin),
+		BetEndTime: time.Now().Add(server.Config.WaitForJoin + server.Config.WaitForBetting),
 	}
 	return race
 }
@@ -212,11 +216,11 @@ func NewRacer(player *Player, mode *Mode) *Racer {
 
 	index := rand.Intn(len(mode.Characters))
 	character := mode.Characters[index]
-	current := fmt.Sprintf("%s %s", character.Emoji, Track)
+	current := fmt.Sprintf("%s %s", Track, character.Emoji)
 	racer := &Racer{
 		Player:       player,
-		Position:     0,
-		LastPosition: 0,
+		Position:     TrackLen,
+		LastPosition: TrackLen,
 		Character:    character,
 		Current:      current,
 	}
@@ -294,7 +298,7 @@ func getCurrentTrack(racers []*Racer, mode *Mode) string {
 
 	var track strings.Builder
 	for _, racer := range racers {
-		line := fmt.Sprintf("%s **%s %s** [%s]\n", mode.Beginning, racer.Current, mode.Ending, racer.Player.Name)
+		line := fmt.Sprintf("%s **%s %s** [%s]\n", mode.Ending, racer.Current, mode.Beginning, racer.Player.Name)
 		track.WriteString(line)
 	}
 	return track.String()
@@ -330,10 +334,11 @@ func (s *Server) RunRace(channelID string) {
 		log.Error("Failed to send message at the start of the race, error:", err)
 	}
 	messageID := message.ID
-	time.Sleep(3 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	done := false
 	for !done {
+		time.Sleep(2 * time.Second)
 		done = runLeg(racers, mode)
 		track = getCurrentTrack(racers, mode)
 		_, err = session.ChannelMessageEdit(channelID, messageID, fmt.Sprintf("%s\n", track))
@@ -379,9 +384,9 @@ func (r *Racer) calculateMovement() int {
 	case "special":
 		fallthrough
 	default:
-		if r.Turn == 1 {
+		if r.Turn == 0 {
 			return 14 * 3
-		} else if r.Turn == 2 {
+		} else if r.Turn == 1 {
 			return 0
 		} else {
 			return rand.Intn(3) * 3
@@ -395,74 +400,22 @@ func (r *Racer) Move() bool {
 	log.Trace("--> Move")
 	defer log.Trace("<-- Move")
 
-	if r.Position < TrackLen {
+	if r.Position > 0 {
 		r.LastPosition = r.Position
 		r.LastMove = int64(r.calculateMovement())
-		r.Position += r.LastMove
-		pos := min(TrackLen, r.Position)
+		r.Position -= r.LastMove
+		pos := math.Max(0, r.Position)
 		start, end := splitString(Track, int(pos))
 		r.Current = start + r.Character.Emoji + end
 		r.Turn++
-		if r.Position >= TrackLen {
-			r.Speed = float64(r.Turn) + float64(TrackLen-r.LastPosition)/float64(r.LastMove)
+		if r.Position <= 0 {
+			r.Speed = float64(r.Turn) + float64(r.LastPosition)/float64(r.LastMove)
 		}
 		return true
 	}
 
 	return false
 }
-
-/*
-	Race
-		bot (will be one of racers)
-		system
-		config (data/race/race.json)
-		version (1.2.0)
-		raceTime = -120
-
-	prize
-		3 of credits to randomly pick, multiplied by the # of entries in the race
-			min, max
-
-	time
-		sets time the players have to enter race
-
-	mode
-		sets the race mode
-			standard: everyone is a turtle
-			zoo: random animal
-			clash: random clash character
-
-	reset
-		reset race parameters
-
-	stats
-		displays race stats
-		wins, losses, % of races played
-
-	bet
-		bet on a race
-		not sure if this can be handled via interactions
-
-	start
-		starts a race and enters yourself as a participant
-			wait time between races: 2 minutes
-
-		once the race starts, then allow players to place bets
-			- get player's name or nickname
-			- use reactions to get which player someone is betting on
-
-		once the race is over, get the winners (1st, 2nd, 3rd) and award prizes
-			60% to 1st, 30% to 2nd, 10% to 3rd (prize pooling)
-			100% to 1st (no prize pooling)
-
-		once race is over, list out the results of the bets
-
-		Only allow 10 players (plus bot) in the race
-
-	wipe
-		deletes all data for the race. Probably want a confirmation about this.
-*/
 
 // LoadServers returns all the servers for the given guilds.
 func LoadServers() {
@@ -478,7 +431,7 @@ func LoadServers() {
 	}
 }
 
-// SaveServer saves the bank.
+// SaveServer saves the race statistics for the server.
 func SaveServer(server *Server) {
 	log.Trace("--> SaveServer")
 	defer log.Trace("<-- SaveServer")
@@ -520,8 +473,7 @@ func GetAdminHelp() []string {
 
 // Start initializes anything needed by the race game.
 func Start(s *discordgo.Session) {
-	Modes = LoadModes()
-	Servers = make(map[string]*Server)
 	session = s
-	// TODO: load the rest....
+	Modes = LoadModes()
+	LoadServers()
 }
