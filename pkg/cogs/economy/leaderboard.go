@@ -1,6 +1,7 @@
 package economy
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -20,6 +21,9 @@ type leaderboardAccount struct {
 
 // formatAccounts formats the leaderboard to be sent to a Discord server
 func formatAccounts(p *message.Printer, title string, accounts []*leaderboardAccount) []*discordgo.MessageEmbed {
+	log.Trace("--> formatAccounts")
+	defer log.Trace("<-- formatAccounts")
+
 	var tableBuffer strings.Builder
 	table := tablewriter.NewWriter(&tableBuffer)
 	table.SetColumnSeparator(" ")
@@ -48,6 +52,9 @@ func formatAccounts(p *message.Printer, title string, accounts []*leaderboardAcc
 
 // getAccounts gets the list of accounts at a given bank
 func getAccounts(bank *Bank) []*Account {
+	log.Trace("--> getAccounts")
+	defer log.Trace("<-- getAccounts")
+
 	accounts := make([]*Account, 0, len(bank.Accounts))
 	for _, account := range bank.Accounts {
 		accounts = append(accounts, account)
@@ -57,6 +64,9 @@ func getAccounts(bank *Bank) []*Account {
 
 // getSortedAccounts converts a map of elements into a sorted list of those same elements.
 func getSortedAccounts(accounts []*Account, sortFunc func(i, j int) bool) []*Account {
+	log.Trace("--> getSortedAccounts")
+	defer log.Trace("<-- getSortedAccounts")
+
 	sort.Slice(accounts, sortFunc)
 	return accounts
 }
@@ -64,6 +74,9 @@ func getSortedAccounts(accounts []*Account, sortFunc func(i, j int) bool) []*Acc
 // GetRanking returns the ranking for the given member for various economy leaderboards.
 // The sortFunc passed in determines how the rankings are determined.
 func GetRanking(accounts []*Account, memberID string, sortFunc func(i, j int) bool) int {
+	log.Trace("--> GetRanking")
+	defer log.Trace("<-- GetRanking")
+
 	getSortedAccounts(accounts, sortFunc)
 	var rank int
 	for i := range accounts {
@@ -77,6 +90,9 @@ func GetRanking(accounts []*Account, memberID string, sortFunc func(i, j int) bo
 
 // GetMonthlyRanking returns the global ranking on the server for a given player.
 func GetMonthlyRanking(serverID string, memberID string) int {
+	log.Trace("--> GetMonthlyRanking")
+	defer log.Trace("<-- GetMonthlyRanking")
+
 	bank := banks[serverID]
 	accounts := getAccounts(bank)
 	rank := GetRanking(accounts, memberID, func(i, j int) bool {
@@ -87,6 +103,9 @@ func GetMonthlyRanking(serverID string, memberID string) int {
 
 // GetCurrentRanking returns the global ranking on the server for a given player.
 func GetCurrentRanking(serverID string, memberID string) int {
+	log.Trace("--> GetCurrentRanking")
+	defer log.Trace("<-- GetCurrentRanking")
+
 	bank := banks[serverID]
 	accounts := getAccounts(bank)
 	rank := GetRanking(accounts, memberID, func(i, j int) bool {
@@ -97,6 +116,9 @@ func GetCurrentRanking(serverID string, memberID string) int {
 
 // GetLifetimeRanking returns the global ranking on the server for a given player.
 func GetLifetimeRanking(serverID string, memberID string) int {
+	log.Trace("--> GetLifetimeRanking")
+	defer log.Trace("<-- GetLifetimeRanking")
+
 	bank := banks[serverID]
 	accounts := getAccounts(bank)
 	rank := GetRanking(accounts, memberID, func(i, j int) bool {
@@ -107,6 +129,9 @@ func GetLifetimeRanking(serverID string, memberID string) int {
 
 // GetMonthlyLeaderboard returns the top `limit` accounts for the server.
 func GetMonthlyLeaderboard(serverID string, limit int) []*leaderboardAccount {
+	log.Trace("--> GetMonthlyLeaderboard")
+	defer log.Trace("<-- GetMonthlyLeaderboard")
+
 	bank := banks[serverID]
 	accounts := getAccounts(bank)
 	getSortedAccounts(accounts, func(i, j int) bool {
@@ -126,6 +151,9 @@ func GetMonthlyLeaderboard(serverID string, limit int) []*leaderboardAccount {
 
 // GetCurrentLeaderboard returns the top `limit` accounts for the server.
 func GetCurrentLeaderboard(serverID string, limit int) []*leaderboardAccount {
+	log.Trace("--> GetCurrentLeaderboard")
+	defer log.Trace("<-- GetCurrentLeaderboard")
+
 	bank := banks[serverID]
 	accounts := getAccounts(bank)
 	getSortedAccounts(accounts, func(i, j int) bool {
@@ -145,6 +173,9 @@ func GetCurrentLeaderboard(serverID string, limit int) []*leaderboardAccount {
 
 // GetLifetimeLeaderboard returns the top `limit` accounts for the server.
 func GetLifetimeLeaderboard(serverID string, limit int) []*leaderboardAccount {
+	log.Trace("--> GetLifetimeLeaderboard")
+	defer log.Trace("<-- GetLifetimeLeaderboard")
+
 	bank := banks[serverID]
 	accounts := getAccounts(bank)
 	getSortedAccounts(accounts, func(i, j int) bool {
@@ -164,12 +195,18 @@ func GetLifetimeLeaderboard(serverID string, limit int) []*leaderboardAccount {
 
 // resetMonthlyLeaderboard resets the MonthlyBalance for all accounts to zero.
 func resetMonthlyLeaderboard() {
+	log.Trace("--> resetMonthlyLeaderboard")
+	defer log.Trace("<-- resetMonthlyLeaderboard")
+
 	var lastSeason time.Time
 	for _, bank := range banks {
 		if lastSeason.Before(bank.LastSeason) {
 			lastSeason = bank.LastSeason
 		}
 		break
+	}
+	if lastSeason.Year() == 1 {
+		lastSeason = time.Now()
 	}
 	month := lastSeason.Month()
 	year := lastSeason.Year()
@@ -189,12 +226,16 @@ func resetMonthlyLeaderboard() {
 			// Trace last season's leaderboard
 			accounts := GetMonthlyLeaderboard(bank.ID, 10)
 			for i, account := range accounts {
-				log.WithFields(log.Fields{"Rank": i + 1, "Server": bank.ID, "Account": account.name, "Balance": account.balance}).Info("Monthly Leaderboard Reset")
+				log.WithFields(log.Fields{
+					"Rank":    i + 1,
+					"Server":  bank.ID,
+					"Account": account.name,
+					"Balance": account.balance}).Info("Monthly Leaderboard Reset")
 			}
 
 			if bank.ChannelID != "" {
 				p := message.NewPrinter(language.English)
-				embeds := formatAccounts(p, p.Sprintf("%s %d Top 10", bank.LastSeason.Month().String(), bank.LastSeason.Year()), accounts)
+				embeds := formatAccounts(p, fmt.Sprintf("%s %d Top 10", bank.LastSeason.Month().String(), bank.LastSeason.Year()), accounts)
 				_, err := session.ChannelMessageSendComplex(bank.ChannelID, &discordgo.MessageSend{
 					Embeds: embeds,
 				})
