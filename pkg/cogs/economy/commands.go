@@ -60,6 +60,25 @@ var (
 					},
 				},
 				{
+					Name:        "transfer",
+					Description: "Transfers the account balance from one account to another.",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Type:        discordgo.ApplicationCommandOptionString,
+							Name:        "from",
+							Description: "The ID of the account to transfer credits from.",
+							Required:    true,
+						},
+						{
+							Type:        discordgo.ApplicationCommandOptionInteger,
+							Name:        "to",
+							Description: "The ID of the account to receive account balance.",
+							Required:    true,
+						},
+					},
+				},
+				{
 					Name:        "channel",
 					Description: "Sets the channel ID where the monthly leaderboard is published at the end of the month.",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
@@ -84,24 +103,6 @@ var (
 		{
 			Name:        "lifetime",
 			Description: "Gets the lifetime economy leaderboard.",
-		},
-		{
-			Name:        "transfer",
-			Description: "Transfers a set amount of credits from your account to another player's account.",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "to",
-					Description: "The ID of the member to transfer credits to.",
-					Required:    true,
-				},
-				{
-					Type:        discordgo.ApplicationCommandOptionInteger,
-					Name:        "amount",
-					Description: "The amount of credits to transfer.",
-					Required:    true,
-				},
-			},
 		},
 		{
 			Name:        "balance",
