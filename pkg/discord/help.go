@@ -58,11 +58,10 @@ func getAdminHelp() string {
 	sb.WriteString("\n")
 	for _, str := range payday.GetAdminHelp() {
 		sb.WriteString(str)
-
-		sb.WriteString("\n")
-		for _, str := range race.GetAdminHelp() {
-			sb.WriteString(str)
-		}
+	}
+	sb.WriteString("\n")
+	for _, str := range race.GetAdminHelp() {
+		sb.WriteString(str)
 	}
 	sb.WriteString("\n")
 	for _, str := range remind.GetAdminHelp() {
