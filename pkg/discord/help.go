@@ -6,6 +6,7 @@ import (
 	"github.com/rbrabson/heist/pkg/cogs/economy"
 	"github.com/rbrabson/heist/pkg/cogs/heist"
 	"github.com/rbrabson/heist/pkg/cogs/payday"
+	"github.com/rbrabson/heist/pkg/cogs/race"
 	"github.com/rbrabson/heist/pkg/cogs/remind"
 	log "github.com/sirupsen/logrus"
 )
@@ -26,6 +27,10 @@ func getMemberHelp() string {
 	}
 	sb.WriteString("\n")
 	for _, str := range payday.GetMemberHelp() {
+		sb.WriteString(str)
+	}
+	sb.WriteString("\n")
+	for _, str := range race.GetMemberHelp() {
 		sb.WriteString(str)
 	}
 	sb.WriteString("\n")
@@ -53,6 +58,11 @@ func getAdminHelp() string {
 	sb.WriteString("\n")
 	for _, str := range payday.GetAdminHelp() {
 		sb.WriteString(str)
+
+		sb.WriteString("\n")
+		for _, str := range race.GetAdminHelp() {
+			sb.WriteString(str)
+		}
 	}
 	sb.WriteString("\n")
 	for _, str := range remind.GetAdminHelp() {
