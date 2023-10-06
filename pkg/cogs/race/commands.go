@@ -362,13 +362,11 @@ func prepareRace(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server.Race = NewRace(server)
 	server.Race.Planned = true
 	server.Race.Interaction = i
-	server.GamesPlayed++
 
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 	mode := Modes[server.Config.Mode]
 	racer := NewRacer(player, mode)
 	server.Race.Racers = append(server.Race.Racers, racer)
-	racer.Player.NumRaces++
 
 	err := raceMessage(s, i, "start")
 	if err != nil {
@@ -464,6 +462,7 @@ func startRace(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	bank := economy.GetBank(i.GuildID)
 
 	for index, racer := range server.Race.Racers {
+		racer.Player.NumRaces++
 		switch index {
 		case 0:
 			racer.Player.Results.Win++
@@ -493,8 +492,9 @@ func startRace(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	economy.SaveBank(bank)
 
 	sendRaceResults(s, i.ChannelID, server)
-	server.Race = nil
+	server.GamesPlayed++
 	server.LastRaceEnded = time.Now()
+	server.Race = nil
 	SaveServer(server)
 }
 
@@ -533,7 +533,6 @@ func joinRace(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
 	racer := NewRacer(player, mode)
 	server.Race.Racers = append(server.Race.Racers, racer)
-	racer.Player.NumRaces++
 	err := raceMessage(s, server.Race.Interaction, "join")
 	if err != nil {
 		log.Error("Unable to update the race message, error:", err)
