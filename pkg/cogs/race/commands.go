@@ -491,11 +491,11 @@ func startRace(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 	}
 	economy.SaveBank(bank)
-	SaveServer(server)
 
 	sendRaceResults(s, i.ChannelID, server)
 	server.Race = nil
 	server.LastRaceEnded = time.Now()
+	SaveServer(server)
 }
 
 // joinRace attempts to join a race that is getting ready to start.
