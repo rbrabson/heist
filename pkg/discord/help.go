@@ -21,19 +21,15 @@ func getMemberHelp() string {
 	for _, str := range economy.GetMemberHelp() {
 		sb.WriteString(str)
 	}
-	sb.WriteString("\n")
 	for _, str := range heist.GetMemberHelp() {
 		sb.WriteString(str)
 	}
-	sb.WriteString("\n")
 	for _, str := range payday.GetMemberHelp() {
 		sb.WriteString(str)
 	}
-	sb.WriteString("\n")
 	for _, str := range race.GetMemberHelp() {
 		sb.WriteString(str)
 	}
-	sb.WriteString("\n")
 	for _, str := range remind.GetMemberHelp() {
 		sb.WriteString(str)
 	}
@@ -51,19 +47,15 @@ func getAdminHelp() string {
 	for _, str := range economy.GetAdminHelp() {
 		sb.WriteString(str)
 	}
-	sb.WriteString("\n")
 	for _, str := range heist.GetAdminHelp() {
 		sb.WriteString(str)
 	}
-	sb.WriteString("\n")
 	for _, str := range payday.GetAdminHelp() {
 		sb.WriteString(str)
 	}
-	sb.WriteString("\n")
 	for _, str := range race.GetAdminHelp() {
 		sb.WriteString(str)
 	}
-	sb.WriteString("\n")
 	for _, str := range remind.GetAdminHelp() {
 		sb.WriteString(str)
 	}
