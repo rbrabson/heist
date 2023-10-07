@@ -422,9 +422,12 @@ func startRace(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	// Update the message every five seconds with the new expiration time until the
 	// time has expired.
-	mute := channel.NewChannelMute(s, i)
-	mute.MuteChannel()
-	defer mute.UnmuteChannel()
+	//
+	// FOR NOW: try to leave the channels un-muted and see how it goes. Uncomment the
+	//          following three lines if it gets unruly.
+	// mute := channel.NewChannelMute(s, i)
+	// mute.MuteChannel()
+	// defer mute.UnmuteChannel()
 	for !time.Now().After(server.Race.BetEndTime) {
 		maximumWait := time.Until(server.Race.BetEndTime)
 		timeToWait := math.Min(maximumWait, 5*time.Second)
