@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/rbrabson/heist/pkg/channel"
 	"github.com/rbrabson/heist/pkg/cogs/economy"
 	"github.com/rbrabson/heist/pkg/format"
 	"github.com/rbrabson/heist/pkg/math"
@@ -687,8 +686,9 @@ func resetRace(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	server := GetServer(i.GuildID)
 	server.Race = nil
-	mute := channel.NewChannelMute(s, i)
-	mute.UnmuteChannel()
+	// Uncomment this out if we change to mute the channel again
+	// mute := channel.NewChannelMute(s, i)
+	// mute.UnmuteChannel()
 	msg.SendResponse(s, i, "The race has been reset.")
 }
 
