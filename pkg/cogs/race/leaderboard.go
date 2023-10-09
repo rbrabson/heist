@@ -2,6 +2,7 @@ package race
 
 import (
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -46,12 +47,20 @@ func formatAccounts(p *message.Printer, title string, accounts []leaderboardAcco
 
 	var tableBuffer strings.Builder
 	table := tablewriter.NewWriter(&tableBuffer)
-	table.SetColumnSeparator(" ")
-	table.SetCenterSeparator(" ")
+	table.SetAutoWrapText(false)
+	table.SetAutoFormatHeaders(true)
+	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	table.SetCenterSeparator("")
+	table.SetColumnSeparator("")
+	table.SetRowSeparator("")
+	table.SetHeaderLine(false)
 	table.SetBorder(false)
-	table.SetHeader([]string{"Name", "Balance"})
-	for _, account := range accounts {
-		data := []string{account.name, p.Sprintf("%d", account.balance)}
+	table.SetTablePadding("\t")
+	table.SetNoWhiteSpace(true)
+	table.SetHeader([]string{"#", "Name", "Balance"})
+	for i, account := range accounts {
+		data := []string{strconv.Itoa(i + 1), account.name, p.Sprintf("%d", account.balance)}
 		table.Append(data)
 	}
 	table.Render()
