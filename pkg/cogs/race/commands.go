@@ -72,6 +72,11 @@ var (
 					Description: "Returns the race stats for the player.",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 				},
+				{
+					Name:        "leaderboard",
+					Description: "Returns the lifetime race leaderboard.",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+				},
 			},
 		},
 	}
@@ -319,6 +324,8 @@ func race(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		prepareRace(s, i)
 	case "stats":
 		raceStats(s, i)
+	case "leaderboard":
+		raceLeaderboard(s, i)
 	}
 }
 
@@ -626,7 +633,25 @@ func raceStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if err != nil {
 		log.Error("Unable to send the player stats to Discord, error:", err)
 	}
+}
 
+// raceLeaderboard returns the lifetime race leaderboard.
+func raceLeaderboard(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	log.Trace("--> raceLeaderboard")
+	defer log.Trace("<-- raceLeaderboard")
+
+	lb := getLeaderboard(i.GuildID, 10)
+
+	p := getPrinter(i)
+	embeds := formatAccounts(p, "Race Leaderboard", lb)
+
+	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Embeds: embeds,
+			Flags:  discordgo.MessageFlagsEphemeral,
+		},
+	})
 }
 
 // betOnRace processes a bet placed by a member on the race.
