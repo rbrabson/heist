@@ -38,6 +38,9 @@ func formatAccounts(p *message.Printer, title string, accounts []*leaderboardAcc
 	table.SetBorder(false)
 	table.SetTablePadding("\t")
 	table.SetNoWhiteSpace(true)
+	table.SetHeaderColor(tablewriter.Colors{tablewriter.FgBlueColor},
+		tablewriter.Colors{tablewriter.FgBlueColor},
+		tablewriter.Colors{tablewriter.FgBlueColor})
 
 	table.SetHeader([]string{"#", "Name", "Balance"})
 	for i, account := range accounts {

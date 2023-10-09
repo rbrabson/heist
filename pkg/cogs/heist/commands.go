@@ -888,8 +888,22 @@ func listTargets(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	var tableBuffer strings.Builder
 	table := tablewriter.NewWriter(&tableBuffer)
 	table.SetBorder(false)
-	table.SetColumnSeparator(" ")
-	table.SetCenterSeparator(" ")
+	table.SetAutoWrapText(false)
+	table.SetAutoFormatHeaders(true)
+	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	table.SetCenterSeparator("")
+	table.SetColumnSeparator("")
+	table.SetRowSeparator("")
+	table.SetHeaderLine(false)
+	table.SetBorder(false)
+	table.SetTablePadding("\t")
+	table.SetNoWhiteSpace(true)
+	table.SetHeaderColor(tablewriter.Colors{tablewriter.FgBlueColor},
+		tablewriter.Colors{tablewriter.FgBlueColor},
+		tablewriter.Colors{tablewriter.FgBlueColor},
+		tablewriter.Colors{tablewriter.FgBlueColor},
+		tablewriter.Colors{tablewriter.FgBlueColor})
 	table.SetHeader([]string{"ID", "Max Crew", theme.Vault, "Max " + theme.Vault, "Success Rate"})
 	for _, target := range targets {
 		data := []string{target.ID, p.Sprintf("%d", target.CrewSize), p.Sprintf("%d", target.Vault), p.Sprintf("%d", target.VaultMax), p.Sprintf("%.2f", target.Success)}
