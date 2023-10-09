@@ -33,7 +33,7 @@ func getLeaderboard(serverID string, limit int) []leaderboardAccount {
 	}
 
 	sort.Slice(lb, func(i, j int) bool {
-		return lb[i].balance < lb[j].balance
+		return lb[i].balance > lb[j].balance
 	})
 
 	return lb[:limit]
