@@ -3,7 +3,7 @@ module github.com/rbrabson/heist
 go 1.20
 
 require (
-	github.com/bwmarrin/discordgo v0.27.1
+	github.com/bwmarrin/discordgo v0.27.2-0.20240104041734-f70a01544f56
 	github.com/joho/godotenv v1.5.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/sirupsen/logrus v1.9.3

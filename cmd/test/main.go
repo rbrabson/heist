@@ -62,6 +62,7 @@ func getRacerButtons(race *race.Race) []discordgo.ActionsRow {
 				Label:    race.Racers[index].Player.Name,
 				Style:    discordgo.PrimaryButton,
 				CustomID: racers[index],
+				Emoji:    nil,
 			}
 			buttons = append(buttons, button)
 		}

@@ -130,6 +130,7 @@ func getRacerButtons(race *Race) []discordgo.ActionsRow {
 				Label:    race.Racers[index].Player.Name,
 				Style:    discordgo.PrimaryButton,
 				CustomID: racers[index],
+				Emoji:    nil,
 			}
 			buttons = append(buttons, button)
 		}
@@ -207,6 +208,7 @@ func raceMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action st
 					Label:    "Join",
 					Style:    discordgo.SuccessButton,
 					CustomID: "join_race",
+					Emoji:    nil,
 				},
 			}},
 		}
@@ -224,6 +226,7 @@ func raceMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action st
 					Label:    "Join",
 					Style:    discordgo.SuccessButton,
 					CustomID: "join_race",
+					Emoji:    nil,
 				},
 			}},
 		}
