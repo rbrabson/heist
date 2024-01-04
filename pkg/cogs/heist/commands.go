@@ -364,7 +364,6 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 				Style:    discordgo.SuccessButton,
 				Disabled: buttonDisabled,
 				CustomID: "join_heist",
-				Emoji:    discordgo.ComponentEmoji{},
 			},
 		}},
 	}
