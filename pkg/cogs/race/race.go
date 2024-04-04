@@ -144,7 +144,8 @@ func NewConfig() *Config {
 	modeName := "clash"
 	mode, ok := Modes[modeName]
 	if !ok {
-		log.Fatalf("Unable to load characters for mode %s", modeName)
+		log.Errorf("Unable to load characters for mode %s", modeName)
+		return nil
 	}
 	config := &Config{
 		BetAmount:        100,
@@ -307,7 +308,7 @@ func getCurrentTrack(racers []*Racer, mode *Mode) string {
 // runLeg runs a single leg of a race - that is, one turn for each player to move.
 // It returns the updated track layout as well as a boolean that indicates whether
 // the race is over (true) or ongoing (false).
-func runLeg(racers []*Racer, mode *Mode) bool {
+func runLeg(racers []*Racer) bool {
 	log.Trace("--> runLeg")
 	defer log.Trace("<-- runLeg")
 
@@ -339,7 +340,7 @@ func (s *Server) RunRace(channelID string) {
 	done := false
 	for !done {
 		time.Sleep(2 * time.Second)
-		done = runLeg(racers, mode)
+		done = runLeg(racers)
 		track = getCurrentTrack(racers, mode)
 		_, err = session.ChannelMessageEdit(channelID, messageID, fmt.Sprintf("%s\n", track))
 		if err != nil {
@@ -384,11 +385,12 @@ func (r *Racer) calculateMovement() int {
 	case "special":
 		fallthrough
 	default:
-		if r.Turn == 0 {
+		switch r.Turn {
+		case 0:
 			return 14 * 3
-		} else if r.Turn == 1 {
+		case 1:
 			return 0
-		} else {
+		default:
 			return rand.Intn(3) * 3
 		}
 	}

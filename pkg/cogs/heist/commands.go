@@ -305,25 +305,28 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 
 	p := getPrinter(i)
 
+	// TODO: look into i.Member.DisplayName() instead of i.i.Member.DisplayName(). Do this globally.
+	i.Member.DisplayName()
 	server := GetServer(servers, i.GuildID)
-	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
+	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.DisplayName())
 	var status string
 	var buttonDisabled bool
-	if action == "plan" || action == "join" || action == "leave" {
+	switch action {
+	case "plan", "join", "leave":
 		until := time.Until(server.Heist.StartTime)
 		status = "Starts in " + format.Duration(until)
 		buttonDisabled = false
-	} else if action == "update" {
+	case "update":
 		until := time.Until(server.Heist.StartTime)
 		status = "Starts in " + format.Duration(until)
 		buttonDisabled = false
-	} else if action == "start" {
+	case "start":
 		status = "Started"
 		buttonDisabled = true
-	} else if action == "cancel" {
+	case "cancel":
 		status = "Canceled"
 		buttonDisabled = true
-	} else {
+	default:
 		status = "Ended"
 		buttonDisabled = true
 	}
@@ -449,7 +452,7 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
+	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.DisplayName())
 
 	// Basic error checks for the heist
 	msg, ok := heistChecks(server, i, player, server.Targets)
@@ -511,7 +514,7 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		discmsg.SendEphemeralResponse(s, i, "No "+theme.Heist+" is planned.")
 		return
 	}
-	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
+	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.DisplayName())
 	server.Heist.Mutex.Lock()
 	isMember := contains(server.Heist.Crew, player.ID)
 	server.Heist.Mutex.Unlock()
@@ -680,7 +683,7 @@ func playerStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	server := GetServer(servers, i.GuildID)
 	theme := themes[server.Config.Theme]
-	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
+	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.DisplayName())
 	caser := cases.Caser(cases.Title(language.Und, cases.NoLower))
 
 	p := getPrinter(i)
@@ -784,7 +787,7 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	server := GetServer(servers, i.GuildID)
-	initiatingPlayer := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
+	initiatingPlayer := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.DisplayName())
 	bank := economy.GetBank(server.ID)
 	account := bank.GetAccount(initiatingPlayer.ID, initiatingPlayer.Name)
 

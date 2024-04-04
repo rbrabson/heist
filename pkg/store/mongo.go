@@ -67,15 +67,16 @@ func newMongoStore() StoreInterface {
 	clientOpts := options.Client().ApplyURI(m.uri).SetAuth(credential)
 	client, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
-		log.Fatal("Unable to connect to the MongoDB database, error:", err)
+		log.Error("Unable to connect to the MongoDB database, error:", err)
 		return nil
 	}
 	defer client.Disconnect(ctx)
+
 	// Check the connection
 	err = client.Ping(ctx, nil)
-
 	if err != nil {
-		log.Fatal("Unable to ping the MongoDB database, error:", err)
+		log.Error("Unable to ping the MongoDB database, error:", err)
+		return nil
 	}
 
 	return &m
@@ -106,7 +107,7 @@ func (m *mongodb) ListDocuments(collectionName string) []string {
 	db := client.Database(m.dbName)
 	collection := db.Collection(collectionName)
 	if collection == nil {
-		log.Errorf("Failed to create %s collection, error=%s", collectionName, err.Error())
+		log.Errorf("Failed to create %s collection", collectionName)
 		return nil
 	}
 	opts := options.Find().SetProjection(bson.M{"_id": 1})
@@ -158,7 +159,7 @@ func (m *mongodb) Load(collectionName string, documentID string, data interface{
 	db := client.Database(m.dbName)
 	collection := db.Collection(collectionName)
 	if collection == nil {
-		log.Errorf("Failed to create %s collection, error=%s", collectionName, err.Error())
+		log.Errorf("Failed to create %s collection", collectionName)
 		return
 	}
 	log.Debug("Collection:", collection.Name())
@@ -194,7 +195,7 @@ func (m *mongodb) Save(collectionName string, documentID string, data interface{
 	}
 	defer client.Disconnect(ctx)
 	findOptions := options.Find()
-	//Set the limit of the number of record to find
+	// Set the limit of the number of record to find
 	findOptions.SetLimit(5)
 	defer log.Debug("Disconnected from DB")
 

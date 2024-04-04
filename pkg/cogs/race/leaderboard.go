@@ -23,6 +23,9 @@ func getLeaderboard(serverID string, limit int) []leaderboardAccount {
 
 	server := GetServer(serverID)
 	players := server.Players
+	if len(players) == 0 {
+		return nil
+	}
 	lb := make([]leaderboardAccount, 0, len(players))
 	for _, player := range players {
 		balance := player.Results.Earnings + (player.Results.BetEarnings - (server.Config.BetAmount * player.Results.BetsPlaced))
@@ -36,6 +39,10 @@ func getLeaderboard(serverID string, limit int) []leaderboardAccount {
 	sort.Slice(lb, func(i, j int) bool {
 		return lb[i].balance > lb[j].balance
 	})
+
+	if limit >= len(lb) {
+		limit = len(lb)
+	}
 
 	return lb[:limit]
 }

@@ -1,0 +1,17 @@
+{
+    "name": "Roy",
+    "items": [
+        {
+            "name": "string",
+            "stringValue": "First"
+        },
+        {
+            "name": "int",
+            "intValue": 1
+        },
+        {
+            "name": "float",
+            "doubleValue": 2.5
+        }
+    ]
+}

@@ -1,12 +1,14 @@
 package main
 
 import (
-	"strconv"
+	"encoding/json"
+	"fmt"
+	"math"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/rbrabson/heist/pkg/cogs/race"
-	"github.com/rbrabson/heist/pkg/math"
-	log "github.com/sirupsen/logrus"
+	"github.com/rbrabson/heist/pkg/cogs/shop"
 )
 
 const (
@@ -62,7 +64,6 @@ func getRacerButtons(race *race.Race) []discordgo.ActionsRow {
 				Label:    race.Racers[index].Player.Name,
 				Style:    discordgo.PrimaryButton,
 				CustomID: racers[index],
-				Emoji:    nil,
 			}
 			buttons = append(buttons, button)
 		}
@@ -83,63 +84,63 @@ func getRacerButtons(race *race.Race) []discordgo.ActionsRow {
 }
 
 func main() {
-	numRacers := 11
-	r := &race.Race{
-		Racers: make([]*race.Racer, 0, 10),
-	}
-	for i := 0; i < numRacers; i++ {
-		index := strconv.Itoa(i)
-		player := &race.Player{ID: index, Name: index}
-		racer := &race.Racer{Player: player}
-		r.Racers = append(r.Racers, racer)
-	}
+	data := Data{Duration: shop.Duration(DURATION_THREE_DAYS)}
 
-	getRacerButtons(r)
+	bytes, _ := json.Marshal(data)
+	fmt.Println(string(bytes))
+
+	json.Unmarshal(bytes, &data)
+	fmt.Println(time.Duration(data.Duration))
+
+	t, bytes, err := data.Duration.MarshalBSONValue()
+	fmt.Println(t, string(bytes), err)
+
+	err = (&data.Duration).UnmarshalBSONValue(t, bytes)
+	fmt.Println(data.Duration, err)
 
 	/*
-		godotenv.Load()
-
-		token := os.Getenv("BOT_TOKEN")
-		s, err := discordgo.New("Bot " + token)
+		data, err := os.ReadFile("/Users/roybrabson/dev/heist/cmd/test/test.json")
 		if err != nil {
-			log.Fatal("Failed to create new bot, error:", err)
+			panic(err)
 		}
 
-		bot := &Bot{
-			Session: s,
-			timer:   make(chan int),
+		var test Test
+		if err := json.Unmarshal(data, &test); err != nil {
+			panic(err)
 		}
-		bot.Session.Identify.Intents = botIntents
-
-		err = bot.Session.Open()
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer bot.Session.Close()
-
-		channelID := "1133474546121449492"
-
-		embeds := []*discordgo.MessageEmbed{
-			{
-				Type:  discordgo.EmbedTypeRich,
-				Title: "Monthly Leaderboard",
-				Fields: []*discordgo.MessageEmbedField{
-					{
-						Value: "This is where the data would go",
-					},
-				},
-			},
-		}
-		_, err = bot.Session.ChannelMessageSendComplex(channelID, &discordgo.MessageSend{
-			Embeds: embeds,
-		})
-		if err != nil {
-			log.Fatal("Unable to send montly leaderboard, err:", err)
+		for _, item := range test.Items {
+			// var xItem Item
+			myItem := item.(map[string]interface{})
+			switch myItem["name"] {
+			case "string":
+				fmt.Println("string")
+			case "int":
+				fmt.Println("int")
+			case "float":
+				fmt.Println("float")
+			}
 		}
 	*/
 
 	/*
-		lastSeason := time.Date(2023, time.September, 1, 0, 0, 0, 0, time.UTC)
-		fmt.Printf("%s %d Leaderboard\n", lastSeason.Month().String(), lastSeason.Year())
+		var test Test
+		err = json.Unmarshal(raw[0], &test.Name)
+		if err != nil {
+			panic(err)
+		}
+		for i := range test.Items {
+			switch test.Items[i].Name {
+			case "string":
+				var stringItem StringItem
+				if err := json.Unmarshal(raw[i+1], &stringItem); err != nil {
+					panic(err)
+				}
+				// Unmarshal item into a StringItem
+			case "int":
+				// Unmarhsal item into an IntItem
+			case "float":
+				// Unmarshal item into a FloatItem
+			}
+		}
 	*/
 }

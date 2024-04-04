@@ -174,7 +174,7 @@ func getAccountInfo(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	p := getPrinter(i)
 
 	bank := GetBank(i.GuildID)
-	account := bank.GetAccount(i.Member.User.ID, getMemberName(i.Member.User.Username, i.Member.Nick))
+	account := bank.GetAccount(i.Member.User.ID, getMemberName(i.Member.User.Username, i.Member.DisplayName()))
 	resp := p.Sprintf("**Name**: %s\n**Monthly Balance**: %d, **Ranking**: %d\n**Lifetime Balance**: %d, **Ranking**: %d", account.Name, account.MonthlyBalance, GetMonthlyRanking(bank.ID, account.ID), account.LifetimeBalance, GetLifetimeRanking(bank.ID, account.ID))
 	msg.SendEphemeralResponse(s, i, resp)
 }
@@ -206,7 +206,7 @@ func setAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	bank := GetBank(i.GuildID)
-	account := bank.GetAccount(id, getMemberName(member.User.ID, member.Nick))
+	account := bank.GetAccount(id, getMemberName(member.User.ID, i.Member.DisplayName()))
 	account.MonthlyBalance = amount
 	account.CurrentBalance = amount
 	account.LifetimeBalance = amount
@@ -256,7 +256,7 @@ func transferAccount(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	toAccount := bank.GetAccount(toID, getMemberName(member.User.Username, member.Nick))
+	toAccount := bank.GetAccount(toID, getMemberName(member.User.Username, i.Member.DisplayName()))
 
 	toAccount.MonthlyBalance = fromAccount.MonthlyBalance
 	toAccount.CurrentBalance = fromAccount.CurrentBalance

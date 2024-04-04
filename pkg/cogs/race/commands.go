@@ -164,19 +164,20 @@ func raceMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action st
 	}
 
 	var msg string
-	if action == "start" || action == "join" || action == "update" {
+	switch action {
+	case "start", "join", "update":
 		until := time.Until(race.StartTime)
 		msg = p.Sprintf(":triangular_flag_on_post: A race is starting! Click the button to join the race! :triangular_flag_on_post:\n\t\t\t\t\tThe race will begin in %s!", format.Duration(until))
-	} else if action == "betting" {
+	case "betting":
 		until := time.Until(race.BetEndTime)
 		msg = p.Sprintf(":triangular_flag_on_post: The racers have been set - betting is now open! :triangular_flag_on_post:\n\t\tYou have %s to place a %d credit bet!", format.Duration(until), server.Config.BetAmount)
-	} else if action == "started" {
+	case "started":
 		msg = ":checkered_flag: The race is now in progress! :checkered_flag:"
-	} else if action == "ended" {
+	case "ended":
 		msg = ":checkered_flag: The race has ended - lets find out the results. :checkered_flag:"
-	} else if action == "cancelled" {
+	case "cancelled":
 		msg = "Not enough players entered the race, so it was cancelled."
-	} else {
+	default:
 		errMsg := fmt.Sprintf("Unrecognized action: %s", action)
 		log.Error(errMsg)
 		return errors.New(errMsg)
@@ -201,7 +202,8 @@ func raceMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action st
 	}
 
 	var err error
-	if action == "start" {
+	switch action {
+	case "start":
 		components := []discordgo.MessageComponent{
 			discordgo.ActionsRow{Components: []discordgo.MessageComponent{
 				discordgo.Button{
@@ -219,7 +221,7 @@ func raceMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action st
 				Components: components,
 			},
 		})
-	} else if action == "join" {
+	case "join":
 		components := []discordgo.MessageComponent{
 			discordgo.ActionsRow{Components: []discordgo.MessageComponent{
 				discordgo.Button{
@@ -234,11 +236,11 @@ func raceMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action st
 			Embeds:     &embeds,
 			Components: &components,
 		})
-	} else if action == "update" {
+	case "update":
 		_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 			Embeds: &embeds,
 		})
-	} else if action == "betting" {
+	case "betting":
 		components := []discordgo.MessageComponent{}
 		rows := getRacerButtons(race)
 		for _, row := range rows {
@@ -248,7 +250,7 @@ func raceMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action st
 			Embeds:     &embeds,
 			Components: &components,
 		})
-	} else {
+	default:
 		_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 			Embeds:     &embeds,
 			Components: &[]discordgo.MessageComponent{},
@@ -338,8 +340,7 @@ func admin(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Trace("<-- admin")
 
 	options := i.ApplicationCommandData().Options
-	switch options[0].Name {
-	case "reset":
+	if options[0].Name == "reset" {
 		resetRace(s, i)
 	}
 }
@@ -372,7 +373,7 @@ func prepareRace(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server.Race.Planned = true
 	server.Race.Interaction = i
 
-	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
+	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.DisplayName())
 	mode := Modes[server.Config.Mode]
 	racer := NewRacer(player, mode)
 	server.Race.Racers = append(server.Race.Racers, racer)
@@ -542,7 +543,7 @@ func joinRace(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		msg.SendEphemeralResponse(s, i, resp)
 	}
 
-	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
+	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.DisplayName())
 	racer := NewRacer(player, mode)
 	server.Race.Racers = append(server.Race.Racers, racer)
 	err := raceMessage(s, server.Race.Interaction, "join")
@@ -564,7 +565,7 @@ func raceStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	p := getPrinter(i)
 	server := GetServer(i.GuildID)
-	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
+	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.DisplayName())
 
 	var betPercentage float64
 	if player.Results.BetsPlaced > 0 {
@@ -663,7 +664,7 @@ func betOnRace(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	defer log.Trace("<-- betOnRace")
 
 	server := GetServer(i.GuildID)
-	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
+	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.DisplayName())
 
 	if server.Race.Started || server.Race.Ended {
 		msg.SendEphemeralResponse(s, i, "You can't place a bet after the race has started.")

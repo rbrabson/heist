@@ -10,6 +10,7 @@ import (
 	"github.com/rbrabson/heist/pkg/cogs/payday"
 	"github.com/rbrabson/heist/pkg/cogs/race"
 	"github.com/rbrabson/heist/pkg/cogs/remind"
+	"github.com/rbrabson/heist/pkg/cogs/shop"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -94,6 +95,9 @@ func NewBot() *Bot {
 	remind.Start(bot.Session)
 	commands = addCommands(componentHandlers, commandHandlers, commands, remind.GetCommands)
 
+	shop.Start(bot.Session)
+	commands = addCommands(componentHandlers, commandHandlers, commands, shop.GetCommands)
+
 	log.Debug("Add bot handlers")
 	bot.Session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		switch i.Type {
@@ -117,10 +121,9 @@ func NewBot() *Bot {
 		}
 	*/
 
-	log.Debug("Add bot commands")
 	_, err = bot.Session.ApplicationCommandBulkOverwrite(appID, guildID, commands)
 	if err != nil {
-		log.Fatal("Failed to load heist commands, error:", err)
+		log.Fatal("Failed to load bot commands, error:", err)
 	}
 
 	return bot
