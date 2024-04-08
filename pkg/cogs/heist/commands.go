@@ -471,10 +471,11 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server.Heist.Planned = true
 
 	err := heistMessage(s, i, "plan")
+	server.Mutex.Unlock()
 	if err != nil {
 		log.Error("Unable to create the `Plan Heist` message, error:", err)
+		return
 	}
-	server.Mutex.Unlock()
 
 	/*
 		if msg != "" {
@@ -492,6 +493,7 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		err := heistMessage(s, i, "update")
 		if err != nil {
 			log.Error("Unable to update the time for the heist message, error:", err)
+			continue
 		}
 	}
 

@@ -307,7 +307,7 @@ func getCurrentTrack(racers []*Racer, mode *Mode) string {
 // runLeg runs a single leg of a race - that is, one turn for each player to move.
 // It returns the updated track layout as well as a boolean that indicates whether
 // the race is over (true) or ongoing (false).
-func runLeg(racers []*Racer, mode *Mode) bool {
+func runLeg(racers []*Racer) bool {
 	log.Trace("--> runLeg")
 	defer log.Trace("<-- runLeg")
 
@@ -332,6 +332,7 @@ func (s *Server) RunRace(channelID string) {
 	message, err := session.ChannelMessageSend(channelID, fmt.Sprintf("%s\n", track))
 	if err != nil {
 		log.Error("Failed to send message at the start of the race, error:", err)
+		return
 	}
 	messageID := message.ID
 	time.Sleep(1 * time.Second)
@@ -339,11 +340,12 @@ func (s *Server) RunRace(channelID string) {
 	done := false
 	for !done {
 		time.Sleep(2 * time.Second)
-		done = runLeg(racers, mode)
+		done = runLeg(racers)
 		track = getCurrentTrack(racers, mode)
 		_, err = session.ChannelMessageEdit(channelID, messageID, fmt.Sprintf("%s\n", track))
 		if err != nil {
 			log.Error("Failed to update race message, error:", err)
+			continue
 		}
 	}
 	sort.Slice(racers, func(i, j int) bool {
