@@ -15,12 +15,16 @@ import (
 
 // mongodb is a Store used to load and save documents in a MongoDB database.
 type mongodb struct {
-	adminDB string
-	dbName  string
-	pwd     string
-	uri     string
-	userID  string
+	//adminDB string
+	//dbName  string
+	//pwd     string
+	uri string
+	//userID  string
 }
+
+var clientOpts *options.ClientOptions = nil
+var client *mongo.Client = nil
+var err error = nil
 
 // newMongoStore creates a Store to load and save documents in a MongoDB database.
 func newMongoStore() StoreInterface {
@@ -30,47 +34,50 @@ func newMongoStore() StoreInterface {
 	if uri == "" {
 		log.Fatal("You must set your 'MONGODB_URI' environmental variable. See\n\t https://www.mongodb.com/docs/drivers/go/current/usage-examples/#environment-variable")
 	}
-	dbName := os.Getenv("MONGODB_DATABASE")
-	if dbName == "" {
-		log.Fatal("You must set your 'MONGODB_DATABASE' environment variable")
-	}
-	userID := os.Getenv("MONGODB_USERID")
-	if userID == "" {
-		log.Fatal("You must set your 'MONGODB_USERID' environment variable")
-	}
-	pwd := os.Getenv("MONGODB_PASSWORD")
-	if pwd == "" {
-		log.Fatal("You must set your 'MONGODB_PASSWORD' environment variable")
-	}
-	adminDB := os.Getenv("MONGODB_ADMIN_DB")
-	if adminDB == "" {
-		adminDB = "admin"
-	}
+	//dbName := os.Getenv("MONGODB_DATABASE")
+	//if dbName == "" {
+	//	log.Fatal("You must set your 'MONGODB_DATABASE' environment variable")
+	//}
+	//userID := os.Getenv("MONGODB_USERID")
+	//if userID == "" {
+	//	log.Fatal("You must set your 'MONGODB_USERID' environment variable")
+	//}
+	//pwd := os.Getenv("MONGODB_PASSWORD")
+	//if pwd == "" {
+	//	log.Fatal("You must set your 'MONGODB_PASSWORD' environment variable")
+	//}
+	//adminDB := os.Getenv("MONGODB_ADMIN_DB")
+	//if adminDB == "" {
+	//	adminDB = "admin"
+	//}
 
 	m := mongodb{
-		adminDB: adminDB,
-		dbName:  dbName,
-		pwd:     pwd,
-		uri:     uri,
-		userID:  userID,
+		//	adminDB: adminDB,
+		//	dbName:  dbName,
+		//	pwd:     pwd,
+		uri: uri,
+		//	userID:  userID,
 	}
 
 	// Wait for MongoDB to become active before proceeding
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	credential := options.Credential{
-		AuthSource: m.adminDB,
-		Username:   m.userID,
-		Password:   m.pwd,
+	//credential := options.Credential{
+	//	AuthSource: m.adminDB,
+	//	Username:   m.userID,
+	//	Password:   m.pwd,
+	//}
+	if clientOpts == nil {
+		clientOpts = options.Client().ApplyURI(m.uri) //.SetAuth(credential)
+		client, err = mongo.Connect(ctx, clientOpts)
 	}
-	clientOpts := options.Client().ApplyURI(m.uri).SetAuth(credential)
-	client, err := mongo.Connect(ctx, clientOpts)
+
 	if err != nil {
 		log.Fatal("Unable to connect to the MongoDB database, error:", err)
 		return nil
 	}
-	defer client.Disconnect(ctx)
+	//defer client.Disconnect(ctx)
 	// Check the connection
 	err = client.Ping(ctx, nil)
 
@@ -89,21 +96,22 @@ func (m *mongodb) ListDocuments(collectionName string) []string {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	credential := options.Credential{
-		AuthSource: m.adminDB,
-		Username:   m.userID,
-		Password:   m.pwd,
+	//credential := options.Credential{
+	//	AuthSource: m.adminDB,
+	//	Username:   m.userID,
+	//	Password:   m.pwd,
+	//}
+	if clientOpts == nil {
+		clientOpts = options.Client().ApplyURI(m.uri) //.SetAuth(credential)
+		client, err = mongo.Connect(ctx, clientOpts)
 	}
-	clientOpts := options.Client().ApplyURI(m.uri).SetAuth(credential)
-	client, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
 		log.Error("Unable to connect to the MongoDB database, error:", err)
 		return nil
 	}
-	defer client.Disconnect(ctx)
-	defer log.Debug("Disconnected from DB")
+	//defer client.Disconnect(ctx)
 
-	db := client.Database(m.dbName)
+	db := client.Database("TestHeist")
 	collection := db.Collection(collectionName)
 	if collection == nil {
 		log.Errorf("Failed to create %s collection, error=%s", collectionName, err.Error())
@@ -141,21 +149,22 @@ func (m *mongodb) Load(collectionName string, documentID string, data interface{
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	credential := options.Credential{
-		AuthSource: m.adminDB,
-		Username:   m.userID,
-		Password:   m.pwd,
+	//credential := options.Credential{
+	//	AuthSource: m.adminDB,
+	//	Username:   m.userID,
+	//	Password:   m.pwd,
+	//}
+	if clientOpts == nil {
+		clientOpts = options.Client().ApplyURI(m.uri) //.SetAuth(credential)
+		client, err = mongo.Connect(ctx, clientOpts)
 	}
-	clientOpts := options.Client().ApplyURI(m.uri).SetAuth(credential)
-	client, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
 		log.Error("Unable to connect to the MongoDB database, error:", err)
 		return
 	}
-	defer client.Disconnect(ctx)
-	defer log.Debug("Disconnected from DB")
+	//defer client.Disconnect(ctx)
 
-	db := client.Database(m.dbName)
+	db := client.Database("TestHeist")
 	collection := db.Collection(collectionName)
 	if collection == nil {
 		log.Errorf("Failed to create %s collection, error=%s", collectionName, err.Error())
@@ -181,24 +190,25 @@ func (m *mongodb) Save(collectionName string, documentID string, data interface{
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	credential := options.Credential{
-		AuthSource: m.adminDB,
-		Username:   m.userID,
-		Password:   m.pwd,
+	//credential := options.Credential{
+	//	AuthSource: m.adminDB,
+	//	Username:   m.userID,
+	//	Password:   m.pwd,
+	//}
+	if clientOpts == nil {
+		clientOpts = options.Client().ApplyURI(m.uri) //.SetAuth(credential)
+		client, err = mongo.Connect(ctx, clientOpts)
 	}
-	clientOpts := options.Client().ApplyURI(m.uri).SetAuth(credential)
-	client, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
 		log.Error("Unable to connect to the MongoDB database, error:", err)
 		return
 	}
-	defer client.Disconnect(ctx)
+	//defer client.Disconnect(ctx)
 	findOptions := options.Find()
 	//Set the limit of the number of record to find
 	findOptions.SetLimit(5)
-	defer log.Debug("Disconnected from DB")
 
-	db := client.Database(m.dbName)
+	db := client.Database("TestHeist")
 	collection := db.Collection(collectionName)
 	if collection == nil {
 		if err = db.CreateCollection(ctx, collectionName); err != nil {
