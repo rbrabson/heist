@@ -5,20 +5,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func EditResponse(s *discordgo.Session, i *discordgo.InteractionCreate, embeds []*discordgo.MessageEmbed, components []discordgo.MessageComponent) {
-	log.Trace("--> EditResponse")
-	defer log.Trace("<-- EditResponse")
-
-	_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-		Embeds:     &embeds,
-		Components: &components,
-	})
-	if err != nil {
-		log.Error("Unable to edit a response, error:", err)
-	}
-
-}
-
 // SendResponse sends a response to a user interaction. The message can ephemeral or non-ephemeral,
 // depending on whether the ephemeral boolean is set to `true`.
 func SendResponse(s *discordgo.Session, i *discordgo.InteractionCreate, msg string, ephemeral ...bool) {
@@ -42,6 +28,23 @@ func SendResponse(s *discordgo.Session, i *discordgo.InteractionCreate, msg stri
 			},
 		})
 	}
+	if err != nil {
+		log.Error("Unable to send a response, error:", err)
+	}
+}
+
+// SendResponse sends a response to a user interaction. The message can ephemeral or non-ephemeral,
+// depending on whether the ephemeral boolean is set to `true`.
+func EditResponse(s *discordgo.Session, i *discordgo.InteractionCreate, msg string) {
+	log.Trace("--> SendResponse")
+	defer log.Trace("<-- SendResponse")
+
+	var err error
+
+	_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		Content: &msg,
+	})
+
 	if err != nil {
 		log.Error("Unable to send a response, error:", err)
 	}

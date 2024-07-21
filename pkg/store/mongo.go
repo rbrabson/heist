@@ -75,6 +75,7 @@ func newMongoStore() StoreInterface {
 
 	if err != nil {
 		log.Fatal("Unable to connect to the MongoDB database, error:", err)
+		err = nil
 		return nil
 	}
 	//defer client.Disconnect(ctx)
@@ -83,6 +84,7 @@ func newMongoStore() StoreInterface {
 
 	if err != nil {
 		log.Fatal("Unable to ping the MongoDB database, error:", err)
+		err = nil
 	}
 
 	return &m
@@ -107,11 +109,12 @@ func (m *mongodb) ListDocuments(collectionName string) []string {
 	}
 	if err != nil {
 		log.Error("Unable to connect to the MongoDB database, error:", err)
+		err = nil
 		return nil
 	}
 	//defer client.Disconnect(ctx)
 
-	db := client.Database("TestHeist")
+	db := client.Database("Heist")
 	collection := db.Collection(collectionName)
 	if collection == nil {
 		log.Errorf("Failed to create %s collection, error=%s", collectionName, err.Error())
@@ -121,6 +124,7 @@ func (m *mongodb) ListDocuments(collectionName string) []string {
 	cur, err := collection.Find(ctx, bson.D{}, opts)
 	if err != nil {
 		log.Errorf("Failed to search the %s collection, error=%s", collectionName, err.Error())
+		err = nil
 		return nil
 	}
 	type result struct {
@@ -131,6 +135,7 @@ func (m *mongodb) ListDocuments(collectionName string) []string {
 	err = cur.All(ctx, &results)
 	if err != nil {
 		log.Errorf("Error getting the IDs for collection %s, error=%s", collectionName, err.Error())
+		err = nil
 	}
 
 	idList := make([]string, 0, len(results))
@@ -160,14 +165,16 @@ func (m *mongodb) Load(collectionName string, documentID string, data interface{
 	}
 	if err != nil {
 		log.Error("Unable to connect to the MongoDB database, error:", err)
+		err = nil
 		return
 	}
 	//defer client.Disconnect(ctx)
 
-	db := client.Database("TestHeist")
+	db := client.Database("Heist")
 	collection := db.Collection(collectionName)
 	if collection == nil {
 		log.Errorf("Failed to create %s collection, error=%s", collectionName, err.Error())
+		err = nil
 		return
 	}
 	log.Debug("Collection:", collection.Name())
@@ -179,6 +186,7 @@ func (m *mongodb) Load(collectionName string, documentID string, data interface{
 	err = res.Decode(data)
 	if err != nil {
 		log.Errorf("Failed to decode document %s, error:%s", documentID, err.Error())
+		err = nil
 	}
 }
 
@@ -201,6 +209,7 @@ func (m *mongodb) Save(collectionName string, documentID string, data interface{
 	}
 	if err != nil {
 		log.Error("Unable to connect to the MongoDB database, error:", err)
+		err = nil
 		return
 	}
 	//defer client.Disconnect(ctx)
@@ -208,11 +217,12 @@ func (m *mongodb) Save(collectionName string, documentID string, data interface{
 	//Set the limit of the number of record to find
 	findOptions.SetLimit(5)
 
-	db := client.Database("TestHeist")
+	db := client.Database("Heist")
 	collection := db.Collection(collectionName)
 	if collection == nil {
 		if err = db.CreateCollection(ctx, collectionName); err != nil {
 			log.Errorf("Failed to create the %s collection, error=%s", collectionName, err.Error())
+			err = nil
 			return
 		}
 		collection = db.Collection(collectionName)
@@ -223,6 +233,7 @@ func (m *mongodb) Save(collectionName string, documentID string, data interface{
 		_, err = collection.ReplaceOne(ctx, bson.D{{Key: "_id", Value: documentID}}, data)
 		if err != nil {
 			log.Errorf("Failed to update or insert document %s into %s collection, error=%s", documentID, collectionName, err.Error())
+			err = nil
 		}
 	}
 }

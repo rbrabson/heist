@@ -35,11 +35,12 @@ func payday(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	p := getPrinter(i)
 	server := getServer(i.GuildID)
 	member := server.getMember(i.Member.User.ID)
+	discmsg.SendEphemeralResponse(s, i, "Paying...")
 
 	if member.NextPayday.After(time.Now()) {
 		remainingTime := time.Until(member.NextPayday)
 		msg := p.Sprintf("You can't get another payday yet. You need to wait %s.", format.Duration(remainingTime))
-		discmsg.SendEphemeralResponse(s, i, msg)
+		discmsg.EditResponse(s, i, msg)
 		return
 	}
 
@@ -51,7 +52,7 @@ func payday(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	saveServer(server)
 
 	msg := p.Sprintf("You deposited your check of %d into your bank account. You now have %d credits.", server.PaydayAmount, account.CurrentBalance)
-	discmsg.SendEphemeralResponse(s, i, msg)
+	discmsg.EditResponse(s, i, msg)
 }
 
 // Start initializes the payday information.

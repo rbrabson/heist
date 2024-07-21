@@ -368,14 +368,12 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 			},
 		}},
 	}
-
+	emptymsg := ""
 	if action == "plan" {
-		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Embeds:     embeds,
-				Components: components,
-			},
+		_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+			Embeds:     &embeds,
+			Components: &components,
+			Content:    &emptymsg,
 		})
 		if err != nil {
 			return err
@@ -384,6 +382,7 @@ func heistMessage(s *discordgo.Session, i *discordgo.InteractionCreate, action s
 		_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 			Embeds:     &embeds,
 			Components: &components,
+			Content:    &emptymsg,
 		})
 		if err != nil {
 			return err
@@ -440,7 +439,7 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	server := GetServer(servers, i.GuildID)
 	theme := themes[server.Config.Theme]
-
+	discmsg.SendResponse(s, i, "Starting "+theme.Heist+"...")
 	server.Mutex.Lock()
 	// Heist is already in progress
 	if server.Heist != nil {
@@ -469,7 +468,6 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server.Heist = NewHeist(server, player)
 	server.Heist.Interaction = i
 	server.Heist.Planned = true
-
 	err := heistMessage(s, i, "plan")
 	server.Mutex.Unlock()
 	if err != nil {
@@ -509,8 +507,11 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	server := GetServer(servers, i.GuildID)
 	theme := themes[server.Config.Theme]
+
+	discmsg.SendEphemeralResponse(s, i, "Joining "+theme.Heist+"...")
+
 	if server.Heist == nil {
-		discmsg.SendEphemeralResponse(s, i, "No "+theme.Heist+" is planned.")
+		discmsg.EditResponse(s, i, "No "+theme.Heist+" is planned.")
 		return
 	}
 	player := server.GetPlayer(i.Member.User.ID, i.Member.User.Username, i.Member.Nick)
@@ -518,16 +519,16 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	isMember := contains(server.Heist.Crew, player.ID)
 	server.Heist.Mutex.Unlock()
 	if isMember {
-		discmsg.SendEphemeralResponse(s, i, "You are already a member of the "+theme.Heist+".")
+		discmsg.EditResponse(s, i, "You are already a member of the "+theme.Heist+".")
 		return
 	}
 	msg, ok := heistChecks(server, i, player, server.Targets)
 	if !ok {
-		discmsg.SendEphemeralResponse(s, i, msg)
+		discmsg.EditResponse(s, i, msg)
 		return
 	}
 	if server.Heist.Started {
-		discmsg.SendEphemeralResponse(s, i, "The heist has already been started")
+		discmsg.EditResponse(s, i, "The heist has already been started")
 		return
 	}
 
@@ -548,10 +549,10 @@ func joinHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	if msg != "" {
 		msg := p.Sprintf("%s You have joined the %s at a cost of %d credits.", msg, theme.Heist, server.Config.HeistCost)
-		discmsg.SendEphemeralResponse(s, i, msg)
+		discmsg.EditResponse(s, i, msg)
 	} else {
 		msg := p.Sprintf("You have joined the %s at a cost of %d credits.", theme.Heist, server.Config.HeistCost)
-		discmsg.SendEphemeralResponse(s, i, msg)
+		discmsg.EditResponse(s, i, msg)
 	}
 
 	store.Store.Save(HEIST, server.ID, server)
@@ -790,12 +791,13 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	bank := economy.GetBank(server.ID)
 	account := bank.GetAccount(initiatingPlayer.ID, initiatingPlayer.Name)
 
+	discmsg.SendEphemeralResponse(s, i, "Bailing "+playerID+"...")
 	var player *Player
 	if playerID != "" {
 		var ok bool
 		player, ok = server.Players[playerID]
 		if !ok {
-			discmsg.SendEphemeralResponse(s, i, "Player "+playerID+" does not exist.")
+			discmsg.EditResponse(s, i, "Player "+playerID+" does not exist.")
 			return
 		}
 	} else {
@@ -809,17 +811,17 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		} else {
 			msg = p.Sprintf("%s is not in jail", player.Name)
 		}
-		discmsg.SendEphemeralResponse(s, i, msg)
+		discmsg.EditResponse(s, i, msg)
 		return
 	}
 	if player.Status == APPREHENDED && player.JailTimer.Before(time.Now()) {
-		discmsg.SendEphemeralResponse(s, i, "You have already served your sentence.")
+		discmsg.EditResponse(s, i, "You have already served your sentence.")
 		player.Reset()
 		return
 	}
 	if account.CurrentBalance < int(player.BailCost) {
 		msg := p.Sprintf("You do not have enough credits to play the bail of %d", player.BailCost)
-		discmsg.SendEphemeralResponse(s, i, msg)
+		discmsg.EditResponse(s, i, msg)
 		return
 	}
 
@@ -831,10 +833,10 @@ func bailoutPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	var msg string
 	if player.ID == initiatingPlayer.ID {
 		msg = p.Sprintf("Congratulations, you are now free! You spent %d credits on your bail. Enjoy your freedom while it lasts.", player.BailCost)
-		discmsg.SendEphemeralResponse(s, i, msg)
+		discmsg.EditResponse(s, i, msg)
 	} else {
 		msg = p.Sprintf("Congratulations, %s, %s bailed you out by spending %d credits and now you are free!. Enjoy your freedom while it lasts.", player.Name, initiatingPlayer.Name, player.BailCost)
-		discmsg.SendResponse(s, i, msg)
+		discmsg.EditResponse(s, i, msg)
 	}
 }
 
