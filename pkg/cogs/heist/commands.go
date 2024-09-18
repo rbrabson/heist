@@ -443,7 +443,7 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	server.Mutex.Lock()
 	// Heist is already in progress
 	if server.Heist != nil {
-		discmsg.SendEphemeralResponse(s, i, "A "+theme.Heist+" is already being planned.")
+		discmsg.EditResponse(s, i, "A "+theme.Heist+" is already being planned.")
 		server.Mutex.Unlock()
 		return
 	}
@@ -453,7 +453,7 @@ func planHeist(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// Basic error checks for the heist
 	msg, ok := heistChecks(server, i, player, server.Targets)
 	if !ok {
-		discmsg.SendEphemeralResponse(s, i, msg)
+		discmsg.EditResponse(s, i, msg)
 		server.Mutex.Unlock()
 		return
 	}
