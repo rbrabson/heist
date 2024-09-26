@@ -16,7 +16,7 @@ import (
 const (
 	botIntents = discordgo.IntentGuilds |
 		discordgo.IntentGuildMessages |
-		discordgo.IntentDirectMessages |
+		//discordgo.IntentDirectMessages |
 		discordgo.IntentGuildEmojis
 	botVersion = "1.0.0"
 )
