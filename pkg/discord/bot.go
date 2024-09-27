@@ -10,13 +10,14 @@ import (
 	"github.com/rbrabson/heist/pkg/cogs/payday"
 	"github.com/rbrabson/heist/pkg/cogs/race"
 	"github.com/rbrabson/heist/pkg/cogs/remind"
+	"github.com/rbrabson/heist/pkg/msg"
 	log "github.com/sirupsen/logrus"
 )
 
 const (
 	botIntents = discordgo.IntentGuilds |
 		discordgo.IntentGuildMessages |
-		//discordgo.IntentDirectMessages |
+		discordgo.IntentDirectMessages |
 		discordgo.IntentGuildEmojis
 	botVersion = "1.0.0"
 )
@@ -96,6 +97,10 @@ func NewBot() *Bot {
 
 	log.Debug("Add bot handlers")
 	bot.Session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		if i.User != nil {
+			msg.SendEphemeralResponse(s, i, "Bot commands are only usable in the server.")
+			return
+		}
 		switch i.Type {
 		case discordgo.InteractionApplicationCommand:
 			if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
